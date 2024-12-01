@@ -45,7 +45,8 @@ const Admissions: React.FC = () => {
     personalEmail: '',
     emergencyContact: '',
     branchId: '',
-    dob: ''
+    dob: '',
+    password: ''
   });
 
   const fetchData = async () => {
@@ -101,7 +102,7 @@ const Admissions: React.FC = () => {
       setFormData({
         firstName: '', lastName: '', studentEmail: '',
         classId: '', section: '', personalEmail: '',
-        emergencyContact: '', branchId: '', dob: ''
+        emergencyContact: '', branchId: '', dob: '', password: ''
       });
     } catch (error: any) {
       toast.error(error.response?.data?.message || 'Failed to save student');
@@ -121,7 +122,8 @@ const Admissions: React.FC = () => {
       personalEmail: student.personalEmail || '',
       emergencyContact: student.emergencyContact,
       branchId: student.branch?._id || '',
-      dob: student.dob ? new Date(student.dob).toISOString().split('T')[0] : ''
+      dob: student.dob ? new Date(student.dob).toISOString().split('T')[0] : '',
+      password: ''
     });
     setIsModalOpen(true);
   };
@@ -350,7 +352,7 @@ const Admissions: React.FC = () => {
           setFormData({
             firstName: '', lastName: '', studentEmail: '',
             classId: '', section: '', personalEmail: '',
-            emergencyContact: '', branchId: '', dob: ''
+            emergencyContact: '', branchId: '', dob: '', password: ''
           });
         }}
         title={editingStudentId ? "Update Student Profile" : "Student Registration"}
@@ -365,7 +367,7 @@ const Admissions: React.FC = () => {
            
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="Student Email" name="studentEmail" value={formData.studentEmail} onChange={handleInputChange} icon={Mail} placeholder="student@edu.com" type="email" />
-              <Input label="Admission Number" value="AUTO-GENERATED" icon={Hash} readOnly disabled className="bg-slate-50 cursor-not-allowed" />
+              <Input label="Admission Number" value="AUTO-GENERATED" icon={Hash} readOnly={true} disabled className="bg-slate-50 cursor-not-allowed" />
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -416,6 +418,15 @@ const Admissions: React.FC = () => {
                   <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
               </div>
+              <Input 
+                label="Initial Password" 
+                name="password" 
+                type="password"
+                value={formData.password} 
+                onChange={handleInputChange} 
+                icon={Shield} 
+                placeholder="Leave blank to auto-generate" 
+              />
            </div>
 
            <div className="p-5 bg-brand-50 rounded-2xl border border-brand-100 flex items-start gap-4">

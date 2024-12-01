@@ -1,116 +1,163 @@
-import React from 'react';
-import Button from '../../components/ui/Button';
+import React, { useEffect, useState } from 'react';
 import Badge from '../../components/ui/Badge';
-import { BookOpen, FileText, ArrowRight, PlayCircle } from 'lucide-react';
-
-const courses = [
-  { id: 1, title: 'Advanced Calculus', tutor: 'Dr. Sarah Smith', progress: 85, lessons: 12, completed: 10, color: 'brand' },
-  { id: 2, title: 'Computer Science II', tutor: 'Prof. Michael Chen', progress: 62, lessons: 15, completed: 9, color: 'success' },
-  { id: 3, title: 'Engineering Physics', tutor: 'Dr. James Wilson', progress: 40, lessons: 10, completed: 4, color: 'warning' },
-];
-
-const studyMaterials = [
-  { id: 1, title: 'Quantum Mechanics - Lecture Notes', course: 'Engineering Physics', type: 'PDF', size: '2.4 MB', date: 'Oct 15' },
-  { id: 2, title: 'Advanced Integration Cheat Sheet', course: 'Advanced Calculus', type: 'PDF', size: '1.1 MB', date: 'Oct 14' },
-  { id: 3, title: 'Data Structures Lab Manual', course: 'Computer Science II', type: 'Doc', size: '3.8 MB', date: 'Oct 12' },
-];
+import { FileText, Loader2, Download, ExternalLink, Link as LinkIcon, Video, Info } from 'lucide-react';
+import { getCourses, getMaterials } from '../../services/studentService';
 
 const MyCourses: React.FC = () => {
+  const [courses, setCourses] = useState<any[]>([]);
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [courseRes, matRes] = await Promise.all([
+          getCourses(),
+          getMaterials()
+        ]);
+        setCourses(courseRes.data);
+        setMaterials(matRes.data);
+        if (courseRes.data.length > 0) {
+          setSelectedSubject(courseRes.data[0].title);
+        }
+      } catch (error) {
+        console.error('Error fetching course data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const filteredMaterials = selectedSubject 
+    ? materials.filter(m => m.subject === selectedSubject)
+    : materials;
+
+  if (loading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-brand-500" size={40} />
+      </div>
+    );
+  }
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 font-sans text-sans">
+    <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">My Courses</h1>
-          <p className="text-gray-500 mt-1">Track your academic progress and access tutors' materials</p>
-        </div>
-        <div className="flex gap-2">
-            <Button variant="outline" className="rounded-xl h-11"><FileText size={18} /> Syllabus</Button>
-            <Button className="rounded-xl h-11 shadow-premium bg-brand-500 text-white hover:bg-brand-600"><PlayCircle size={18} /> Join Lecture</Button>
+          <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 tracking-tight">Academic Routine</h1>
+          <p className="text-gray-500 mt-1 font-medium">Access your curriculum materials and lecture distribution</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-         {courses.map((course) => (
-           <div key={course.id} className="bg-surface rounded-[40px] border border-surface-200 shadow-premium-sm overflow-hidden group hover:border-brand-300 transition-all flex flex-col">
-              <div className={`h-40 bg-${course.color === 'brand' ? 'brand-500' : course.color === 'success' ? 'success' : 'warning'} p-8 flex flex-col justify-end relative overflow-hidden`}>
-                 <div className="absolute top-6 right-6 bg-white/20 backdrop-blur-md rounded-xl p-2 text-white border border-white/20">
-                    <BookOpen size={20} />
-                 </div>
-                 <h3 className="text-xl font-medium text-white relative z-10  leading-tight">{course.title}</h3>
-                 <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-xl"></div>
-              </div>
-              
-              <div className="p-8 flex-1 flex flex-col">
-                 <div className="flex items-center gap-3 mb-8">
-                    <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center font-bold text-slate-400 text-xs">
-                       {course.tutor.split(' ').pop()?.[0]}
-                    </div>
-                    <div>
-                       <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Instructor</p>
-                       <p className="text-sm font-medium text-gray-900 mt-1.5">{course.tutor}</p>
-                    </div>
-                 </div>
-                 
-                 <div className="space-y-3 mb-10">
-                    <div className="flex justify-between text-[10px] font-bold  uppercase tracking-widest">
-                       <span className="text-slate-400">Course Progress</span>
-                       <span className={`text-${course.color === 'brand' ? 'brand-600' : course.color === 'success' ? 'success-dark' : 'warning-dark'}`}>{course.progress}%</span>
-                    </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                       <div className={`h-full bg-${course.color === 'brand' ? 'brand-500' : course.color === 'success' ? 'success' : 'warning'} rounded-full transition-all duration-1000`} style={{ width: `${course.progress}%` }}></div>
-                    </div>
-                    <div className="flex justify-between items-center text-[10px] text-slate-400 font-bold uppercase tracking-widest pt-1">
-                        <span>{course.completed}/{course.lessons} completed</span>
-                        <span>4 Materials</span>
-                    </div>
-                 </div>
-
-                 <div className="mt-auto flex items-center justify-between pt-6 border-t border-slate-50">
-                    <div className="flex -space-x-2">
-                       <div className="w-9 h-9 rounded-xl border-2 border-white bg-brand-50 flex items-center justify-center text-brand-600 shadow-sm"><PlayCircle size={16}/></div>
-                       <div className="w-9 h-9 rounded-xl border-2 border-white bg-success-light flex items-center justify-center text-success-dark shadow-sm"><FileText size={16}/></div>
-                    </div>
-                    <Button variant="ghost" size="sm" className={`text-brand-600 font-bold text-[10px] uppercase tracking-widest group px-0`}>
-                       Continue <ArrowRight size={14} className="ml-2 transition-transform group-hover:translate-x-1" />
-                    </Button>
-                 </div>
-              </div>
-           </div>
-         ))}
-      </div>
-
-      <div className="space-y-6 pt-4">
-         <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-               <div className="w-10 h-10 bg-brand-50 rounded-xl flex items-center justify-center text-brand-500">
-                  <FileText size={20} />
-               </div>
-               <h2 className="text-xl font-medium text-gray-900">Recent Materials</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+         {/* Sidebar - Subject Selector (matching Tutor Class Selector) */}
+         <div className="lg:col-span-1 space-y-4">
+            <h3 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">My Active Courses</h3>
+            <div className="space-y-3">
+              {courses.map((course, idx) => (
+                <div 
+                  key={idx} 
+                  onClick={() => setSelectedSubject(course.title)}
+                  className={`p-5 rounded-[24px] border transition-all cursor-pointer group ${selectedSubject === course.title ? 'bg-brand-500 text-white border-brand-500 shadow-premium' : 'bg-white border-slate-200 text-gray-600 hover:border-brand-300 shadow-soft'}`}
+                >
+                   <div className="flex justify-between items-center mb-1">
+                      <span className="font-bold tracking-tight">{course.title}</span>
+                      <div className={`w-2 h-2 rounded-full ${selectedSubject === course.title ? 'bg-white animate-pulse' : 'bg-slate-200'}`}></div>
+                   </div>
+                   <div className="flex items-center justify-between mt-2">
+                      <p className={`text-[10px] font-bold uppercase tracking-widest ${selectedSubject === course.title ? 'text-brand-100' : 'text-slate-400'}`}>
+                         Instructor: {course.tutor.split(' ').pop()}
+                      </p>
+                      <Badge variant={selectedSubject === course.title ? 'neutral' : 'brand'} className={`text-[8px] px-2 ${selectedSubject === course.title ? 'bg-white/20 text-white border-white/20' : ''}`}>
+                         {materials.filter(m => m.subject === course.title).length} Assets
+                      </Badge>
+                   </div>
+                </div>
+              ))}
             </div>
-            <button className="text-[10px] font-bold text-brand-600 uppercase tracking-widest border-b border-brand-200 pb-1">View All Documents</button>
          </div>
 
-         <div className="bg-white rounded-[40px] border border-slate-200 overflow-hidden shadow-soft">
-            <div className="divide-y divide-slate-50">
-               {studyMaterials.map((file) => (
-                  <div key={file.id} className="p-8 flex items-center justify-between hover:bg-brand-50/20 transition-all cursor-pointer group">
-                     <div className="flex items-center gap-6">
-                        <div className="w-14 h-14 bg-slate-50 rounded-2xl flex items-center justify-center text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-500 transition-all border border-transparent group-hover:border-brand-100">
-                           <FileText size={20} />
-                        </div>
-                        <div>
-                           <div className="flex items-center gap-3 mb-1">
-                              <h4 className="text-base font-medium text-gray-900 group-hover:text-brand-600 transition-colors tracking-tight">{file.title}</h4>
-                              <Badge variant="brand" className="text-[8px] font-bold uppercase tracking-widest px-2">{file.type}</Badge>
-                           </div>
-                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                              {file.course} • {file.size} • Uploaded {file.date}
-                           </p>
-                        </div>
+         {/* Main - Material List (matching Tutor Material List) */}
+         <div className="lg:col-span-3 space-y-6">
+            <div className="bg-white rounded-[40px] border border-slate-200 overflow-hidden shadow-premium">
+               <div className="p-8 border-b border-slate-100 flex items-center justify-between bg-slate-50/30">
+                  <div className="flex items-center gap-4">
+                     <div className="w-12 h-12 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-600 border border-brand-100 shadow-sm">
+                        <FileText size={24} />
                      </div>
-                     <Button variant="outline" size="sm" className="rounded-xl px-6 h-10 text-[10px] font-bold uppercase tracking-widest group-hover:bg-brand-500 group-hover:text-white group-hover:border-brand-500 transition-all">Download</Button>
+                     <div>
+                        <h2 className="text-xl font-bold text-gray-900 tracking-tight">{selectedSubject || 'Course'} Materials</h2>
+                        <p className="text-xs font-medium text-slate-400 mt-0.5">Distributed resources for your active curriculum</p>
+                     </div>
                   </div>
-               ))}
+                  <Badge variant="brand" className="px-4 py-1.5 font-bold uppercase tracking-widest text-[9px] bg-brand-500 text-white shadow-sm border-none">
+                    {filteredMaterials.length} Distributed
+                  </Badge>
+               </div>
+               
+               <div className="divide-y divide-slate-100">
+                  {filteredMaterials.length > 0 ? filteredMaterials.map((file) => (
+                    <div key={file._id} className="p-8 flex items-center justify-between group hover:bg-brand-50/10 transition-all">
+                       <div className="flex items-center gap-6">
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-soft border transition-all ${
+                            file.type === 'PDF' ? 'bg-rose-50 text-rose-500 border-rose-100' : 
+                            file.type === 'Video' ? 'bg-amber-50 text-amber-500 border-amber-100' : 'bg-emerald-50 text-emerald-500 border-emerald-100'
+                          }`}>
+                             {file.type === 'PDF' ? <FileText size={24}/> : file.type === 'Video' ? <Video size={24}/> : <LinkIcon size={24}/>}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-3 mb-1.5">
+                               <h4 className="font-bold text-gray-900 group-hover:text-brand-600 transition-colors tracking-tight text-base">{file.title}</h4>
+                               <Badge variant="neutral" className="text-[9px] font-bold uppercase tracking-widest px-2.5 py-1 bg-slate-50 border-slate-200 text-slate-500">{file.subject || 'Syllabus'}</Badge>
+                            </div>
+                            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-[0.1em] flex items-center gap-3 mt-0.5">
+                               <span className="text-slate-900/60 uppercase">{file.type}</span>
+                               <span className="w-1 h-1 rounded-full bg-slate-200"></span>
+                               <span>{file.fileSize || '2.4 MB'}</span>
+                               <span className="w-1 h-1 rounded-full bg-slate-200"></span>
+                               <span>Received {new Date(file.createdAt || file.date).toLocaleDateString()}</span>
+                            </p>
+                          </div>
+                       </div>
+                       <div className="flex gap-2">
+                          {file.type === 'Link' ? (
+                             <a 
+                               href={file.externalLink || '#'} 
+                               target="_blank" 
+                               rel="noopener noreferrer"
+                               className="h-12 px-8 rounded-2xl bg-brand-50 text-brand-600 font-bold text-[10px] uppercase tracking-widest hover:bg-brand-600 hover:text-white transition-all flex items-center justify-center"
+                             >
+                                <ExternalLink size={16} className="mr-2" /> Open
+                             </a>
+                          ) : (
+                             <a 
+                               href={file.fileUrl || '#'} 
+                               download 
+                               target="_blank"
+                               rel="noopener noreferrer"
+                               className="h-12 px-8 rounded-2xl bg-brand-500 text-white shadow-premium font-bold text-[10px] uppercase tracking-widest hover:bg-brand-600 transition-all flex items-center justify-center"
+                             >
+                                <Download size={16} className="mr-2" /> Download
+                             </a>
+                          )}
+                       </div>
+                    </div>
+                  )) : (
+                     <div className="p-32 text-center">
+                        <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-dashed border-slate-200">
+                           <Info size={32} className="text-slate-300" />
+                        </div>
+                        <p className="text-slate-400 font-bold uppercase tracking-widest text-[10px]">No learning assets distributed for {selectedSubject}.</p>
+                     </div>
+                  )}
+               </div>
+               <div className="p-10 text-center border-t border-dashed border-slate-100 bg-slate-50/20">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                     Materials are automatically synchronized with your class curriculum.
+                  </p>
+               </div>
             </div>
          </div>
       </div>

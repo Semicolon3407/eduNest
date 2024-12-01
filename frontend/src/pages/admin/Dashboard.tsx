@@ -102,7 +102,7 @@ const AdminDashboard: React.FC = () => {
                 <span className="text-xs font-medium text-success-dark">+18.5%</span>
               </div>
               <p className="mt-4 text-sm text-gray-500 font-medium  ">Collected Today</p>
-              <h4 className="text-2xl font-medium text-gray-900">$12,450</h4>
+              <h4 className="text-2xl font-medium text-gray-900">Rs. 12,450</h4>
             </div>
             <div className="p-6 rounded-2xl bg-gradient-to-br from-danger/10 to-transparent border border-danger/20">
               <div className="flex justify-between items-start">
@@ -110,7 +110,7 @@ const AdminDashboard: React.FC = () => {
                 <span className="text-xs font-medium text-danger-dark">+2.1%</span>
               </div>
               <p className="mt-4 text-sm text-gray-500 font-medium  ">Pending Dues</p>
-              <h4 className="text-2xl font-medium text-gray-900">$8,200</h4>
+              <h4 className="text-2xl font-medium text-gray-900">Rs. 8,200</h4>
             </div>
           </div>
           <div className="mt-6 pt-6 border-t border-surface-100 space-y-3">

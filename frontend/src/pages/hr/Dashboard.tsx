@@ -46,7 +46,7 @@ const HRDashboard: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Total Staff" value={stats?.totalStaff || '0'} icon={Briefcase} color="brand" />
-        <StatCard title="Active Payroll" value={`$${stats?.lastPayroll?.toLocaleString() || '0'}`} icon={CreditCard} color="success" />
+        <StatCard title="Active Payroll" value={`Rs. ${stats?.lastPayroll?.toLocaleString() || '0'}`} icon={CreditCard} color="success" />
         <StatCard title="Leave Requests" value={`${stats?.pendingLeaves || '0'} Pending`} icon={ClipboardList} color="warning" />
         <StatCard title="Verified Docs" value="98%" icon={FileText} color="brand" />
       </div>
@@ -142,21 +142,21 @@ const HRDashboard: React.FC = () => {
                        <span className="w-3 h-3 bg-brand-500 rounded-full"></span>
                        <span className="text-sm font-medium text-gray-700">Base Salary</span>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">$38,200</span>
+                    <span className="text-sm font-medium text-gray-900">Rs. 38,200</span>
                  </div>
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                        <span className="w-3 h-3 bg-success rounded-full"></span>
                        <span className="text-sm font-medium text-gray-700">Bonuses</span>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">$2,450</span>
+                    <span className="text-sm font-medium text-gray-900">Rs. 2,450</span>
                  </div>
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                        <span className="w-3 h-3 bg-danger rounded-full"></span>
                        <span className="text-sm font-medium text-gray-700">Tax Deductions</span>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">$1,850</span>
+                    <span className="text-sm font-medium text-gray-900">Rs. 1,850</span>
                  </div>
               </div>
            </div>

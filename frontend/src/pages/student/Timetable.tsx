@@ -1,6 +1,7 @@
-import React from 'react';
-import { Clock, MapPin, User, ChevronLeft, ChevronRight, Calendar as CalendarIcon, BookOpen, Coffee, GraduationCap } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Clock, MapPin, User, ChevronLeft, ChevronRight, Calendar as CalendarIcon, BookOpen, Coffee, GraduationCap, Loader2 } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
+import { getTimetable, getStudentProfile } from '../../services/studentService';
 
 const timeSlots = [
   { id: 1, time: '08:00 AM', duration: '55 min' },
@@ -13,35 +14,48 @@ const timeSlots = [
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
-// Mock data for 6 subjects per day
-const routine: Record<string, any[]> = {
-  'Sunday': [
-    { subject: 'Mathematics', tutor: 'Dr. Smith', room: 'B-102', type: 'Lecture' },
-    { subject: 'Physics', tutor: 'Prof. Hawking', room: 'Lab 4', type: 'Lab' },
-    { subject: 'English', tutor: 'Ms. Emily', room: 'A-201', type: 'Lecture' },
-    { subject: 'Biology', tutor: 'Dr. Ray', room: 'Bio Lab', type: 'Lecture' },
-    { subject: 'Chemistry', tutor: 'Dr. Curie', room: 'Lab 2', type: 'Lecture' },
-    { subject: 'History', tutor: 'Dr. Jones', room: 'Hall B', type: 'Seminar' },
-  ],
-  'Monday': [
-    { subject: 'Physics', tutor: 'Prof. Hawking', room: 'Lab 4', type: 'Lecture' },
-    { subject: 'Mathematics', tutor: 'Dr. Smith', room: 'B-102', type: 'Lecture' },
-    { subject: 'Computer Sci', tutor: 'Prof. Chen', room: 'IT Lab 1', type: 'Lab' },
-    { subject: 'History', tutor: 'Dr. Jones', room: 'Hall B', type: 'Lecture' },
-    { subject: 'English', tutor: 'Ms. Emily', room: 'A-201', type: 'Lecture' },
-    { subject: 'Geography', tutor: 'Dr. Atlas', room: 'C-303', type: 'Lecture' },
-  ],
-  // ... adding more for demo
-};
-
 const StudentTimetable: React.FC = () => {
+  const [schedules, setSchedules] = useState<any[]>([]);
+  const [student, setStudent] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [schRes, profRes] = await Promise.all([
+          getTimetable(),
+          getStudentProfile()
+        ]);
+        setSchedules(schRes.data);
+        setStudent(profRes.data);
+      } catch (error) {
+        console.error('Error fetching timetable:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-brand-500" size={40} />
+      </div>
+    );
+  }
+
+  const getCellData = (day: string, slotIndex: number) => {
+    return schedules.find(s => s.day === day && s.startTime === timeSlots[slotIndex].time);
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
         <div>
           <h1 className="text-2xl sm:text-4xl font-display font-medium text-gray-900 leading-none">Class Routine</h1>
           <p className="text-gray-500 mt-3 font-medium text-sm flex items-center gap-2">
-            <GraduationCap size={16} className="text-brand-500" /> Grade 10 - Section A • Academic Session 2023-24
+            <GraduationCap size={16} className="text-brand-500" /> {student?.class?.name} - {student?.class?.section} • Academic Session 2023-24
           </p>
         </div>
         <div className="flex items-center gap-3 bg-white p-2 rounded-2xl shadow-soft border border-slate-200">
@@ -81,7 +95,7 @@ const StudentTimetable: React.FC = () => {
                     <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">{slot.duration}</p>
                   </td>
                   {days.map(day => {
-                    const subject = (routine[day] || routine['Sunday'])[rowIndex];
+                    const subject = getCellData(day, rowIndex);
                     return (
                       <td key={day} className="p-4 border-b border-r border-slate-100 group/cell relative">
                         {subject ? (
@@ -109,11 +123,11 @@ const StudentTimetable: React.FC = () => {
                             
                             <div className="space-y-1.5 pt-4 border-t border-slate-900/5 group-hover/cell:border-white/20">
                                <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest group-hover/cell:text-inherit">
-                                  <User size={12} className="opacity-70" /> {subject.tutor}
+                                  <User size={12} className="opacity-70" /> {subject.tutor?.firstName} {subject.tutor?.lastName}
                                </div>
                                <div className="flex items-center gap-2 text-[9px] font-bold text-slate-400 uppercase tracking-widest group-hover/cell:text-inherit">
                                   <MapPin size={12} className="opacity-70" /> Room {subject.room}
-                               </div>
+                                </div>
                             </div>
                           </div>
                         ) : (

@@ -16,6 +16,9 @@ import superAdminRoutes from './routes/superAdminRoutes';
 import tenantRoutes from './routes/tenantRoutes';
 import hrRoutes from './routes/hrRoutes';
 import adminRoutes from './routes/adminRoutes';
+import tutorRoutes from './routes/tutorRoutes';
+import studentRoutes from './routes/studentRoutes';
+import chatRoutes from './routes/chatRoutes';
 
 // Load env vars
 dotenv.config();
@@ -57,6 +60,9 @@ app.use('/api/v1/super-admin', superAdminRoutes);
 app.use('/api/v1/tenant', tenantRoutes);
 app.use('/api/v1/hr', hrRoutes);
 app.use('/api/v1/admin', adminRoutes);
+app.use('/api/v1/tutor', tutorRoutes);
+app.use('/api/v1/student', studentRoutes);
+app.use('/api/v1/chat', chatRoutes);
 
 // Error handler
 app.use(errorHandler);
@@ -79,3 +85,4 @@ process.on('unhandledRejection', (err: any, promise) => {
   // Close server & exit process
   server.close(() => process.exit(1));
 });
+

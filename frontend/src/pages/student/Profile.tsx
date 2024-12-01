@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
@@ -6,44 +6,63 @@ import Modal from '../../components/ui/Modal';
 import { 
   User, Mail, Phone, Calendar, MapPin, Shield, 
   CheckCircle2, XCircle, Clock, Plus, ChevronRight,
-  BookOpen, Hash, GraduationCap, FileText
+  BookOpen, Hash, GraduationCap, FileText, Loader2
 } from 'lucide-react';
+import { getStudentProfile, applyLeave, getLeaveHistory } from '../../services/studentService';
 
 const StudentProfile: React.FC = () => {
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'attendance' | 'leaves'>('overview');
+  const [student, setStudent] = useState<any>(null);
+  const [leaves, setLeaves] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const student = {
-    name: 'Alex Johnson',
-    id: 'STU-101-2023',
-    grade: 'Grade 10',
-    section: 'A',
-    email: 'alex.j@student.com',
-    phone: '+1 (555) 123-4567',
-    dob: 'May 12, 2008',
-    address: '123 Academic Lane, EduCity, EC 12345',
-    bloodGroup: 'B+',
-    admissionDate: 'Sept 01, 2023',
-    parentName: 'Mark Johnson',
-    parentPhone: '+1 (555) 987-6543',
-    attendance: {
-      percentage: '94.5%',
-      present: 162,
-      absent: 8,
-      late: 2
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const [profRes, leaveRes] = await Promise.all([
+        getStudentProfile(),
+        getLeaveHistory()
+      ]);
+      setStudent(profRes.data);
+      setLeaves(leaveRes.data);
+    } catch (error) {
+      console.error('Error fetching student profile:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const attendanceHistory = [
-    { month: 'September', present: 21, absent: 1, status: '95%' },
-    { month: 'October', present: 20, absent: 2, status: '90%' },
-    { month: 'November', present: 22, absent: 0, status: '100%' },
-  ];
+  const handleApplyLeave = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    try {
+      await applyLeave({
+        type: formData.get('type'),
+        from: formData.get('from'),
+        to: formData.get('to'),
+        reason: formData.get('reason')
+      });
+      setIsLeaveModalOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error('Error applying leave:', error);
+    }
+  };
 
-  const leaveRequests = [
-    { id: 1, type: 'Medical Leave', from: 'Oct 12', to: 'Oct 14', status: 'Approved', reason: 'Flu symptoms' },
-    { id: 2, type: 'Family Event', from: 'Nov 05', to: 'Nov 05', status: 'Pending', reason: 'Sister\'s graduation' },
-  ];
+  if (loading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-brand-500" size={40} />
+      </div>
+    );
+  }
+
+  const attendancePercentage = student?.attendanceRecords ? 
+    ((student.attendanceRecords.filter((a: any) => a.status === 'Present').length / student.attendanceRecords.length) * 100).toFixed(1) : '100';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-12">
@@ -52,16 +71,16 @@ const StudentProfile: React.FC = () => {
         <div className="absolute top-0 right-0 w-64 h-64 bg-brand-50 rounded-full -mr-32 -mt-32 opacity-50 blur-3xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
           <div className="w-32 h-32 rounded-[40px] bg-brand-500 text-white flex items-center justify-center text-4xl font-bold shadow-premium shrink-0 ring-8 ring-brand-50">
-            {student.name.charAt(0)}
+            {student?.firstName?.charAt(0)}
           </div>
           <div className="flex-1 space-y-4">
             <div>
               <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
-                <h1 className="text-3xl font-display font-medium text-gray-900 leading-none  ">{student.name}</h1>
+                <h1 className="text-3xl font-display font-medium text-gray-900 leading-none  ">{student?.firstName} {student?.lastName}</h1>
                 <Badge variant="brand" className="w-fit mx-auto md:mx-0">Active Student</Badge>
               </div>
               <p className="text-gray-500 font-medium flex items-center justify-center md:justify-start gap-2">
-                <Hash size={16} className="text-brand-500" /> {student.id}
+                <Hash size={16} className="text-brand-500" /> {student?.admissionNumber}
               </p>
             </div>
             
@@ -69,25 +88,25 @@ const StudentProfile: React.FC = () => {
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Grade / Class</p>
                 <p className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                  <GraduationCap size={16} className="text-brand-500" /> {student.grade}
+                  <GraduationCap size={16} className="text-brand-500" /> {student?.class?.name}
                 </p>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Section</p>
                 <p className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                  <Layout size={16} className="text-brand-500" /> {student.section}
+                  <Layout size={16} className="text-brand-500" /> {student?.class?.section}
                 </p>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Attendance</p>
                 <p className="text-sm font-bold text-success-dark flex items-center gap-2">
-                  <CheckCircle2 size={16} /> {student.attendance.percentage}
+                  <CheckCircle2 size={16} /> {attendancePercentage}%
                 </p>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Blood Group</p>
                 <p className="text-sm font-bold text-danger flex items-center gap-2">
-                  <Shield size={16} /> {student.bloodGroup}
+                  <Shield size={16} /> {student?.bloodGroup || 'O+'}
                 </p>
               </div>
             </div>
@@ -99,7 +118,7 @@ const StudentProfile: React.FC = () => {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1.5 bg-slate-100/50 w-fit rounded-2xl border border-slate-200">
+      <div className="flex gap-2 p-1.5 bg-slate-100/50 w-fit rounded-2xl border border-slate-200 font-sans">
         {(['overview', 'attendance', 'leaves'] as const).map((tab) => (
           <button
             key={tab}
@@ -116,7 +135,7 @@ const StudentProfile: React.FC = () => {
       </div>
 
       {/* Content Areas */}
-      <div className="animate-in slide-in-from-bottom-4 duration-500">
+      <div className="animate-in slide-in-from-bottom-4 duration-500 font-sans">
         {activeTab === 'overview' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Personal Details */}
@@ -124,12 +143,12 @@ const StudentProfile: React.FC = () => {
               <div className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200">
                 <h3 className="text-xl font-medium text-gray-900 mb-8 border-b border-slate-100 pb-4  ">Personal Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
-                  <InfoItem icon={Mail} label="Official Email" value={student.email} />
-                  <InfoItem icon={Phone} label="Primary Phone" value={student.phone} />
-                  <InfoItem icon={Calendar} label="Date of Birth" value={student.dob} />
-                  <InfoItem icon={MapPin} label="Home Address" value={student.address} fullWidth />
-                  <InfoItem icon={User} label="Parent / Guardian" value={student.parentName} />
-                  <InfoItem icon={Phone} label="Guardian Contact" value={student.parentPhone} />
+                  <InfoItem icon={Mail} label="Official Email" value={student?.email || 'N/A'} />
+                  <InfoItem icon={Phone} label="Primary Phone" value={student?.phone || 'N/A'} />
+                  <InfoItem icon={Calendar} label="Date of Birth" value={student?.dob ? new Date(student.dob).toLocaleDateString() : 'N/A'} />
+                  <InfoItem icon={MapPin} label="Home Address" value={student?.address || 'N/A'} fullWidth />
+                  <InfoItem icon={User} label="Parent / Guardian" value={student?.parentName || 'N/A'} />
+                  <InfoItem icon={Phone} label="Guardian Contact" value={student?.parentPhone || 'N/A'} />
                 </div>
               </div>
 
@@ -140,7 +159,7 @@ const StudentProfile: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="text-xl font-medium text-brand-700 leading-none  ">Academic Summary</h4>
-                    <p className="text-brand-600 text-sm mt-2 font-medium">Admission Date: {student.admissionDate}</p>
+                    <p className="text-brand-600 text-sm mt-2 font-medium">Admission Date: {student?.admissionDate ? new Date(student.admissionDate).toLocaleDateString() : 'N/A'}</p>
                   </div>
                 </div>
                 <Button variant="outline" className="h-12 rounded-xl bg-white border-brand-200 text-brand-600 font-bold text-[10px] uppercase tracking-widest">
@@ -155,7 +174,7 @@ const StudentProfile: React.FC = () => {
                 <h3 className="text-lg font-medium text-gray-900 mb-6 uppercase tracking-tight  ">Session Progress</h3>
                 <div className="space-y-6">
                   <StatProgress label="Course Completion" percentage={75} color="brand" />
-                  <StatProgress label="Attendance Requirement" percentage={90} color="success" />
+                  <StatProgress label="Attendance Requirement" percentage={parseInt(attendancePercentage)} color="success" />
                   <StatProgress label="Grade Average" percentage={82} color="warning" />
                 </div>
               </div>
@@ -176,36 +195,38 @@ const StudentProfile: React.FC = () => {
         {activeTab === 'attendance' && (
           <div className="space-y-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-              <AttendanceCard label="Total Working Days" value="172" icon={Calendar} color="brand" />
-              <AttendanceCard label="Days Present" value={student.attendance.present.toString()} icon={CheckCircle2} color="success" />
-              <AttendanceCard label="Days Absent" value={student.attendance.absent.toString()} icon={XCircle} color="danger" />
-              <AttendanceCard label="Late Arrivals" value={student.attendance.late.toString()} icon={Clock} color="warning" />
+              <AttendanceCard label="Total Working Days" value={student?.attendanceRecords?.length.toString() || '0'} icon={Calendar} color="brand" />
+              <AttendanceCard label="Days Present" value={student?.attendanceRecords?.filter((a: any) => a.status === 'Present').length.toString() || '0'} icon={CheckCircle2} color="success" />
+              <AttendanceCard label="Days Absent" value={student?.attendanceRecords?.filter((a: any) => a.status === 'Absent').length.toString() || '0'} icon={XCircle} color="danger" />
+              <AttendanceCard label="Late Arrivals" value={student?.attendanceRecords?.filter((a: any) => a.status === 'Late').length.toString() || '0'} icon={Clock} color="warning" />
             </div>
 
             <div className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200">
-              <h3 className="text-2xl font-medium text-gray-900 mb-8  ">Monthly Breakdown</h3>
-              <div className="overflow-x-auto -mx-4 sm:-mx-8">
-                <table className="w-full text-left border-collapse">
-                  <thead>
-                    <tr className="bg-surface-50 text-gray-400 text-[10px] font-bold tracking-[0.2em]">
-                      <th className="px-8 py-4">Month</th>
-                      <th className="px-6 py-4">Days Present</th>
-                      <th className="px-6 py-4">Days Absent</th>
-                      <th className="px-8 py-4 text-right">Percentage</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-surface-100">
-                    {attendanceHistory.map((row) => (
-                      <tr key={row.month} className="group hover:bg-slate-50 transition-all">
-                        <td className="px-8 py-5 text-sm font-bold text-gray-900 uppercase tracking-tight">{row.month}</td>
-                        <td className="px-6 py-5 text-sm font-medium text-gray-700">{row.present}</td>
-                        <td className="px-6 py-5 text-sm font-medium text-gray-700">{row.absent}</td>
-                        <td className="px-8 py-5 text-right font-bold text-brand-600">{row.status}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+               <h3 className="text-2xl font-medium text-gray-900 mb-8  ">Detailed Attendance History</h3>
+               <div className="overflow-x-auto -mx-4 sm:-mx-8">
+                 <table className="w-full text-left border-collapse">
+                   <thead>
+                     <tr className="bg-surface-50 text-gray-400 text-[10px] font-bold tracking-[0.2em]">
+                       <th className="px-8 py-4">Date</th>
+                       <th className="px-6 py-4">Day</th>
+                       <th className="px-6 py-4">Status</th>
+                       <th className="px-8 py-4 text-right">Remark</th>
+                     </tr>
+                   </thead>
+                   <tbody className="divide-y divide-surface-100">
+                     {student?.attendanceRecords?.slice(0, 10).map((row: any) => (
+                       <tr key={row._id} className="group hover:bg-slate-50 transition-all font-sans">
+                         <td className="px-8 py-5 text-sm font-bold text-gray-900 uppercase tracking-tight">{new Date(row.date).toLocaleDateString()}</td>
+                         <td className="px-6 py-5 text-sm font-medium text-gray-700">{new Date(row.date) ? new Date(row.date).toLocaleDateString('en-US', { weekday: 'long' }) : '---'}</td>
+                         <td className="px-6 py-5">
+                            <Badge variant={row.status === 'Present' ? 'success' : row.status === 'Late' ? 'warning' : 'danger'}>{row.status}</Badge>
+                         </td>
+                         <td className="px-8 py-5 text-right font-medium text-slate-400 italic">{row.remarks || '---'}</td>
+                       </tr>
+                     ))}
+                   </tbody>
+                 </table>
+               </div>
             </div>
           </div>
         )}
@@ -215,28 +236,30 @@ const StudentProfile: React.FC = () => {
             <div className="flex items-center justify-between">
                <h3 className="text-2xl font-medium text-gray-900 uppercase tracking-tight  ">Leave Applications</h3>
                <div className="flex gap-2">
-                 <Badge variant="brand" className="px-4 py-2">Available Credits: 4 Days</Badge>
+                 <Badge variant="brand" className="px-4 py-2">Account Status: Active</Badge>
                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {leaveRequests.map((leave) => (
-                <div key={leave.id} className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200 relative group hover:border-brand-500 transition-all">
+              {leaves.length > 0 ? leaves.map((leave) => (
+                <div key={leave._id} className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200 relative group hover:border-brand-500 transition-all">
                   <div className="flex justify-between items-start mb-6">
                     <div className="w-12 h-12 bg-slate-50 text-brand-500 rounded-2xl flex items-center justify-center border border-slate-100">
                        <FileText size={24} />
                     </div>
-                    <Badge variant={leave.status === 'Approved' ? 'success' : 'warning'}>{leave.status}</Badge>
+                    <Badge variant={leave.status === 'Approved' ? 'success' : leave.status === 'Rejected' ? 'danger' : 'warning'}>{leave.status}</Badge>
                   </div>
                   <h4 className="text-xl font-medium text-gray-900 group-hover:text-brand-600 transition-colors mb-1  ">{leave.type}</h4>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{leave.from} - {leave.to}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{new Date(leave.from).toLocaleDateString()} - {new Date(leave.to).toLocaleDateString()}</p>
                   
                   <div className="p-4 bg-slate-50 rounded-2xl">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Reason</p>
                     <p className="text-sm font-medium text-slate-700 leading-relaxed italic">"{leave.reason}"</p>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="col-span-full py-20 text-center text-gray-400 italic">No leave applications submitted yet.</div>
+              )}
             </div>
           </div>
         )}
@@ -250,25 +273,26 @@ const StudentProfile: React.FC = () => {
         description="Submit a formal leave request for administrative approval."
         maxWidth="xl"
       >
-        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setIsLeaveModalOpen(false); }}>
+        <form className="space-y-6" onSubmit={handleApplyLeave}>
           <div className="space-y-1.5 focus-within:z-10 group">
             <label className="text-xs font-bold text-gray-400 px-1 uppercase tracking-tight">Leave Type</label>
-            <select className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer">
-              <option value="medical">Medical Leave</option>
-              <option value="emergency">Emergency Absence</option>
-              <option value="event">Family Event / Function</option>
-              <option value="other">Other</option>
+            <select name="type" required className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer">
+              <option value="Medical">Medical Leave</option>
+              <option value="Emergency">Emergency Absence</option>
+              <option value="Family Event">Family Event / Function</option>
+              <option value="Other">Other</option>
             </select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input label="From Date" type="date" required />
-            <Input label="To Date" type="date" required />
+            <Input name="from" label="From Date" type="date" required />
+            <Input name="to" label="To Date" type="date" required />
           </div>
 
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Reason for Absence</label>
             <textarea 
+              name="reason"
               className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all resize-none"
               placeholder="Please provide a brief explanation for your leave..."
               required
@@ -324,7 +348,7 @@ const AttendanceCard: React.FC<{ label: string, value: string, icon: any, color:
   };
   
   return (
-    <div className="bg-white p-6 rounded-[32px] border border-slate-200 flex flex-col gap-4 shadow-soft">
+    <div className="bg-white p-6 rounded-[32px] border border-slate-200 flex flex-col gap-4 shadow-soft font-sans">
       <div className={`w-12 h-12 rounded-2xl ${colorMap[color]} flex items-center justify-center shadow-sm`}>
         <Icon size={24} />
       </div>

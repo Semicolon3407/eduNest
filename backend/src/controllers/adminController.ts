@@ -5,6 +5,8 @@ import Class from '../models/Class';
 import Fee from '../models/Fee';
 import Inventory from '../models/Inventory';
 import Schedule from '../models/Schedule';
+import User from '../models/User';
+import sendEmail from '../utils/sendEmail';
 
 export const adminController = {
   // Students
@@ -20,8 +22,20 @@ export const adminController = {
       const month = new Date().getMonth(); 
       const currentAcademicYear = month >= 3 ? `${year}-${(year + 1).toString().slice(-2)}` : `${year - 1}-${year.toString().slice(-2)}`;
 
+      // 1. Create User Account for Student
+      const password = req.body.password || `EduStudent@${Math.floor(1000 + Math.random() * 9000)}`;
+      const user = await User.create({
+        name: `${req.body.firstName} ${req.body.lastName}`,
+        email: req.body.studentEmail || `std${admissionNumber.toLowerCase().replace(/-/g, '')}@edunest.com`,
+        password,
+        role: 'STUDENT',
+        organization: orgId
+      });
+
+      // 2. Create Student Profile
       const studentData = { 
         ...req.body, 
+        user: user._id,
         admissionNumber,
         status: 'Active',
         academicYear: currentAcademicYear,
@@ -31,6 +45,39 @@ export const adminController = {
       
       // Update class strength
       await Class.findByIdAndUpdate(student.class, { $inc: { strength: 1 } });
+
+      // 3. Send Credentials Email
+      if (req.body.personalEmail) {
+        const message = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 20px; color: #1e293b;">
+            <h2 style="color: #6366f1; text-align: center; font-size: 24px;">Welcome to eduNest!</h2>
+            <p>Dear <b>${req.body.firstName} ${req.body.lastName}</b>,</p>
+            <p>Your institutional student account has been successfully initialized. You can now access your learning dashboard and resources using the credentials below:</p>
+            
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 16px; margin: 25px 0; border: 1px solid #f1f5f9;">
+              <p style="margin: 8px 0;"><b>Institutional ID:</b> ${admissionNumber}</p>
+              <p style="margin: 8px 0;"><b>Portal Login:</b> ${user.email}</p>
+              <p style="margin: 8px 0;"><b>Access Password:</b> <code style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px;">${password}</code></p>
+            </div>
+            
+            <p style="font-size: 0.9em; line-height: 1.6;">Please log in to the portal and update your password for security. Your teacher/branch administrator will guide you through the next steps of your academic journey.</p>
+            
+            <p style="border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: center; font-size: 11px; color: #94a3b8;">
+              This is an automated system notification from eduNest ERP. See you in class!
+            </p>
+          </div>
+        `;
+
+        try {
+          await sendEmail({
+            email: req.body.personalEmail,
+            subject: 'Your Account is Ready - eduNest Student Portal',
+            message
+          });
+        } catch (emailError) {
+          console.error('Failed to send student enrollment email:', emailError);
+        }
+      }
       
       res.status(201).json({ success: true, data: student });
     } catch (error: any) {

@@ -2,9 +2,9 @@ import React from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { 
-  Users, Mail, Search, Filter, AlertCircle, Plus, BookOpen, GraduationCap 
+  Users, Mail, Search, Filter, AlertCircle, Plus, BookOpen, GraduationCap, 
+  Trash2, Edit3, ChevronDown, Clock, MapPin 
 } from 'lucide-react';
-import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import { adminService } from '../../services/adminService';
 import { hrService } from '../../services/hrService';
@@ -23,8 +23,11 @@ const TutorSchedules: React.FC = () => {
   const [formData, setFormData] = React.useState({
     classId: '',
     subject: '',
-    room: 'B102'
+    room: ''
   });
+  const [tutorSearch, setTutorSearch] = React.useState('');
+  const [deptFilter, setDeptFilter] = React.useState('');
+  const [editingScheduleId, setEditingScheduleId] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     fetchInitialData();
@@ -72,6 +75,7 @@ const TutorSchedules: React.FC = () => {
       const data = {
         type: 'Tutor',
         staff: selectedTutor._id,
+        branch: selectedTutor.branch?._id || selectedTutor.branch, // Include mandatory branch ID
         class: formData.classId,
         day: selectedSlot.day,
         startTime: selectedSlot.time,
@@ -79,21 +83,63 @@ const TutorSchedules: React.FC = () => {
         subject: formData.subject,
         room: formData.room
       };
-      const response = await adminService.createSchedule(data);
-      if (response.success) {
+
+      if (editingScheduleId) {
+        await adminService.updateSchedule(editingScheduleId, data);
+        toast.success('Faculty assignment updated');
+      } else {
+        await adminService.createSchedule(data);
         toast.success('Faculty load assigned');
-        setIsModalOpen(false);
-        fetchSchedules();
-        setFormData({ classId: '', subject: '', room: 'B102' });
       }
+      
+      setIsModalOpen(false);
+      setEditingScheduleId(null);
+      fetchSchedules();
+      setFormData({ classId: '', subject: '', room: '' });
     } catch (error) {
       toast.error('Conflict detected or assignment failed');
     }
   };
 
+  const handleDeleteSchedule = async (id: string) => {
+    if (!window.confirm('Are you sure you want to remove this faculty assignment?')) return;
+    try {
+      await adminService.deleteSchedule(id);
+      toast.success('Assignment removed');
+      fetchSchedules();
+    } catch (error) {
+      toast.error('Failed to remove assignment');
+    }
+  };
+
+  const openAssignModal = (day: string, time: string, existing?: any) => {
+    const slot = { day, time };
+    setSelectedSlot(slot);
+    if (existing) {
+      setEditingScheduleId(existing._id);
+      setFormData({
+        classId: existing.class?._id || existing.class,
+        subject: existing.subject,
+        room: existing.room
+      });
+    } else {
+      setEditingScheduleId(null);
+      setFormData({ classId: '', subject: '', room: '' });
+    }
+    setIsModalOpen(true);
+  };
+
   const getSlotContent = (day: string, time: string) => {
     return schedules.find(s => s.day === day && s.startTime === time);
   };
+
+  const filteredTutors = tutors.filter(t => {
+    const matchesSearch = `${t.firstName} ${t.lastName}`.toLowerCase().includes(tutorSearch.toLowerCase());
+    const matchesDept = !deptFilter || t.department === deptFilter;
+    return matchesSearch && matchesDept;
+  });
+
+  const departments = [...new Set(tutors.map(t => t.department))].sort();
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-12">
@@ -102,11 +148,28 @@ const TutorSchedules: React.FC = () => {
           <h1 className="text-2xl sm:text-4xl font-display font-medium text-gray-900 leading-none  ">Tutor Schedules</h1>
           <p className="text-gray-500 mt-3 font-medium text-sm">Monitor faculty assignments and resolve scheduling conflicts</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Input placeholder="Find tutor..." icon={Search} className="w-64" />
-          <Button variant="outline" className="rounded-2xl h-14 px-6 border-slate-200">
-             <Filter size={18} /> Dept Filter
-          </Button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Input 
+            placeholder="Find tutor..." 
+            icon={Search} 
+            className="w-64" 
+            value={tutorSearch}
+            onChange={(e) => setTutorSearch(e.target.value)}
+          />
+          <div className="relative min-w-[180px]">
+            <select 
+              value={deptFilter}
+              onChange={(e) => setDeptFilter(e.target.value)}
+              className="w-full h-14 bg-surface-50 border border-slate-200 rounded-2xl px-10 py-2 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer pr-10"
+            >
+              <option value="">All Departments</option>
+              {departments.map(dept => (
+                <option key={dept} value={dept}>{dept}</option>
+              ))}
+            </select>
+            <Filter size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+            <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          </div>
         </div>
       </div>
 
@@ -115,33 +178,34 @@ const TutorSchedules: React.FC = () => {
         <div className="xl:col-span-1 space-y-4">
            <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] px-2 mb-4">Faculty Directory</h3>
            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
-              {tutors.map(tutor => (
+              {filteredTutors.map(tutor => (
                 <div 
                   key={tutor._id} 
                   onClick={() => setSelectedTutor(tutor)}
-                  className={`p-5 rounded-[32px] border transition-all cursor-pointer group ${
+                  className={`p-5 rounded-[32px] border transition-all cursor-pointer group hover:scale-[1.02] active:scale-[0.98] ${
                     selectedTutor?._id === tutor._id 
                     ? 'bg-slate-900 border-slate-900 text-white shadow-premium ring-4 ring-slate-900/10' 
                     : 'bg-white border-slate-100 hover:border-brand-300'
                   }`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg ${
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg transition-colors ${
                       selectedTutor?._id === tutor._id ? 'bg-brand-500 text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-600'
                     }`}>
                       {(tutor.firstName || 'T').charAt(0)}
                     </div>
-                    <div>
-                      <h4 className="font-medium text-sm leading-tight">{tutor.firstName} {tutor.lastName}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={tutor.status === 'Active' ? 'success' : 'warning'} className="text-[8px] px-1.5 py-0">
-                          {tutor.status === 'Active' ? 'Available' : 'Unavailable'}
-                        </Badge>
-                      </div>
+                    <div className="min-w-0">
+                      <h4 className="font-medium text-sm leading-tight truncate">{tutor.firstName} {tutor.lastName}</h4>
+                      <p className={`text-[10px] font-bold mt-1 uppercase tracking-wider truncate ${selectedTutor?._id === tutor._id ? 'text-slate-400' : 'text-slate-400'}`}>{tutor.department}</p>
                     </div>
                   </div>
                 </div>
               ))}
+              {filteredTutors.length === 0 && (
+                <div className="p-8 text-center bg-slate-50 rounded-[32px] border border-dashed border-slate-200">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">No tutors found</p>
+                </div>
+              )}
            </div>
         </div>
 
@@ -182,30 +246,37 @@ const TutorSchedules: React.FC = () => {
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{time}</span>
                         </td>
                         {days.map(day => (
-                            <td 
-                            key={day} 
-                            className="p-2 border-b border-r border-slate-100 relative group cursor-pointer"
-                            onClick={() => {
-                              setSelectedSlot({ day, time });
-                              setIsModalOpen(true);
-                            }}
-                          >
+                            <td key={day} className="p-2 border-b border-r border-slate-100 relative group cursor-pointer">
                              {getSlotContent(day, time) ? (
-                               <div className="p-3 bg-brand-50 border border-brand-100 rounded-2xl text-left shadow-sm group-hover:border-brand-300 transition-all">
+                               <div 
+                                 className="p-3 bg-brand-50 border border-brand-100 rounded-2xl text-left shadow-sm group-hover:border-brand-300 transition-all hover:bg-white"
+                                 onClick={(e) => { e.stopPropagation(); openAssignModal(day, time, getSlotContent(day, time)); }}
+                               >
                                   <p className="text-[9px] font-bold text-brand-600 uppercase tracking-widest mb-1">{getSlotContent(day, time).class?.name}</p>
                                   <h5 className="font-bold text-[11px] text-slate-900 leading-none">{getSlotContent(day, time).subject}</h5>
                                   <div className="mt-2 flex items-center justify-between">
                                     <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">RM {getSlotContent(day, time).room}</span>
-                                    <button 
-                                      onClick={(e) => { e.stopPropagation(); adminService.deleteSchedule(getSlotContent(day, time)._id).then(fetchSchedules); }}
-                                      className="text-danger opacity-0 group-hover:opacity-100 transition-opacity"
-                                    >
-                                      <Plus size={10} className="rotate-45" />
-                                    </button>
+                                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); openAssignModal(day, time, getSlotContent(day, time)); }}
+                                        className="p-1 hover:bg-brand-100 rounded-lg text-brand-600 transition-colors"
+                                      >
+                                        <Edit3 size={10} />
+                                      </button>
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); handleDeleteSchedule(getSlotContent(day, time)._id); }}
+                                        className="p-1 hover:bg-danger/10 rounded-lg text-danger transition-colors"
+                                      >
+                                        <Trash2 size={10} />
+                                      </button>
+                                    </div>
                                   </div>
                                </div>
                              ) : (
-                               <div className="w-full h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                               <div 
+                                 className="w-full h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                 onClick={() => openAssignModal(day, time)}
+                               >
                                   <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 hover:bg-brand-500 hover:text-white transition-all shadow-sm">
                                     <Plus size={14} />
                                   </div>
@@ -235,9 +306,13 @@ const TutorSchedules: React.FC = () => {
       {/* Assignment Modal */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Assign Faculty Load"
-        description={`Assigning academic session to ${selectedTutor?.firstName || 'Tutor'} on ${selectedSlot?.day} at ${selectedSlot?.time}`}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingScheduleId(null);
+          setFormData({ classId: '', subject: '', room: '' });
+        }}
+        title={editingScheduleId ? "Edit Faculty Load" : "Assign Faculty Load"}
+        description={editingScheduleId ? `Modifying academic session for ${selectedTutor?.firstName || 'Tutor'}` : `Assigning academic session to ${selectedTutor?.firstName || 'Tutor'} on ${selectedSlot?.day} at ${selectedSlot?.time}`}
         maxWidth="xl"
       >
         <form className="space-y-6" onSubmit={handleAssignLoad}>
@@ -259,40 +334,35 @@ const TutorSchedules: React.FC = () => {
             </div>
           </div>
 
-          <Input 
-            label="Subject Name" 
-            placeholder="e.g. Theoretical Physics" 
-            icon={BookOpen} 
-            value={formData.subject}
-            onChange={(e) => setFormData({...formData, subject: e.target.value})}
-            required 
-          />
-
           <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 px-1">Room Assignment</label>
-              <select 
-                value={formData.room}
-                onChange={(e) => setFormData({...formData, room: e.target.value})}
-                className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer"
-              >
-                <option value="B102">Room B-102</option>
-                <option value="L4">Lab 4</option>
-                <option value="HallA">Hall A</option>
-                <option value="Auditorium">Auditorium</option>
-              </select>
-            </div>
-            <div className="flex items-end">
-               <div className="p-4 bg-brand-50 border border-brand-100 rounded-2xl w-full">
-                  <p className="text-[10px] font-bold text-brand-600 uppercase tracking-widest leading-none mb-1">Status</p>
-                  <p className="text-xs font-medium text-slate-900">Conflict-free check active</p>
-               </div>
-            </div>
+            <Input 
+              label="Subject Name" 
+              placeholder="e.g. Theoretical Physics" 
+              icon={BookOpen} 
+              value={formData.subject}
+              onChange={(e) => setFormData({...formData, subject: e.target.value})}
+              required 
+            />
+            <Input 
+              label="Room Number / Lab" 
+              placeholder="B102" 
+              icon={MapPin} 
+              value={formData.room}
+              onChange={(e) => setFormData({...formData, room: e.target.value})}
+              required 
+            />
+          </div>
+
+          <div className="p-4 bg-brand-50 border border-brand-100 rounded-2xl flex items-center gap-3">
+            <Clock size={16} className="text-brand-600" />
+            <p className="text-xs font-medium text-slate-900">Conflict-free validation active for this timeslot.</p>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6">Cancel</Button>
-            <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white">Assign Schedule</Button>
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6">Discard</Button>
+            <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white">
+              {editingScheduleId ? 'Save Changes' : 'Assign Schedule'}
+            </Button>
           </div>
         </form>
       </Modal>

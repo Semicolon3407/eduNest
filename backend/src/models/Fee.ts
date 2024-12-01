@@ -6,6 +6,7 @@ export interface IFee extends Document {
   amount: number;
   frequency: 'Annual' | 'Termly' | 'Monthly' | 'One-time';
   category: string;
+  targetGrade?: string; // e.g., Grade 10
   description?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -22,6 +23,7 @@ const feeSchema = new Schema<IFee>({
     default: 'Annual'
   },
   category: { type: String, required: true, default: 'Academic' },
+  targetGrade: { type: String },
   description: { type: String }
 }, { timestamps: true });
 

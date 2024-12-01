@@ -14,7 +14,7 @@ import toast from 'react-hot-toast';
 const plans = [
   {
     name: 'Basic Institutional',
-    price: '$199',
+    price: 'Rs. 199',
     period: '/month',
     icon: Zap,
     color: 'text-brand-500',
@@ -23,7 +23,7 @@ const plans = [
   },
   {
     name: 'Premium Network',
-    price: '$499',
+    price: 'Rs. 499',
     period: '/month',
     icon: Star,
     color: 'text-warning-dark',

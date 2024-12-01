@@ -50,7 +50,6 @@ export const navItems: NavItem[] = [
   { title: 'Admissions', href: '/admin/admissions', icon: UserRound, roles: ['ADMIN'] },
   { title: 'Class & Sections', href: '/admin/classes', icon: BookOpen, roles: ['ADMIN'] },
   { title: 'Fee Management', href: '/admin/fees', icon: CreditCard, roles: ['ADMIN'] },
-  { title: 'Student Schedules', href: '/admin/student-schedules', icon: Calendar, roles: ['ADMIN'] },
   { title: 'Tutor Schedules', href: '/admin/tutor-schedules', icon: Users, roles: ['ADMIN'] },
   { title: 'My Profile', href: '/admin/profile', icon: UserRound, roles: ['ADMIN'] },
 

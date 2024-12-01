@@ -1,21 +1,88 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
-import { Award, ShieldAlert, Star, Search, Filter, MoreHorizontal, User, FileText, Plus, AlertCircle } from 'lucide-react';
-
-const behavioralLogs = [
-  { id: 1, name: 'Alice Smith', type: 'Excellence', note: 'Demonstrated exceptional leadership in the Science Fair.', date: 'Oct 14', status: 'Approved' },
-  { id: 2, name: 'Robert Fox', type: 'Disciplinary', note: 'Inappropriate behavior during laboratory session.', date: 'Oct 12', status: 'Pending Review' },
-  { id: 3, name: 'Samantha White', type: 'Academic', note: 'Significant improvement in mathematics proficiency.', date: 'Oct 10', status: 'Acknowledged' },
-];
+import { Award, ShieldAlert, Star, Search, Filter, MoreHorizontal, User, FileText, Plus, AlertCircle, Loader2 } from 'lucide-react';
+import { getBehaviorLogs, addBehaviorLog, getTutorClasses, getStudentsByClass } from '../../services/tutorService';
 
 const BehavioralTracking: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
+  const [students, setStudents] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchLogs();
+    fetchClasses();
+  }, []);
+
+  useEffect(() => {
+    if (selectedClassId) {
+      fetchStudents();
+    } else {
+      setStudents([]);
+    }
+  }, [selectedClassId]);
+
+  const fetchLogs = async () => {
+    try {
+      const res = await getBehaviorLogs();
+      setLogs(res.data);
+    } catch (error) {
+      console.error('Error fetching logs:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchClasses = async () => {
+    try {
+      const res = await getTutorClasses();
+      setClasses(res.data);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+    }
+  };
+
+  const fetchStudents = async () => {
+    try {
+      const res = await getStudentsByClass(selectedClassId);
+      setStudents(res.data);
+    } catch (error) {
+      console.error('Error fetching students:', error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    try {
+      await addBehaviorLog({
+        student: formData.get('studentId'),
+        engagementMetric: formData.get('category'),
+        observation: formData.get('description'),
+        severity: formData.get('severity')
+      });
+      setIsModalOpen(false);
+      fetchLogs();
+    } catch (error) {
+      console.error('Error adding log:', error);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-brand-500" size={40} />
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 font-sans">
+    <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-12">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900  ">Behavioral Tracking</h1>
@@ -49,7 +116,7 @@ const BehavioralTracking: React.FC = () => {
                </div>
                <div>
                   <h3 className="text-xl font-medium text-white  ">Achievement Awards</h3>
-                  <p className="text-[10px] font-medium text-brand-300   leading-none text-brand-300">Issue certificates</p>
+                  <p className="text-[10px] font-medium   leading-none text-brand-300">Issue certificates</p>
                </div>
             </div>
             <p className="text-sm font-medium text-brand-100 mb-6 font-sans relative z-10">Reward consistency and progress with official institutional digital certificates.</p>
@@ -67,26 +134,28 @@ const BehavioralTracking: React.FC = () => {
          </div>
 
          <div className="space-y-4">
-            {behavioralLogs.map(log => (
-               <div key={log.id} className="p-6 bg-slate-50 rounded-[32px] border border-transparent hover:border-slate-200 hover:bg-white transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-6 font-sans">
+            {logs.length > 0 ? logs.map(log => (
+               <div key={log._id} className="p-6 bg-slate-50 rounded-[32px] border border-transparent hover:border-slate-200 hover:bg-white transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-6 font-sans">
                   <div className="flex items-center gap-4">
-                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${log.type === 'Excellence' ? 'bg-success-light text-success-dark' : log.type === 'Disciplinary' ? 'bg-danger-light text-danger-dark' : 'bg-brand-50 text-brand-600'}`}>
-                        {log.type === 'Excellence' ? <Award size={20} /> : log.type === 'Disciplinary' ? <ShieldAlert size={20} /> : <User size={20} />}
+                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${log.severity === 'Commendable (Positive)' ? 'bg-success-light text-success-dark' : log.severity === 'Critical Violation' ? 'bg-danger-light text-danger-dark' : 'bg-brand-50 text-brand-600'}`}>
+                        {log.severity === 'Commendable (Positive)' ? <Award size={20} /> : log.severity === 'Critical Violation' ? <ShieldAlert size={20} /> : <User size={20} />}
                      </div>
                      <div>
                         <div className="flex items-center gap-2">
-                           <h4 className="font-medium text-gray-900   leading-none">{log.name}</h4>
-                           <span className="text-[10px] font-medium text-slate-400  ">({log.date})</span>
+                           <h4 className="font-medium text-gray-900   leading-none">{log.student?.firstName} {log.student?.lastName}</h4>
+                           <span className="text-[10px] font-medium text-slate-400  ">({new Date(log.createdAt).toLocaleDateString()})</span>
                         </div>
-                        <p className="text-xs font-medium text-slate-500 mt-1 line-clamp-1">{log.note}</p>
+                        <p className="text-xs font-medium text-slate-500 mt-1 line-clamp-1">{log.observation}</p>
                      </div>
                   </div>
                   <div className="flex items-center gap-4">
-                     <Badge variant={log.type === 'Excellence' ? 'success' : log.type === 'Disciplinary' ? 'danger' : 'brand'}>{log.status}</Badge>
+                     <Badge variant={log.severity === 'Commendable (Positive)' ? 'success' : log.severity === 'Critical Violation' ? 'danger' : 'brand'}>{log.engagementMetric}</Badge>
                      <button className="p-2 text-slate-400 hover:text-brand-600 transition-colors"><MoreHorizontal size={18}/></button>
                   </div>
                </div>
-            ))}
+            )) : (
+               <div className="py-20 text-center text-gray-400 italic">No behavioral logs recorded yet.</div>
+            )}
          </div>
       </div>
       <Modal
@@ -96,14 +165,34 @@ const BehavioralTracking: React.FC = () => {
         description="Record a commendable action or a disciplinary incident for a student."
         maxWidth="2xl"
       >
-        <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+        <form className="space-y-8" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <Input label="Student Name" placeholder="Search student..." icon={User} required />
+            <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Select Class</label>
+                <select 
+                  value={selectedClassId}
+                  onChange={(e) => setSelectedClassId(e.target.value)}
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans"
+                >
+                  <option value="">Choose Class</option>
+                  {classes.map(c => <option key={c._id} value={c._id}>{c.name}-{c.section}</option>)}
+                </select>
+            </div>
+            <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Select Student</label>
+                <select 
+                  name="studentId"
+                  required
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans disabled:opacity-50"
+                  disabled={!selectedClassId}
+                >
+                  <option value="">{selectedClassId ? 'Choose Student' : 'Select Class First'}</option>
+                  {students.map(s => <option key={s._id} value={s._id}>{s.firstName} {s.lastName}</option>)}
+                </select>
             </div>
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Report Category</label>
-                <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
+                <select name="category" className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
                   <option>Academic Achievement</option>
                   <option>Excellence in Leadership</option>
                   <option>Disciplinary Issue</option>
@@ -113,7 +202,7 @@ const BehavioralTracking: React.FC = () => {
             </div>
             <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Severity / Impact</label>
-                <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
+                <select name="severity" className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
                   <option>Commendable (Positive)</option>
                   <option>Minor Incident</option>
                   <option>Moderate Concern</option>
@@ -121,7 +210,7 @@ const BehavioralTracking: React.FC = () => {
                 </select>
             </div>
             <div className="md:col-span-2">
-              <Input label="Detailed Description" placeholder="Describe the incident or action..." icon={FileText} required />
+              <Input name="description" label="Detailed Description" placeholder="Describe the incident or action..." icon={FileText} required />
             </div>
           </div>
 

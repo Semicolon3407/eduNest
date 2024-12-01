@@ -6,7 +6,8 @@ import Input from '../../components/ui/Input';
 import { 
   CreditCard, Download, Send, Plus, 
   DollarSign, Briefcase, Calculator, ChevronDown,
-  ShieldCheck, Percent, Search, Filter, GitBranch, Loader2, MoreVertical, User
+  ShieldCheck, Percent, Search, Filter, GitBranch, Loader2, MoreVertical, User,
+  Calendar, Clock3
 } from 'lucide-react';
 import { hrService } from '../../services/hrService';
 import toast from 'react-hot-toast';
@@ -23,6 +24,9 @@ const Payroll: React.FC = () => {
   const [staffList, setStaffList] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const [filterMonth, setFilterMonth] = useState(new Date().toLocaleString('default', { month: 'long' }));
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear().toString());
 
   // Form State for Setup
   const [modalBranch, setModalBranch] = useState('All Branches');
@@ -41,7 +45,7 @@ const Payroll: React.FC = () => {
     try {
       setIsLoading(true);
       const [payrollRes, staffRes, branchRes] = await Promise.all([
-        hrService.getPayroll(),
+        hrService.getPayroll(filterMonth, filterYear),
         hrService.getStaff(),
         hrService.getBranches()
       ]);
@@ -57,7 +61,7 @@ const Payroll: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [filterMonth, filterYear]);
 
   const handleGeneratePayroll = async () => {
     try {
@@ -139,6 +143,96 @@ const Payroll: React.FC = () => {
     return matchesSearch && matchesBranch && matchesRole;
   });
 
+  const downloadPayslip = (item: any) => {
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
+
+    const html = `
+      <html>
+        <head>
+          <title>Payslip - ${item.staff?.firstName} ${item.staff?.lastName}</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+            body { font-family: 'Outfit', sans-serif; padding: 40px; color: #1e293b; background: #fff; }
+            .container { max-width: 800px; margin: 0 auto; border: 1px solid #e2e8f0; padding: 40px; border-radius: 24px; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); }
+            .header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #6366f1; padding-bottom: 30px; margin-bottom: 40px; }
+            .logo-area h1 { color: #6366f1; margin: 0; font-size: 32px; letter-spacing: -1px; }
+            .logo-area p { color: #64748b; margin: 5px 0 0 0; font-weight: 500; }
+            .period-badge { background: #f1f5f9; padding: 10px 20px; border-radius: 12px; font-weight: 600; color: #475569; }
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 50px; }
+            .info-box { background: #f8fafc; padding: 20px; border-radius: 16px; border: 1px solid #f1f5f9; }
+            .info-box b { color: #94a3b8; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 5px; }
+            .info-box span { font-size: 16px; font-weight: 600; color: #1e293b; }
+            .table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+            .table th { text-align: left; padding: 15px; background: #f1f5f9; color: #64748b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; border-radius: 8px 0 0 8px; }
+            .table th:last-child { border-radius: 0 8px 8px 0; text-align: right; }
+            .table td { padding: 20px 15px; border-bottom: 1px solid #f1f5f9; font-weight: 500; }
+            .table td:last-child { text-align: right; font-weight: 700; }
+            .total-row td { background: #6366f1; color: white !important; font-size: 1.25rem; padding: 25px 20px; }
+            .total-row td:first-child { border-radius: 16px 0 0 16px; }
+            .total-row td:last-child { border-radius: 0 16px 16px 0; text-align: right; }
+            .footer { margin-top: 60px; text-align: center; color: #94a3b8; font-size: 12px; border-top: 1px solid #f1f5f9; padding-top: 30px; }
+            @media print {
+              body { padding: 0; }
+              .container { border: none; box-shadow: none; max-width: 100%; }
+              button { display: none; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <div class="logo-area">
+                <h1>eduNest</h1>
+                <p>Official Salary Advice</p>
+              </div>
+              <div class="period-badge">
+                ${item.month} ${item.year}
+              </div>
+            </div>
+            
+            <div class="info-grid">
+              <div class="info-box"><b>Employee Name</b><span>${item.staff?.firstName} ${item.staff?.lastName}</span></div>
+              <div class="info-box"><b>Employee ID</b><span>${item.staff?.employeeId}</span></div>
+              <div class="info-box"><b>Current Role</b><span>${item.staff?.designation || 'Staff Member'}</span></div>
+              <div class="info-box"><b>Branch/Campus</b><span>${item.staff?.branch?.name || 'Main Campus'}</span></div>
+            </div>
+
+            <table class="table">
+              <thead>
+                <tr><th>Description</th><th>Amount (Rs.)</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Monthly Base Salary</td><td>${item.baseSalary?.toLocaleString()}</td></tr>
+                <tr><td>Periodic Performance Bonuses</td><td style="color: #10b981;">+ ${item.bonuses?.toLocaleString()}</td></tr>
+                <tr><td>Statutory Taxes & Deductions</td><td style="color: #ef4444;">- ${item.deductions?.toLocaleString()}</td></tr>
+                <tr class="total-row">
+                  <td>Net Payout Amount</td>
+                  <td>Rs. ${item.netPay?.toLocaleString()}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div class="footer">
+              <p>This document is digitally verified. No physical signature is required.</p>
+              <p>Generated on ${new Date().toLocaleDateString('en-GB')} at ${new Date().toLocaleTimeString()}</p>
+              <p>© ${new Date().getFullYear()} eduNest Academic Solutions</p>
+            </div>
+          </div>
+          <script>
+            window.onload = () => {
+              window.print();
+              setTimeout(() => { window.close(); }, 500);
+            };
+          </script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
+  };
+
   const totalPayout = payrollRecords.reduce((sum, item) => sum + (item.netPay || 0), 0);
 
   if (isLoading) {
@@ -176,13 +270,13 @@ const Payroll: React.FC = () => {
       <div className="bg-brand-500 text-white rounded-[40px] p-4 sm:p-8 lg:p-12 shadow-premium relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4 sm:p-8">
           <div className="relative z-10 max-w-lg">
             <Badge variant="neutral" className="bg-white/10 text-white border-white/20 mb-4 tracking-[0.2em] ">Period: {new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}</Badge>
-            <h2 className="text-3xl sm:text-4xl font-medium ">Total Payout: ${totalPayout.toLocaleString()}.00</h2>
+            <h2 className="text-3xl sm:text-4xl font-medium ">Total Payout: Rs. {totalPayout.toLocaleString()}.00</h2>
             <p className="mt-2 text-brand-200 font-medium">{payrollRecords.length} employees identified for this cycle. Payroll is compiled from active staff records.</p>
          </div>
          <div className="relative z-10 grid grid-cols-2 gap-4">
             <div className="bg-white/5 border border-white/10 p-6 rounded-3xl backdrop-blur-md">
                <p className="text-[10px] uppercase font-bold tracking-widest text-brand-300 ">Gross Payout</p>
-               <h4 className="text-xl font-medium mt-1">${totalPayout.toLocaleString()}</h4>
+               <h4 className="text-xl font-medium mt-1">Rs. {totalPayout.toLocaleString()}</h4>
             </div>
             <div className="bg-white/5 border border-white/10 p-6 rounded-3xl backdrop-blur-md">
                <p className="text-[10px] uppercase font-bold tracking-widest text-brand-300 ">Cycle Status</p>
@@ -196,54 +290,102 @@ const Payroll: React.FC = () => {
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
            <h3 className="text-xl font-medium text-gray-900 shrink-0">Detailed Payslip Preview</h3>
            
-           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-grow justify-end max-w-4xl">
-              <div className="relative flex-grow max-w-md">
-                 <Input 
-                   placeholder="Search employee..." 
-                   icon={Search} 
-                   className="h-11 rounded-xl"
-                   value={searchTerm}
-                   onChange={(e) => setSearchTerm(e.target.value)}
-                 />
-              </div>
+            <div className="flex flex-col gap-4 flex-grow max-w-5xl">
+               {/* Global Search */}
+               <div className="relative">
+                  <Input 
+                    placeholder="Search by candidate name or Institutional ID..." 
+                    icon={Search} 
+                    className="h-12 rounded-2xl bg-slate-50/50 border-slate-200/60"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+               </div>
+               
+               {/* Multi-Dimensional Filters */}
+               <div className="flex flex-wrap items-center gap-3 justify-end">
+                  {/* Period Group */}
+                  <div className="flex items-center gap-2 p-1.5 bg-slate-100/50 rounded-2xl border border-slate-200/50">
+                    <div className="relative min-w-[130px]">
+                      <select 
+                        value={filterMonth}
+                        onChange={(e) => setFilterMonth(e.target.value)}
+                        className="w-full h-10 pl-9 pr-8 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-tight outline-none focus:border-brand-500 transition-all appearance-none cursor-pointer"
+                      >
+                        <option>All Months</option>
+                        {["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"].map(m => (
+                          <option key={m}>{m}</option>
+                        ))}
+                      </select>
+                      <Calendar size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-500" />
+                      <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
 
-              <div className="flex items-center gap-2">
-                 <div className="relative min-w-[160px]">
-                    <select 
-                      value={selectedBranch}
-                      onChange={(e) => setSelectedBranch(e.target.value)}
-                      className="w-full h-11 pl-10 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-brand-500 transition-all appearance-none cursor-pointer font-sans"
+                    <div className="relative min-w-[100px]">
+                      <select 
+                        value={filterYear}
+                        onChange={(e) => setFilterYear(e.target.value)}
+                        className="w-full h-10 pl-9 pr-8 bg-white border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-tight outline-none focus:border-brand-500 transition-all appearance-none cursor-pointer"
+                      >
+                        <option>All Years</option>
+                        {[2023, 2024, 2025, 2026, 2027].map(y => (
+                          <option key={y}>{y}</option>
+                        ))}
+                      </select>
+                      <Clock3 size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-brand-500" />
+                      <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+                  </div>
+
+                  {/* Institutional Group */}
+                  <div className="flex items-center gap-2">
+                    <div className="relative min-w-[150px]">
+                       <select 
+                         value={selectedBranch}
+                         onChange={(e) => setSelectedBranch(e.target.value)}
+                         className="w-full h-11 pl-10 pr-10 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-brand-500 transition-all appearance-none cursor-pointer font-sans"
+                       >
+                         <option>All Branches</option>
+                         {branches.map(b => (
+                           <option key={b._id} value={b.name}>{b.name}</option>
+                         ))}
+                       </select>
+                       <GitBranch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500" />
+                       <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    <div className="relative min-w-[160px]">
+                       <select 
+                         value={selectedRole}
+                         onChange={(e) => setSelectedRole(e.target.value)}
+                         className="w-full h-11 pl-10 pr-10 bg-slate-50 border border-slate-200 rounded-2xl text-[10px] font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-brand-500 transition-all appearance-none cursor-pointer font-sans"
+                       >
+                         <option>All Designations</option>
+                         <option>Tutor</option>
+                         <option>Administrator</option>
+                         <option>HR Manager</option>
+                         <option>Librarian</option>
+                       </select>
+                       <Briefcase size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500" />
+                       <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
+
+                    <Button 
+                      variant="outline" 
+                      className="rounded-2xl h-11 w-11 p-0 shrink-0 border-slate-200 hover:bg-brand-50 hover:text-brand-600 transition-all shadow-sm" 
+                      onClick={() => { 
+                        setFilterMonth('All Months'); 
+                        setFilterYear('All Years'); 
+                        setSelectedBranch('All Branches'); 
+                        setSelectedRole('All Designations'); 
+                        setSearchTerm(''); 
+                      }}
                     >
-                      <option>All Branches</option>
-                      <option>Main Campus</option>
-                      <option>North Branch</option>
-                      <option>West Side</option>
-                    </select>
-                    <GitBranch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500" />
-                    <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                 </div>
-
-                 <div className="relative min-w-[170px]">
-                    <select 
-                      value={selectedRole}
-                      onChange={(e) => setSelectedRole(e.target.value)}
-                      className="w-full h-11 pl-10 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-brand-500 transition-all appearance-none cursor-pointer font-sans"
-                    >
-                      <option>All Designations</option>
-                      <option>Tutor</option>
-                      <option>Administrator</option>
-                      <option>HR Manager</option>
-                      <option>Librarian</option>
-                    </select>
-                    <Briefcase size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500" />
-                    <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
-                 </div>
-
-                 <Button variant="outline" className="rounded-xl h-11 w-11 p-0 shrink-0 border-slate-200">
-                    <Filter size={18} className="mx-auto" />
-                 </Button>
-              </div>
-           </div>
+                       <Filter size={18} className="mx-auto" />
+                    </Button>
+                  </div>
+               </div>
+            </div>
         </div>
 
         <div className="w-full">
@@ -280,16 +422,16 @@ const Payroll: React.FC = () => {
                         <span className="text-[10px] font-bold uppercase tracking-tight">{item.staff?.branch?.name || 'Main'}</span>
                      </div>
                   </td>
-                  <td className="px-6 py-5 text-sm font-bold text-slate-700">${item.baseSalary?.toLocaleString()}</td>
+                  <td className="px-6 py-5 text-sm font-bold text-slate-700">Rs. {item.baseSalary?.toLocaleString()}</td>
                   <td className="px-6 py-5 text-sm font-bold text-success-dark">
-                    {item.bonuses === 0 ? <span className="opacity-30">N/A</span> : `$${item.bonuses}`}
+                    {item.bonuses === 0 ? <span className="opacity-30">N/A</span> : `Rs. ${item.bonuses}`}
                   </td>
-                  <td className="px-6 py-5 text-sm font-bold text-danger-dark">${item.deductions?.toLocaleString()}</td>
-                  <td className="px-6 py-5">
-                     <span className="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl font-bold text-xs border border-brand-100/50">
-                        ${item.netPay?.toLocaleString()}
-                     </span>
-                  </td>
+                  <td className="px-6 py-5 text-sm font-bold text-danger-dark">Rs. {item.deductions?.toLocaleString()}</td>
+                  <td className="px-6 py-5 whitespace-nowrap">
+                      <span className="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl font-bold text-xs border border-brand-100/50 inline-block whitespace-nowrap">
+                         Rs. {item.netPay?.toLocaleString()}
+                      </span>
+                   </td>
                   <td className="px-6 py-5">
                     {item.status === 'Processed' ? (
                       <Badge variant="success" className="bg-success-50 text-success-600 border-success-100 uppercase tracking-widest text-[10px]">Paid</Badge>
@@ -317,11 +459,17 @@ const Payroll: React.FC = () => {
                        <DropdownItem icon={Calculator}>
                          Edit Details
                        </DropdownItem>
-                       <DropdownItem icon={Download}>
+                       <DropdownItem 
+                         icon={Download} 
+                         onClick={() => downloadPayslip(item)}
+                       >
                          Download Payslip
                        </DropdownItem>
-                       <DropdownItem icon={Send}>
-                         Send Email
+                       <DropdownItem 
+                         icon={Send}
+                         onClick={() => handleDisburseIndividual(item._id)}
+                       >
+                         Resend Advice
                        </DropdownItem>
                     </Dropdown>
                   </td>
@@ -411,7 +559,7 @@ const Payroll: React.FC = () => {
             </div>
 
             <Input 
-              label="Basic Salary ($)" 
+              label="Basic Salary (Rs.)" 
               placeholder="e.g. 4500.00" 
               icon={DollarSign} 
               required 
@@ -420,7 +568,7 @@ const Payroll: React.FC = () => {
               onChange={(e) => setSetupForm({...setupForm, baseSalary: e.target.value})}
             />
             <Input 
-              label="Performance Bonus ($)" 
+              label="Performance Bonus (Rs.)" 
               placeholder="e.g. 500.00" 
               icon={Plus} 
               required 
@@ -429,7 +577,7 @@ const Payroll: React.FC = () => {
               onChange={(e) => setSetupForm({...setupForm, bonuses: e.target.value})}
             />
             <Input 
-              label="Tax Deduction ($)" 
+              label="Tax Deduction (Rs.)" 
               placeholder="e.g. 450.00" 
               icon={Percent} 
               required 

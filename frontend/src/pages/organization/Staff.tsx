@@ -4,7 +4,7 @@ import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import {
-  UserPlus, Mail, Shield, Phone, Briefcase, Hash,
+  UserPlus, Mail, Shield, Phone, Briefcase,
   Search, MoreVertical, Users,
   AlertCircle, Eye, Trash2, ChevronDown, Loader2, Edit3, Lock
 } from 'lucide-react';
@@ -386,14 +386,12 @@ const StaffOnboarding: React.FC = () => {
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
             />
-            <Input
-              label="Employee ID"
-              icon={Hash}
-              placeholder="EMP-001"
-              required
-              value={formData.employeeId}
-              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
-            />
+            <div className="space-y-1.5 group text-left">
+              <label className="text-xs font-medium text-gray-400 px-1">Staff ID Status</label>
+              <div className="bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-xs font-medium text-gray-400 italic">
+                {editingStaff ? `Fixed ID: ${formData.employeeId}` : "Auto-generated on creation"}
+              </div>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

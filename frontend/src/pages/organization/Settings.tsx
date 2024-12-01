@@ -47,7 +47,7 @@ const GeneralSettings: React.FC = () => {
 
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Input label="Organization Name" placeholder="eduNest International School" />
-                  <Input label="System Currency" placeholder="USD ($)" />
+                  <Input label="System Currency" placeholder="INR (Rs.)" />
                   <Input label="Primary Timezone" placeholder="UTC (GMT+0)" />
                   <Input label="Contact Email" placeholder="admin@edunest.org" />
                </div>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
@@ -6,44 +6,60 @@ import Modal from '../../components/ui/Modal';
 import { 
   User, Mail, Phone, Calendar, MapPin, Shield, 
   CheckCircle2, XCircle, Clock, Plus, ChevronRight,
-  BookOpen, Hash, GraduationCap, FileText, Briefcase
+  BookOpen, Hash, GraduationCap, FileText, Briefcase, Loader2
 } from 'lucide-react';
+import { getTutorProfile, applyLeave } from '../../services/tutorService';
 
 const TutorProfile: React.FC = () => {
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'attendance' | 'leaves'>('overview');
+  const [profileData, setProfileData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
-  const tutor = {
-    name: 'Sarah Wilson',
-    id: 'TUT-505-2023',
-    department: 'Mathematics',
-    qualification: 'PhD in Applied Mathematics',
-    email: 's.wilson@edunest.com',
-    phone: '+1 (555) 444-5555',
-    dob: 'March 15, 1988',
-    address: '742 Platinum Heights, EduCity, EC 99887',
-    bloodGroup: 'A+',
-    joiningDate: 'Aug 15, 2022',
-    emergencyContact: 'Robert Wilson',
-    emergencyPhone: '+1 (555) 333-2222',
-    attendance: {
-      percentage: '98.2%',
-      present: 185,
-      absent: 3,
-      late: 1
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  const fetchProfile = async () => {
+    try {
+      const res = await getTutorProfile();
+      setProfileData(res.data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const attendanceHistory = [
-    { month: 'September', present: 22, absent: 0, status: '100%' },
-    { month: 'October', present: 21, absent: 1, status: '95%' },
-    { month: 'November', present: 22, absent: 0, status: '100%' },
-  ];
+  const handleApplyLeave = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    try {
+      await applyLeave({
+        type: formData.get('type'),
+        startDate: formData.get('startDate'),
+        endDate: formData.get('endDate'),
+        reason: formData.get('reason')
+      });
+      setIsLeaveModalOpen(false);
+      fetchProfile();
+      alert('Leave application submitted!');
+    } catch (error) {
+      console.error('Error applying leave:', error);
+    }
+  };
 
-  const leaveRequests = [
-    { id: 1, type: 'Casual Leave', from: 'Oct 05', to: 'Oct 05', status: 'Approved', reason: 'Personal work' },
-    { id: 2, type: 'Medical Leave', from: 'Nov 12', to: 'Nov 13', status: 'Pending', reason: 'Dental appointment' },
-  ];
+  if (loading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-brand-500" size={40} />
+      </div>
+    );
+  }
+
+  const tutor = profileData.profile;
+  const leaves = profileData.leaves;
+  const stats = profileData.attendanceStats;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-12">
@@ -52,16 +68,16 @@ const TutorProfile: React.FC = () => {
         <div className="absolute top-0 right-0 w-64 h-64 bg-brand-50 rounded-full -mr-32 -mt-32 opacity-50 blur-3xl"></div>
         <div className="relative z-10 flex flex-col md:flex-row gap-8 items-center md:items-start text-center md:text-left">
           <div className="w-32 h-32 rounded-[40px] bg-brand-500 text-white flex items-center justify-center text-4xl font-bold shadow-premium shrink-0 ring-8 ring-brand-50">
-            {tutor.name.charAt(0)}
+            {tutor.firstName?.charAt(0)}
           </div>
           <div className="flex-1 space-y-4">
             <div>
               <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
-                <h1 className="text-3xl font-display font-medium text-gray-900 leading-none  ">{tutor.name}</h1>
-                <Badge variant="brand" className="w-fit mx-auto md:mx-0">Senior Faculty</Badge>
+                <h1 className="text-3xl font-display font-medium text-gray-900 leading-none  ">{tutor.firstName} {tutor.lastName}</h1>
+                <Badge variant="brand" className="w-fit mx-auto md:mx-0">{tutor.designation}</Badge>
               </div>
               <p className="text-gray-500 font-medium flex items-center justify-center md:justify-start gap-2">
-                <Hash size={16} className="text-brand-500" /> {tutor.id}
+                <Hash size={16} className="text-brand-500" /> {tutor.employeeId}
               </p>
             </div>
             
@@ -73,21 +89,21 @@ const TutorProfile: React.FC = () => {
                 </p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Qualification</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
                 <p className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                  <GraduationCap size={16} className="text-brand-500" /> Specialist
+                  <GraduationCap size={16} className="text-brand-500" /> {tutor.status}
                 </p>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Attendance</p>
                 <p className="text-sm font-bold text-success-dark flex items-center gap-2">
-                  <CheckCircle2 size={16} /> {tutor.attendance.percentage}
+                  <CheckCircle2 size={16} /> {stats.percentage}
                 </p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Blood Group</p>
-                <p className="text-sm font-bold text-danger flex items-center gap-2">
-                  <Shield size={16} /> {tutor.bloodGroup}
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Designation</p>
+                <p className="text-sm font-bold text-brand-600 flex items-center gap-2">
+                  <Shield size={16} /> {tutor.designation}
                 </p>
               </div>
             </div>
@@ -124,12 +140,12 @@ const TutorProfile: React.FC = () => {
               <div className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200">
                 <h3 className="text-xl font-medium text-gray-900 mb-8 border-b border-slate-100 pb-4  ">Staff Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
-                  <InfoItem icon={Mail} label="Official Email" value={tutor.email} />
+                  <InfoItem icon={Mail} label="Official Email" value={tutor.user?.email} />
                   <InfoItem icon={Phone} label="Contact Phone" value={tutor.phone} />
-                  <InfoItem icon={Calendar} label="Date of Birth" value={tutor.dob} />
-                  <InfoItem icon={MapPin} label="Residential Address" value={tutor.address} fullWidth />
-                  <InfoItem icon={User} label="Emergency Contact" value={tutor.emergencyContact} />
-                  <InfoItem icon={Phone} label="Emergency Phone" value={tutor.emergencyPhone} />
+                  <InfoItem icon={Calendar} label="Date of Birth" value={'---'} />
+                  <InfoItem icon={MapPin} label="Residential Address" value={'---'} fullWidth />
+                  <InfoItem icon={User} label="Personal Email" value={tutor.personalEmail} />
+                  <InfoItem icon={Briefcase} label="Department" value={tutor.department} />
                 </div>
               </div>
 
@@ -140,7 +156,7 @@ const TutorProfile: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="text-xl font-medium text-brand-700 leading-none  ">Professional Profile</h4>
-                    <p className="text-brand-600 text-sm mt-2 font-medium">Joining Date: {tutor.joiningDate}</p>
+                    <p className="text-brand-600 text-sm mt-2 font-medium">Employee ID: {tutor.employeeId}</p>
                   </div>
                 </div>
                 <Button variant="outline" className="h-12 rounded-xl bg-white border-brand-200 text-brand-600 font-bold text-[10px] uppercase tracking-widest">
@@ -177,9 +193,9 @@ const TutorProfile: React.FC = () => {
           <div className="space-y-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               <AttendanceCard label="Total Working Days" value="189" icon={Calendar} color="brand" />
-              <AttendanceCard label="Days Present" value={tutor.attendance.present.toString()} icon={CheckCircle2} color="success" />
-              <AttendanceCard label="Days Absent" value={tutor.attendance.absent.toString()} icon={XCircle} color="danger" />
-              <AttendanceCard label="Late Arrivals" value={tutor.attendance.late.toString()} icon={Clock} color="warning" />
+              <AttendanceCard label="Days Present" value={stats.present.toString()} icon={CheckCircle2} color="success" />
+              <AttendanceCard label="Days Absent" value={stats.absent.toString()} icon={XCircle} color="danger" />
+              <AttendanceCard label="Late Arrivals" value={stats.late.toString()} icon={Clock} color="warning" />
             </div>
 
             <div className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200">
@@ -195,14 +211,12 @@ const TutorProfile: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-surface-100">
-                    {attendanceHistory.map((row) => (
-                      <tr key={row.month} className="group hover:bg-slate-50 transition-all">
-                        <td className="px-8 py-5 text-sm font-bold text-gray-900 uppercase tracking-tight">{row.month}</td>
-                        <td className="px-6 py-5 text-sm font-medium text-gray-700">{row.present}</td>
-                        <td className="px-6 py-5 text-sm font-medium text-gray-700">{row.absent}</td>
-                        <td className="px-8 py-5 text-right font-bold text-brand-600">{row.status}</td>
-                      </tr>
-                    ))}
+                    <tr className="group hover:bg-slate-50 transition-all">
+                      <td className="px-8 py-5 text-sm font-bold text-gray-900 uppercase tracking-tight">Recent</td>
+                      <td className="px-6 py-5 text-sm font-medium text-gray-700">{stats.present}</td>
+                      <td className="px-6 py-5 text-sm font-medium text-gray-700">{stats.absent}</td>
+                      <td className="px-8 py-5 text-right font-bold text-brand-600">{stats.percentage}</td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
@@ -215,13 +229,13 @@ const TutorProfile: React.FC = () => {
             <div className="flex items-center justify-between">
                <h3 className="text-2xl font-medium text-gray-900 uppercase tracking-tight  ">Leave Applications</h3>
                <div className="flex gap-2">
-                 <Badge variant="brand" className="px-4 py-2">Sick Leave Balance: 8 Days</Badge>
+                 <Badge variant="brand" className="px-4 py-2">Leave History</Badge>
                </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {leaveRequests.map((leave) => (
-                <div key={leave.id} className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200 relative group hover:border-brand-500 transition-all">
+              {leaves.map((leave: any) => (
+                <div key={leave._id} className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200 relative group hover:border-brand-500 transition-all">
                   <div className="flex justify-between items-start mb-6">
                     <div className="w-12 h-12 bg-slate-50 text-brand-500 rounded-2xl flex items-center justify-center border border-slate-100">
                        <FileText size={24} />
@@ -229,7 +243,9 @@ const TutorProfile: React.FC = () => {
                     <Badge variant={leave.status === 'Approved' ? 'success' : 'warning'}>{leave.status}</Badge>
                   </div>
                   <h4 className="text-xl font-medium text-gray-900 group-hover:text-brand-600 transition-colors mb-1  ">{leave.type}</h4>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{leave.from} - {leave.to}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">
+                    {new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}
+                  </p>
                   
                   <div className="p-4 bg-slate-50 rounded-2xl">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Reason</p>
@@ -250,10 +266,10 @@ const TutorProfile: React.FC = () => {
         description="Submit a formal leave request for HR approval."
         maxWidth="xl"
       >
-        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setIsLeaveModalOpen(false); }}>
+        <form className="space-y-6" onSubmit={handleApplyLeave}>
           <div className="space-y-1.5 focus-within:z-10 group">
             <label className="text-xs font-bold text-gray-400 px-1 uppercase tracking-tight">Leave Category</label>
-            <select className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer">
+            <select name="type" required className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer">
               <option value="sick">Sick Leave</option>
               <option value="casual">Casual Leave</option>
               <option value="vacation">Earned Leave / Vacation</option>
@@ -262,13 +278,14 @@ const TutorProfile: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Start Date" type="date" required />
-            <Input label="End Date" type="date" required />
+            <Input name="startDate" label="Start Date" type="date" required />
+            <Input name="endDate" label="End Date" type="date" required />
           </div>
 
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Reason for Absence</label>
             <textarea 
+              name="reason"
               className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all resize-none"
               placeholder="Please provide a brief explanation for your leave request..."
               required
@@ -295,7 +312,7 @@ const InfoItem: React.FC<{ icon: any, label: string, value: string, fullWidth?: 
       <div className="w-9 h-9 bg-slate-50 text-brand-500 rounded-xl flex items-center justify-center border border-slate-100/50">
         <Icon size={16} />
       </div>
-      <p className="text-sm font-bold text-gray-800 tracking-tight">{value}</p>
+      <p className="text-sm font-bold text-gray-800 tracking-tight">{value || '---'}</p>
     </div>
   </div>
 );

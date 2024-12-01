@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
@@ -7,73 +7,97 @@ import Input from '../../components/ui/Input';
 import { 
   ArrowLeft, Plus, Edit2, Trash2, Save, 
   GraduationCap, BookOpen, 
-  Trophy, AlertCircle 
+  Trophy, AlertCircle, Loader2
 } from 'lucide-react';
+import { getStudentById, getGrades, upsertGrade, deleteGrade } from '../../services/tutorService';
 
 interface MarkEntry {
-  id: string;
+  _id: string;
   subject: string;
-  theory: number;
-  practical: number;
-  total: number;
+  theoryMarks: number;
+  practicalMarks: number;
+  totalMarks: number;
   grade: string;
 }
 
 const StudentResult: React.FC = () => {
-  const { studentId: _studentId } = useParams();
+  const { studentId } = useParams();
   const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMark, setEditingMark] = useState<MarkEntry | null>(null);
+  const [student, setStudent] = useState<any>(null);
+  const [marks, setMarks] = useState<MarkEntry[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Mock student data
-  const student = {
-    name: 'Ava Thompson',
-    id: 'D2401',
-    class: '12',
-    section: 'A',
-    term: 'Midterm 2023'
+  useEffect(() => {
+    if (studentId) {
+      fetchStudentData();
+    }
+  }, [studentId]);
+
+  const fetchStudentData = async () => {
+    try {
+      const [studentRes, gradeRes] = await Promise.all([
+        getStudentById(studentId!),
+        getGrades({ classId: '', term: '' }) // We'll filter on frontend or add student filter
+      ]);
+      setStudent(studentRes.data);
+      // Filter grades for this student only
+      setMarks(gradeRes.data.filter((g: any) => g.student?._id === studentId));
+    } catch (error) {
+      console.error('Error fetching student results:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const [marks, setMarks] = useState<MarkEntry[]>([
-    { id: '1', subject: 'Advanced Mathematics', theory: 78, practical: 19, total: 97, grade: 'A+' },
-    { id: '2', subject: 'Physics', theory: 65, practical: 18, total: 83, grade: 'A' },
-    { id: '3', subject: 'Chemistry', theory: 70, practical: 20, total: 90, grade: 'A+' },
-    { id: '4', subject: 'Computer Science', theory: 75, practical: 25, total: 100, grade: 'A+' },
-  ]);
-
-  const calculateGrade = (total: number) => {
-    if (total >= 90) return 'A+';
-    if (total >= 80) return 'A';
-    if (total >= 70) return 'B';
-    if (total >= 60) return 'C';
-    return 'D';
-  };
-
-  const handleSaveMark = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSaveMark = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const subject = formData.get('subject') as string;
-    const theory = Number(formData.get('theory'));
-    const practical = Number(formData.get('practical'));
-    const total = theory + practical;
-    const grade = calculateGrade(total);
+    const theoryMarks = Number(formData.get('theoryMarks'));
+    const practicalMarks = Number(formData.get('practicalMarks'));
 
-    if (editingMark) {
-      setMarks(marks.map(m => m.id === editingMark.id ? { ...m, subject, theory, practical, total, grade } : m));
-    } else {
-      setMarks([...marks, { id: Math.random().toString(), subject, theory, practical, total, grade }]);
+    const payload = {
+      student: studentId,
+      term: 'mid-term', // Should be dynamic
+      subject: formData.get('subject'),
+      theoryMarks,
+      practicalMarks,
+      class: student.class?._id
+    };
+
+    try {
+      await upsertGrade(payload);
+      fetchStudentData();
+      setIsModalOpen(false);
+      setEditingMark(null);
+    } catch (error) {
+      console.error('Error saving grade:', error);
     }
-    setIsModalOpen(false);
-    setEditingMark(null);
   };
 
-  const deleteMark = (id: string) => {
-    setMarks(marks.filter(m => m.id !== id));
+  const handleDeleteMark = async (id: string) => {
+    if (window.confirm('Are you sure you want to delete this record?')) {
+      try {
+        await deleteGrade(id);
+        fetchStudentData();
+      } catch (error) {
+        console.error('Error deleting grade:', error);
+      }
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-brand-500" size={40} />
+      </div>
+    );
+  }
 
   const totalPossible = marks.length * 100;
-  const totalObtained = marks.reduce((acc, m) => acc + m.total, 0);
-  const percentage = ((totalObtained / totalPossible) * 100).toFixed(1);
+  const totalObtained = marks.reduce((acc, m) => acc + m.totalMarks, 0);
+  const percentage = marks.length > 0 ? ((totalObtained / totalPossible) * 100).toFixed(1) : '0';
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -87,10 +111,10 @@ const StudentResult: React.FC = () => {
           </button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">{student.name}</h1>
-              <Badge variant="brand" className="px-3 py-1 uppercase tracking-widest text-[9px] font-bold">{student.id}</Badge>
+              <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">{student?.firstName} {student?.lastName}</h1>
+              <Badge variant="brand" className="px-3 py-1 uppercase tracking-widest text-[9px] font-bold">{student?.admissionNumber}</Badge>
             </div>
-            <p className="text-gray-500 mt-1 font-medium">Class {student.class}-{student.section} • {student.term}</p>
+            <p className="text-gray-500 mt-1 font-medium">Class {student?.class?.name}-{student?.class?.section} • Midterm 2023</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -116,7 +140,7 @@ const StudentResult: React.FC = () => {
              <div className="mt-12 space-y-4">
                 <div className="flex justify-between items-end">
                    <p className="text-xs text-slate-400 font-medium">Marks Obtained</p>
-                   <p className="text-lg font-bold">{totalObtained} / {totalPossible}</p>
+                   <p className="text-lg font-bold">{totalObtained} / {totalPossible || 0}</p>
                 </div>
                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                    <div className="h-full bg-brand-500 rounded-full" style={{ width: `${percentage}%` }}></div>
@@ -137,7 +161,7 @@ const StudentResult: React.FC = () => {
                    <div className="w-8 h-8 rounded-full bg-brand-50 text-brand-500 flex items-center justify-center">
                       <BookOpen size={16} />
                    </div>
-                   <p className="text-sm font-bold text-slate-700 leading-none">Rank: #04 in Section</p>
+                   <p className="text-sm font-bold text-slate-700 leading-none">Rank: Competitive</p>
                 </li>
              </ul>
           </div>
@@ -164,18 +188,18 @@ const StudentResult: React.FC = () => {
                        </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                       {marks.map((item) => (
-                          <tr key={item.id} className="group hover:bg-slate-50/50 transition-all">
+                       {marks.length > 0 ? marks.map((item) => (
+                          <tr key={item._id} className="group hover:bg-slate-50/50 transition-all">
                              <td className="px-8 py-6 font-bold text-slate-800 text-sm">{item.subject}</td>
-                             <td className="px-6 py-6 text-center font-medium text-slate-600">{item.theory}</td>
-                             <td className="px-6 py-6 text-center font-medium text-slate-600">{item.practical}</td>
+                             <td className="px-6 py-6 text-center font-medium text-slate-600">{item.theoryMarks}</td>
+                             <td className="px-6 py-6 text-center font-medium text-slate-600">{item.practicalMarks}</td>
                              <td className="px-6 py-6 text-center">
                                 <span className="inline-block bg-slate-100 px-3 py-1 rounded-lg font-bold text-slate-800 min-w-[3rem]">
-                                   {item.total}
+                                   {item.totalMarks}
                                 </span>
                              </td>
                              <td className="px-6 py-6 text-center">
-                                <Badge variant={item.total >= 80 ? 'success' : item.total >= 60 ? 'warning' : 'danger'} className="font-bold min-w-[2.5rem] justify-center">
+                                <Badge variant={item.totalMarks >= 80 ? 'success' : item.totalMarks >= 60 ? 'warning' : 'danger'} className="font-bold min-w-[2.5rem] justify-center">
                                    {item.grade}
                                 </Badge>
                              </td>
@@ -188,7 +212,7 @@ const StudentResult: React.FC = () => {
                                       <Edit2 size={16} />
                                    </button>
                                    <button 
-                                     onClick={() => deleteMark(item.id)}
+                                     onClick={() => handleDeleteMark(item._id)}
                                      className="p-2 bg-slate-100 hover:bg-danger hover:text-white rounded-xl text-slate-400 transition-all shadow-sm"
                                    >
                                       <Trash2 size={16} />
@@ -196,7 +220,11 @@ const StudentResult: React.FC = () => {
                                 </div>
                              </td>
                           </tr>
-                       ))}
+                       )) : (
+                          <tr>
+                             <td colSpan={6} className="px-8 py-10 text-center text-gray-400 text-sm">No marks recorded yet.</td>
+                          </tr>
+                       )}
                     </tbody>
                  </table>
               </div>
@@ -238,22 +266,22 @@ const StudentResult: React.FC = () => {
 
            <div className="grid grid-cols-2 gap-4">
               <Input 
-                name="theory"
+                name="theoryMarks"
                 label="Theory (Max 75)" 
                 type="number" 
                 max={75} 
                 min={0}
                 required
-                defaultValue={editingMark?.theory}
+                defaultValue={editingMark?.theoryMarks}
               />
               <Input 
-                name="practical"
+                name="practicalMarks"
                 label="Practical (Max 25)" 
                 type="number" 
                 max={25} 
                 min={0}
                 required
-                defaultValue={editingMark?.practical}
+                defaultValue={editingMark?.practicalMarks}
               />
            </div>
 

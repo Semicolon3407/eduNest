@@ -51,8 +51,8 @@ export const hrService = {
   },
 
   // Leaves
-  getLeaves: async () => {
-    const response = await axios.get(`${API_URL}/hr/leaves`, getAuthHeaders());
+  getLeaves: async (date?: string) => {
+    const response = await axios.get(`${API_URL}/hr/leaves${date ? `?date=${date}` : ''}`, getAuthHeaders());
     return response.data;
   },
 
@@ -62,8 +62,14 @@ export const hrService = {
   },
 
   // Payroll
-  getPayroll: async () => {
-    const response = await axios.get(`${API_URL}/hr/payroll`, getAuthHeaders());
+  getPayroll: async (month?: string, year?: string) => {
+    let url = `${API_URL}/hr/payroll`;
+    const params = new URLSearchParams();
+    if (month) params.append('month', month);
+    if (year) params.append('year', year);
+    if (params.toString()) url += `?${params.toString()}`;
+    
+    const response = await axios.get(url, getAuthHeaders());
     return response.data;
   },
 

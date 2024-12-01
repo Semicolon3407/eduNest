@@ -1,19 +1,42 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
-import { CreditCard, ArrowRight, Download, Calendar, Wallet, History, AlertCircle, CheckCircle2, User, Building2, CreditCard as CardIcon } from 'lucide-react';
-
-const feeHistory = [
-  { id: 'INV-2023-001', description: 'Annual Tuition Fee - Term 1', amount: '$4,500', date: 'Sept 15, 2023', status: 'Paid', method: 'Credit Card' },
-  { id: 'INV-2023-002', description: 'Laboratory & Resource Fee', amount: '$350', date: 'Oct 02, 2023', status: 'Paid', method: 'Bank Transfer' },
-  { id: 'INV-2023-003', description: 'Sports & Athletics Fee', amount: '$200', date: 'Oct 10, 2023', status: 'Paid', method: 'Digital Wallet' },
-  { id: 'INV-2023-004', description: 'Annual Tuition Fee - Term 2', amount: '$4,500', date: 'Jan 15, 2024', status: 'Pending', method: '-' },
-];
+import { CreditCard, ArrowRight, Download, Calendar, Wallet, History, AlertCircle, CheckCircle2, User, Building2, CreditCard as CardIcon, Loader2 } from 'lucide-react';
+import { getFeeRecords } from '../../services/studentService';
 
 const StudentFees: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [records, setRecords] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const res = await getFeeRecords();
+      setRecords(res.data);
+    } catch (error) {
+      console.error('Error fetching fee records:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-brand-500" size={40} />
+      </div>
+    );
+  }
+
+  const totalOutstanding = records.filter(r => r.status !== 'Paid').reduce((acc, r) => acc + r.amount, 0);
+  const totalPaid = records.filter(r => r.status === 'Paid').reduce((acc, r) => acc + r.amount, 0);
+  const nextDueDate = records.find(r => r.status !== 'Paid')?.date;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans">
@@ -34,7 +57,7 @@ const StudentFees: React.FC = () => {
             </div>
             <div>
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Outstanding</p>
-               <h4 className="text-2xl font-medium text-gray-900  ">$4,500</h4>
+               <h4 className="text-2xl font-medium text-gray-900  ">${totalOutstanding}</h4>
             </div>
          </div>
          <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-soft flex items-center gap-4 transition-all hover:border-success-100 group">
@@ -43,7 +66,7 @@ const StudentFees: React.FC = () => {
             </div>
             <div>
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Total Paid (YTD)</p>
-               <h4 className="text-2xl font-medium text-gray-900  ">$5,050</h4>
+               <h4 className="text-2xl font-medium text-gray-900  ">${totalPaid}</h4>
             </div>
          </div>
          <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-soft flex items-center gap-4 transition-all hover:border-warning-100 group">
@@ -52,7 +75,7 @@ const StudentFees: React.FC = () => {
             </div>
             <div>
                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Next Due Date</p>
-               <h4 className="text-2xl font-medium text-gray-900  ">Jan 15, 2024</h4>
+               <h4 className="text-2xl font-medium text-gray-900  ">{nextDueDate ? new Date(nextDueDate).toLocaleDateString() : 'N/A'}</h4>
             </div>
          </div>
       </div>
@@ -83,17 +106,17 @@ const StudentFees: React.FC = () => {
                         </tr>
                      </thead>
                      <tbody className="divide-y divide-slate-100">
-                        {feeHistory.map(item => (
-                           <tr key={item.id} className="group hover:bg-slate-50/50 transition-all font-sans">
+                        {records.length > 0 ? records.map(item => (
+                           <tr key={item._id} className="group hover:bg-slate-50/50 transition-all font-sans">
                               <td className="px-6 py-5">
                                  <p className="font-medium text-gray-900 group-hover:text-brand-600 transition-colors text-sm">{item.description}</p>
-                                 <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{item.id}</p>
+                                 <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{item.transactionId || '---'}</p>
                               </td>
                               <td className="px-6 py-5">
-                                 <p className="text-sm font-medium text-slate-500">{item.date}</p>
+                                 <p className="text-sm font-medium text-slate-500">{new Date(item.date).toLocaleDateString()}</p>
                                  <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-widest">{item.method}</p>
                               </td>
-                              <td className="px-6 py-5 text-sm font-bold text-gray-900">{item.amount}</td>
+                              <td className="px-6 py-5 text-sm font-bold text-gray-900">${item.amount}</td>
                               <td className="px-6 py-5">
                                  <Badge variant={item.status === 'Paid' ? 'success' : 'warning'}>{item.status}</Badge>
                               </td>
@@ -103,7 +126,11 @@ const StudentFees: React.FC = () => {
                                  </button>
                               </td>
                            </tr>
-                        ))}
+                        )) : (
+                          <tr>
+                            <td colSpan={5} className="py-10 text-center text-gray-400">No billing history available.</td>
+                          </tr>
+                        )}
                      </tbody>
                   </table>
                </div>
@@ -115,11 +142,11 @@ const StudentFees: React.FC = () => {
             <div className="bg-brand-500 text-white rounded-[40px] p-8 shadow-premium relative overflow-hidden group">
                <div className="relative z-10">
                   <Badge variant="neutral" className="bg-white/10 text-white border-white/10 mb-6 tracking-widest uppercase">Quick Pay</Badge>
-                  <h3 className="text-2xl font-medium mb-2 leading-tight">Tuition Installment<br/>is almost due.</h3>
-                  <p className="text-brand-100 text-sm font-medium mt-4">Term 2 Tuition ($4,500) is scheduled for Jan 15, 2024. Pay early to avoid late fees.</p>
+                  <h3 className="text-2xl font-medium mb-2 leading-tight">Institutional Dues<br/>Pending Approval</h3>
+                  <p className="text-brand-100 text-sm font-medium mt-4">Review your outstanding balance of ${totalOutstanding}. Pay early to avoid late fees and maintain account active status.</p>
                   <div className="mt-10">
                      <Button className="w-full bg-white text-brand-600 hover:bg-brand-50 rounded-2xl h-14 font-bold shadow-soft">
-                        Pay Term 2 Now
+                        Pay Dues Now
                      </Button>
                   </div>
                </div>
@@ -149,11 +176,11 @@ const StudentFees: React.FC = () => {
             <div className="bg-slate-50 rounded-3xl p-6 border border-slate-100">
                <div className="flex items-center justify-between mb-4">
                   <p className="text-sm font-medium text-slate-500">Selected Invoice</p>
-                  <p className="text-sm font-bold text-gray-900">Term 2 Tuition Fee</p>
+                  <p className="text-sm font-bold text-gray-900">Academic Fees</p>
                </div>
                <div className="flex items-center justify-between py-4 border-y border-slate-200">
                   <p className="text-lg font-medium text-gray-900">Total Amount Due</p>
-                  <p className="text-2xl font-bold text-brand-600">$4,500.00</p>
+                  <p className="text-2xl font-bold text-brand-600">${totalOutstanding}.00</p>
                </div>
             </div>
 
@@ -181,8 +208,10 @@ const StudentFees: React.FC = () => {
                <Input label="Cardholder Name" placeholder="e.g. John Doe" icon={User} required />
                <div className="grid grid-cols-2 gap-4">
                   <Input label="Card Number" placeholder="**** **** **** ****" icon={CardIcon} required />
-                  <div className="grid grid-cols-2 gap-2">
-                     <Input label="Expiry" placeholder="MM/YY" required />
+                  <div className="grid grid-cols-3 gap-2">
+                     <div className="col-span-2">
+                        <Input label="Expiry" placeholder="MM/YY" required />
+                     </div>
                      <Input label="CVC" placeholder="***" required />
                   </div>
                </div>
@@ -190,7 +219,7 @@ const StudentFees: React.FC = () => {
 
             <div className="flex justify-end gap-3 pt-4">
                <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6">Cancel</Button>
-               <Button type="submit" className="rounded-xl h-12 px-10 shadow-premium bg-brand-500 text-white hover:bg-brand-600">Proceed to Pay $4,500</Button>
+               <Button type="submit" className="rounded-xl h-12 px-10 shadow-premium bg-brand-500 text-white hover:bg-brand-600">Proceed to Pay ${totalOutstanding}</Button>
             </div>
          </form>
       </Modal>

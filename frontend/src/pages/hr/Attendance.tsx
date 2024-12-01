@@ -37,13 +37,16 @@ const AttendanceLeave: React.FC = () => {
     reason: ''
   });
 
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
+  const [leaveDate, setLeaveDate] = useState(new Date().toISOString().split('T')[0]);
+
   const fetchData = async () => {
     try {
       setIsLoading(true);
       const [staffRes, leavesRes, attendanceRes, branchRes] = await Promise.all([
         hrService.getStaff(),
-        hrService.getLeaves(),
-        hrService.getAttendance(),
+        hrService.getLeaves(leaveDate),
+        hrService.getAttendance(attendanceDate),
         hrService.getBranches()
       ]);
 
@@ -67,12 +70,16 @@ const AttendanceLeave: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [attendanceDate, leaveDate]);
 
   const handleMark = async (staffId: string, status: string) => {
     try {
       setMarkedStatus(prev => ({ ...prev, [staffId]: status }));
-      const response = await hrService.markAttendance({ staffId, status });
+      const response = await hrService.markAttendance({ 
+        staffId, 
+        status,
+        date: attendanceDate 
+      });
       if (response.success) {
         toast.success(`Attendance logged for candidate`);
       }
@@ -198,6 +205,16 @@ const AttendanceLeave: React.FC = () => {
                         onChange={(e) => setSearchTerm(e.target.value)}
                       />
                     </div>
+
+                    <div className="relative min-w-[150px]">
+                      <Input 
+                        type="date"
+                        icon={Calendar}
+                        className="h-11 rounded-xl font-bold uppercase tracking-widest text-[10px]"
+                        value={attendanceDate}
+                        onChange={(e) => setAttendanceDate(e.target.value)}
+                      />
+                    </div>
                     
                     <div className="flex items-center gap-2">
                       <div className="relative min-w-[160px]">
@@ -318,9 +335,18 @@ const AttendanceLeave: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-6">
-              <div className="flex items-center justify-between mb-8">
-                <h2 className="text-xl font-medium text-gray-900  ">Recent Leave Requests</h2>
-                <div className="flex gap-2">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+                <h2 className="text-xl font-medium text-gray-900 leading-none">Recent Leave Requests</h2>
+                <div className="flex flex-wrap items-center gap-2 justify-end">
+                   <div className="relative min-w-[150px]">
+                      <Input 
+                        type="date"
+                        icon={Calendar}
+                        className="h-10 rounded-xl font-bold uppercase tracking-widest text-[10px]"
+                        value={leaveDate}
+                        onChange={(e) => setLeaveDate(e.target.value)}
+                      />
+                   </div>
                    <Button size="sm" variant="outline" className="rounded-xl h-10 w-10"><Search size={16}/></Button>
                    <Button size="sm" variant="outline" className="rounded-xl h-10 w-10"><Filter size={16}/></Button>
                 </div>

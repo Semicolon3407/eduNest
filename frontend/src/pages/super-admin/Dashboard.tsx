@@ -5,10 +5,10 @@ import { School, Users, CreditCard, LifeBuoy, ArrowRight, MoreVertical } from 'l
 
 
 const organizations = [
-  { id: 1, name: 'Springfield Academy', owner: 'John Smith', plan: 'Enterprise', status: 'Active', schools: 4, revenue: '$4,200', date: 'Oct 12, 2023' },
-  { id: 2, name: 'Lakeside College', owner: 'Sarah Johnson', plan: 'Standard', status: 'Pending', schools: 1, revenue: '$1,500', date: 'Oct 14, 2023' },
-  { id: 3, name: 'Elite International', owner: 'Michael Brown', plan: 'Enterprise', status: 'Active', schools: 2, revenue: '$3,800', date: 'Oct 15, 2023' },
-  { id: 4, name: 'Greenwood High', owner: 'Emma Wilson', plan: 'Standard', status: 'Suspended', schools: 1, revenue: '$1,200', date: 'Oct 16, 2023' },
+  { id: 1, name: 'Springfield Academy', owner: 'John Smith', plan: 'Enterprise', status: 'Active', schools: 4, revenue: 'Rs. 4,200', date: 'Oct 12, 2023' },
+  { id: 2, name: 'Lakeside College', owner: 'Sarah Johnson', plan: 'Standard', status: 'Pending', schools: 1, revenue: 'Rs. 1,500', date: 'Oct 14, 2023' },
+  { id: 3, name: 'Elite International', owner: 'Michael Brown', plan: 'Enterprise', status: 'Active', schools: 2, revenue: 'Rs. 3,800', date: 'Oct 15, 2023' },
+  { id: 4, name: 'Greenwood High', owner: 'Emma Wilson', plan: 'Standard', status: 'Suspended', schools: 1, revenue: 'Rs. 1,200', date: 'Oct 16, 2023' },
 ];
 
 const SuperAdminDashboard: React.FC = () => {
@@ -22,7 +22,7 @@ const SuperAdminDashboard: React.FC = () => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard title="Total Schools" value="1,284" icon={School} trend={{ value: '+12%', isUp: true }} color="brand" />
         <StatCard title="Active Users" value="48.5k" icon={Users} trend={{ value: '+5.4%', isUp: true }} color="success" />
-        <StatCard title="Total Revenue" value="$142,400" icon={CreditCard} trend={{ value: '-2.1%', isUp: false }} color="warning" />
+        <StatCard title="Total Revenue" value="Rs. 142,400" icon={CreditCard} trend={{ value: '-2.1%', isUp: false }} color="warning" />
         <StatCard title="Support Tickets" value="24" icon={LifeBuoy} trend={{ value: '4 Urgent', isUp: false }} color="danger" />
       </div>
 

@@ -60,6 +60,11 @@ export const adminService = {
     return response.data;
   },
 
+  updateSchedule: async (id: string, data: any) => {
+    const response = await api.put(`/admin/schedules/${id}`, data);
+    return response.data;
+  },
+
   deleteSchedule: async (id: string) => {
     const response = await api.delete(`/admin/schedules/${id}`);
     return response.data;

@@ -5,6 +5,7 @@ import Organization from '../models/Organization';
 import Branch from '../models/Branch';
 import { AuthRequest } from '../middlewares/auth';
 import mongoose from 'mongoose';
+import sendEmail from '../utils/sendEmail';
 
 // --- Branch Management ---
 
@@ -126,6 +127,19 @@ export const onboardStaff = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ success: false, message: 'Email already registered' });
     }
 
+    // Auto-generate employeeId if not provided
+    let finalEmployeeId = employeeId;
+    if (!finalEmployeeId) {
+      const year = new Date().getFullYear();
+      let isUnique = false;
+      while (!isUnique) {
+        const rand = Math.floor(1000 + Math.random() * 9000);
+        finalEmployeeId = `EMP-${year}-${rand}`;
+        const existing = await Staff.findOne({ organization: req.user.organization, employeeId: finalEmployeeId });
+        if (!existing) isUnique = true;
+      }
+    }
+
     // 1. Create User
     const user = await User.create({
       name: `${firstName} ${lastName}`,
@@ -140,7 +154,7 @@ export const onboardStaff = async (req: AuthRequest, res: Response) => {
       user: user._id,
       organization: req.user.organization,
       branch: branchId,
-      employeeId,
+      employeeId: finalEmployeeId,
       department,
       firstName,
       lastName,
@@ -148,6 +162,35 @@ export const onboardStaff = async (req: AuthRequest, res: Response) => {
       personalEmail,
       status: 'Active'
     });
+
+    // Send credentials via email
+    if (personalEmail) {
+      const actualPassword = password || 'EduNest@123';
+      const message = `
+        <div style="font-family: sans-serif; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 12px;">
+          <h2 style="color: #4f46e5;">Welcome to the Team!</h2>
+          <p>Hello ${firstName} ${lastName},</p>
+          <p>Your staff account has been created at EduNest. You can now log in to the portal using the credentials below:</p>
+          <div style="background-color: #f9fafb; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 5px 0;"><strong>Portal URL:</strong> <a href="${process.env.CLIENT_URL}">${process.env.CLIENT_URL}</a></p>
+            <p style="margin: 5px 0;"><strong>Login Email:</strong> ${email}</p>
+            <p style="margin: 5px 0;"><strong>Password:</strong> ${actualPassword}</p>
+          </div>
+          <p>Please change your password after your first login for better security.</p>
+          <p>Best Regards,<br>Management Team</p>
+        </div>
+      `;
+
+      try {
+        await sendEmail({
+          email: personalEmail,
+          subject: 'Your Staff Account Credentials - EduNest',
+          message,
+        });
+      } catch (emailErr) {
+        console.error('Error sending staff email:', emailErr);
+      }
+    }
 
     res.status(201).json({ success: true, data: staff });
   } catch (err: any) {

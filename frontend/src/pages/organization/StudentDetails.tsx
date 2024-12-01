@@ -28,9 +28,9 @@ const StudentDetails: React.FC = () => {
     attendance: '94.5%',
     gpa: '3.8/4.0',
     fees: {
-      total: '$12,000',
-      paid: '$8,500',
-      pending: '$3,500',
+      total: 'Rs. 12,000',
+      paid: 'Rs. 8,500',
+      pending: 'Rs. 3,500',
       status: 'Partial'
     }
   };

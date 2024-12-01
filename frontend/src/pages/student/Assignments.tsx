@@ -1,52 +1,51 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import { 
   FileText, Calendar, Upload, CheckCircle2, 
   AlertCircle, Download, FileArchive, Clock, 
-  ChevronRight, Plus
+  ChevronRight, Plus, Loader2
 } from 'lucide-react';
-
-const studentAssignments = [
-  { 
-    id: 1, 
-    title: 'Advanced Calculus Problem Set 4', 
-    subject: 'Mathematics', 
-    dueDate: 'Apr 25, 2026', 
-    status: 'Pending', 
-    description: 'Solve the problems from Chapter 4, sections 4.1 to 4.5. Submit a single PDF file with clear steps.' 
-  },
-  { 
-    id: 2, 
-    title: 'Quantum Mechanics Lab Report', 
-    subject: 'Physics', 
-    dueDate: 'Apr 28, 2026', 
-    status: 'Submitted', 
-    submissionDate: 'Apr 18, 2026',
-    grade: 'A+',
-    description: 'Detailed report on the Electron Double Slit experiment. ZIP file containing the data and analysis report.' 
-  },
-  { 
-    id: 3, 
-    title: 'History Essay - French Revolution', 
-    subject: 'History', 
-    dueDate: 'Apr 15, 2026', 
-    status: 'Overdue', 
-    description: 'Analyze the social and political causes of the French Revolution. Minimum 1500 words.' 
-  },
-];
+import { getAssignments, submitAssignment } from '../../services/studentService';
 
 const StudentAssignments: React.FC = () => {
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const res = await getAssignments();
+      setAssignments(res.data);
+    } catch (error) {
+      console.error('Error fetching assignments:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // In a real app, logic for file upload goes here
-    setIsSubmitModalOpen(false);
-    setSelectedFile(null);
+    const formData = new FormData(e.currentTarget);
+    try {
+      await submitAssignment({
+        assignment: selectedTask._id,
+        content: formData.get('remarks'),
+        fileUrl: '---' // In real app, upload file to storage first
+      });
+      setIsSubmitModalOpen(false);
+      setSelectedFile(null);
+      fetchData();
+    } catch (error) {
+      console.error('Error submitting assignment:', error);
+    }
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +53,14 @@ const StudentAssignments: React.FC = () => {
       setSelectedFile(e.target.files[0]);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="h-full w-full flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin text-brand-500" size={40} />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-12">
@@ -80,8 +87,8 @@ const StudentAssignments: React.FC = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
            <div className="grid grid-cols-1 gap-6">
-              {studentAssignments.map((task) => (
-                <div key={task.id} className="bg-white rounded-[40px] shadow-soft border border-slate-200 overflow-hidden group hover:border-brand-500 transition-all duration-300">
+              {assignments.length > 0 ? assignments.map((task) => (
+                <div key={task._id} className="bg-white rounded-[40px] shadow-soft border border-slate-200 overflow-hidden group hover:border-brand-500 transition-all duration-300">
                   <div className="p-8">
                     <div className="flex justify-between items-start mb-6">
                       <div className="flex items-center gap-4">
@@ -106,7 +113,7 @@ const StudentAssignments: React.FC = () => {
                       <div className="flex flex-col gap-1">
                         <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Due On</p>
                         <div className="flex items-center gap-2 font-bold text-slate-700 text-sm">
-                          <Calendar size={16} className="text-brand-500" /> {task.dueDate}
+                          <Calendar size={16} className="text-brand-500" /> {new Date(task.dueDate).toLocaleDateString()}
                         </div>
                       </div>
                       {task.status === 'Submitted' && (
@@ -114,11 +121,11 @@ const StudentAssignments: React.FC = () => {
                           <div className="flex flex-col gap-1">
                             <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Submitted On</p>
                             <div className="flex items-center gap-2 font-bold text-slate-700 text-sm">
-                              <CheckCircle2 size={16} className="text-success" /> {task.submissionDate}
+                              <CheckCircle2 size={16} className="text-success" /> {new Date(task.submissionDate).toLocaleDateString()}
                             </div>
                           </div>
                           <div className="flex flex-col gap-1">
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Final Grade</p>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Grade Status</p>
                             <Badge variant="success" className="h-6 font-black text-xs">{task.grade}</Badge>
                           </div>
                         </>
@@ -143,7 +150,9 @@ const StudentAssignments: React.FC = () => {
                     </div>
                   </div>
                 </div>
-              ))}
+              )) : (
+                <div className="text-center py-20 text-gray-400">No assignments found for your class.</div>
+              )}
            </div>
         </div>
 
@@ -213,7 +222,7 @@ const StudentAssignments: React.FC = () => {
                    <button 
                      type="button"
                      onClick={(e) => { e.stopPropagation(); setSelectedFile(null); }}
-                     className="w-8 h-8 rounded-full bg-danger/10 text-danger flex items-center justify-center hover:bg-danger hover:text-white transition-all"
+                     className="w-8 h-8 rounded-full bg-danger/10 text-danger flex items-center justify-center hover:bg-danger hover:text-white transition-all transition-transform hover:scale-110"
                    >
                      <Plus size={16} className="rotate-45" />
                    </button>
@@ -224,6 +233,7 @@ const StudentAssignments: React.FC = () => {
            <div className="space-y-2">
               <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest px-1">Remarks (Optional)</label>
               <textarea 
+                name="remarks"
                 className="w-full h-24 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all resize-none"
                 placeholder="Leave a message for your tutor..."
               ></textarea>

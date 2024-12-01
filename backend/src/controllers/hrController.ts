@@ -6,6 +6,7 @@ import Leave from '../models/Leave';
 import Payroll from '../models/Payroll';
 import Branch from '../models/Branch';
 import StaffDocument from '../models/StaffDocument';
+import sendEmail from '../utils/sendEmail';
 
 
 // --- Dashboard & Stats ---
@@ -82,7 +83,25 @@ export const markAttendance = async (req: AuthRequest, res: Response) => {
 
 export const getLeaveRequests = async (req: AuthRequest, res: Response) => {
   try {
-    const leaves = await Leave.find({ organization: req.user.organization })
+    const { date } = req.query;
+    const query: any = { organization: req.user.organization };
+
+    if (date) {
+      const searchDate = new Date(date as string);
+      searchDate.setHours(0, 0, 0, 0);
+      const nextDate = new Date(searchDate.getTime() + 24 * 60 * 60 * 1000);
+      
+      // Filter by appliedDate or if the leave spans across this date
+      query.$or = [
+        { appliedDate: { $gte: searchDate, $lt: nextDate } },
+        { 
+          startDate: { $lte: searchDate },
+          endDate: { $gte: searchDate }
+        }
+      ];
+    }
+
+    const leaves = await Leave.find(query)
       .populate('staff', 'firstName lastName designation employeeId')
       .sort({ appliedDate: -1 });
     res.status(200).json({ success: true, data: leaves });
@@ -110,7 +129,12 @@ export const updateLeaveStatus = async (req: AuthRequest, res: Response) => {
 // --- Payroll Management ---
 export const getPayrollRecords = async (req: AuthRequest, res: Response) => {
   try {
-    const records = await Payroll.find({ organization: req.user.organization })
+    const { month, year } = req.query;
+    const query: any = { organization: req.user.organization };
+    if (month && month !== 'All Months') query.month = month;
+    if (year && year !== 'All Years') query.year = Number(year);
+
+    const records = await Payroll.find(query)
       .populate('staff', 'firstName lastName designation employeeId')
       .populate({
         path: 'staff',
@@ -189,8 +213,42 @@ export const disburseIndividualPayroll = async (req: AuthRequest, res: Response)
       { _id: id, organization: req.user.organization },
       { status: 'Processed', paidAt: new Date() },
       { new: true }
-    );
+    ).populate('staff', 'firstName lastName personalEmail employeeId');
+    
     if (!payroll) return res.status(404).json({ success: false, message: 'Payroll record not found' });
+
+    // Send Email
+    if (payroll.staff && (payroll.staff as any).personalEmail) {
+      const emailContent = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+          <h2 style="color: #6366f1; text-align: center;">Institutional Salary Advice</h2>
+          <p>Dear <b>${(payroll.staff as any).firstName}</b>,</p>
+          <p>We are pleased to inform you that your salary for the period <b>${payroll.month} ${payroll.year}</b> has been successfully disbursed.</p>
+          
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #f1f5f9;">
+            <p style="margin: 8px 0; color: #64748b; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.05em;">Salary Breakdown</p>
+            <div style="border-top: 1px solid #e2e8f0; padding-top: 10px;">
+              <p style="margin: 8px 0; display: flex; justify-content: space-between;"><span>Basic Salary:</span> <b>Rs. ${payroll.baseSalary?.toLocaleString()}</b></p>
+              <p style="margin: 8px 0; display: flex; justify-content: space-between;"><span>Periodic Bonuses:</span> <b>Rs. ${payroll.bonuses?.toLocaleString()}</b></p>
+              <p style="margin: 8px 0; display: flex; justify-content: space-between; color: #ef4444;"><span>Statutory Deductions:</span> <b>- Rs. ${payroll.deductions?.toLocaleString()}</b></p>
+              <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #6366f1;">
+                <p style="margin: 0; font-size: 1.2em; color: #10b981; display: flex; justify-content: space-between;"><b>Net Payout:</b> <b>Rs. ${payroll.netPay?.toLocaleString()}</b></p>
+              </div>
+            </div>
+          </div>
+          
+          <p style="color: #64748b; font-size: 0.9em;">You can view and download your detailed PDF payslip via the eduNest portal's Document Center.</p>
+          <p style="border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 11px; color: #94a3b8; text-align: center;">This is a system-generated salary advice. Please do not reply to this email.</p>
+        </div>
+      `;
+      
+      sendEmail({
+        email: (payroll.staff as any).personalEmail,
+        subject: `Salary Disbursed: ${payroll.month} ${payroll.year} - eduNest`,
+        message: emailContent
+      });
+    }
+
     res.status(200).json({ success: true, data: payroll });
   } catch (err: any) {
     res.status(400).json({ success: false, message: err.message });
@@ -200,11 +258,60 @@ export const disburseIndividualPayroll = async (req: AuthRequest, res: Response)
 export const disburseAllPayroll = async (req: AuthRequest, res: Response) => {
   try {
     const { month, year } = req.body;
-    const result = await Payroll.updateMany(
+    
+    // Find all pending records for this month/year
+    const pendingRecords = await Payroll.find({
+      organization: req.user.organization,
+      month,
+      year,
+      status: 'Pending'
+    }).populate('staff', 'firstName lastName personalEmail employeeId');
+
+    if (pendingRecords.length === 0) {
+      return res.status(200).json({ success: true, modifiedCount: 0 });
+    }
+
+    // Update them all
+    await Payroll.updateMany(
       { organization: req.user.organization, month, year, status: 'Pending' },
       { status: 'Processed', paidAt: new Date() }
     );
-    res.status(200).json({ success: true, modifiedCount: result.modifiedCount });
+
+    // Send Emails asynchronously
+    pendingRecords.forEach(payroll => {
+      if (payroll.staff && (payroll.staff as any).personalEmail) {
+        const emailContent = `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px;">
+            <h2 style="color: #6366f1; text-align: center;">Institutional Salary Advice</h2>
+            <p>Dear <b>${(payroll.staff as any).firstName}</b>,</p>
+            <p>We are pleased to inform you that your salary for the period <b>${payroll.month} ${payroll.year}</b> has been successfully disbursed.</p>
+            
+            <div style="background-color: #f8fafc; padding: 20px; border-radius: 12px; margin: 25px 0; border: 1px solid #f1f5f9;">
+              <p style="margin: 8px 0; color: #64748b; font-size: 0.9em; text-transform: uppercase; letter-spacing: 0.05em;">Salary Breakdown</p>
+              <div style="border-top: 1px solid #e2e8f0; padding-top: 10px;">
+                <p style="margin: 8px 0; display: flex; justify-content: space-between;"><span>Basic Salary:</span> <b>Rs. ${payroll.baseSalary?.toLocaleString()}</b></p>
+                <p style="margin: 8px 0; display: flex; justify-content: space-between;"><span>Periodic Bonuses:</span> <b>Rs. ${payroll.bonuses?.toLocaleString()}</b></p>
+                <p style="margin: 8px 0; display: flex; justify-content: space-between; color: #ef4444;"><span>Statutory Deductions:</span> <b>- Rs. ${payroll.deductions?.toLocaleString()}</b></p>
+                <div style="margin-top: 15px; padding-top: 15px; border-top: 2px solid #6366f1;">
+                  <p style="margin: 0; font-size: 1.2em; color: #10b981; display: flex; justify-content: space-between;"><b>Net Payout:</b> <b>Rs. ${payroll.netPay?.toLocaleString()}</b></p>
+                </div>
+              </div>
+            </div>
+            
+            <p style="color: #64748b; font-size: 0.9em;">You can view and download your detailed PDF payslip via the eduNest portal's Document Center.</p>
+            <p style="border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 11px; color: #94a3b8; text-align: center;">This is a system-generated salary advice. Please do not reply to this email.</p>
+          </div>
+        `;
+        
+        sendEmail({
+          email: (payroll.staff as any).personalEmail,
+          subject: `Salary Disbursed: ${payroll.month} ${payroll.year} - eduNest`,
+          message: emailContent
+        });
+      }
+    });
+
+    res.status(200).json({ success: true, modifiedCount: pendingRecords.length });
   } catch (err: any) {
     res.status(400).json({ success: false, message: err.message });
   }
