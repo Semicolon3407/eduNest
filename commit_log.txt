@@ -1,2 +1,3 @@
 chore: initial repository setup for eduNest backend
 feat: install core dependencies (Express, Prisma, TypeScript, JWT)
+feat: architect multi-tenant Prisma schema with schema isolation
