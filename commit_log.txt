@@ -3,3 +3,4 @@ feat: install core dependencies (Express, Prisma, TypeScript, JWT)
 feat: architect multi-tenant Prisma schema with schema isolation
 feat: implement modern Prisma 7 datasource adapter for PostgreSQL
 feat: configure JWT and Refresh Token session management (Cookies)
+feat: implement Role-Based Access Control (RBAC) middleware
