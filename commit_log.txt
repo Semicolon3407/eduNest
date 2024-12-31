@@ -4,3 +4,4 @@ feat: architect multi-tenant Prisma schema with schema isolation
 feat: implement modern Prisma 7 datasource adapter for PostgreSQL
 feat: configure JWT and Refresh Token session management (Cookies)
 feat: implement Role-Based Access Control (RBAC) middleware
+feat: add global response and error handling utilities
