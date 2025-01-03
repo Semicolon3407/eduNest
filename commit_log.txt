@@ -7,3 +7,4 @@ feat: implement Role-Based Access Control (RBAC) middleware
 feat: add global response and error handling utilities
 feat: establish modular project structure (Controllers, Services, Routes)
 feat: implement centralized Zod request validation middleware
+feat: build Super Admin module for organization management
