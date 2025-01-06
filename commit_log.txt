@@ -10,3 +10,4 @@ feat: implement centralized Zod request validation middleware
 feat: build Super Admin module for organization management
 feat: implement Organization Admin onboarding service
 feat: build Student Admission pipeline with transaction logic
+feat: implement HR module for staff onboarding and profiles
