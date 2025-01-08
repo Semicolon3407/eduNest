@@ -12,3 +12,4 @@ feat: implement Organization Admin onboarding service
 feat: build Student Admission pipeline with transaction logic
 feat: implement HR module for staff onboarding and profiles
 feat: build Staff Leave Management system with RBAC
+feat: implement Academic management (Grades and Sections)
