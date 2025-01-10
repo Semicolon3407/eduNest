@@ -14,3 +14,4 @@ feat: implement HR module for staff onboarding and profiles
 feat: build Staff Leave Management system with RBAC
 feat: implement Academic management (Grades and Sections)
 feat: build Fee Structure and simulated payment tracking
+feat: implement Tutor module for Student Attendance tracking
