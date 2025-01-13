@@ -17,3 +17,4 @@ feat: build Fee Structure and simulated payment tracking
 feat: implement Tutor module for Student Attendance tracking
 feat: build Student Gradebook and academic marks input
 feat: architect System-wide Audit Log for data integrity
+feat: integrate Socket.io for real-time institutional alerts
