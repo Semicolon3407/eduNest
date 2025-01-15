@@ -19,3 +19,4 @@ feat: build Student Gradebook and academic marks input
 feat: architect System-wide Audit Log for data integrity
 feat: integrate Socket.io for real-time institutional alerts
 feat: add PDF Generation utility for receipts and report cards
+feat: implement interactive Swagger documentation for all APIs
