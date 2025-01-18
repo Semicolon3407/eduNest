@@ -22,3 +22,4 @@ feat: add PDF Generation utility for receipts and report cards
 feat: implement interactive Swagger documentation for all APIs
 fix: resolve Prisma 7 initialization and constructor issues
 chore: optimize port configuration to resolve macOS service conflicts
+docs: finalize professional README and development guide
