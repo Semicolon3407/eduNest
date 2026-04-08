@@ -1,0 +1,376 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  ORG_ADMIN
+  HR
+  ADMIN
+  TUTOR
+  STUDENT
+  PARENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum StaffStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  ON_LEAVE
+}
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  GRADUATED
+  DROPPED_OUT
+  SUSPENDED
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+// 1. Super Admin (System level)
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          Role      @default(STUDENT)
+  avatar        String?
+  phoneNumber   String?
+  isActive      Boolean   @default(true)
+  
+  // Multi-tenancy
+  organizationId String?
+  organization   Organization? @relation(fields: [organizationId], references: [id])
+  
+  // Relations
+  staffProfile   StaffProfile?
+  studentProfile StudentProfile?
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  @@index([email])
+  @@index([organizationId])
+}
+
+// 2. Organization (The School/College)
+model Organization {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  logo        String?
+  address     String?
+  website     String?
+  contactEmail String?
+  contactPhone String?
+  
+  // Settings
+  gradingScale String? // "GPA" or "PERCENTAGE"
+  currency     String   @default("USD")
+  
+  isActive    Boolean  @default(true)
+  
+  // Relations
+  users        User[]
+  branches     Branch[]
+  academicYears AcademicYear[]
+  departments  Department[]
+  grades       Grade[]
+  subjects     Subject[]
+  fees         FeeStructure[]
+  inventory    Inventory[]
+  auditLogs    AuditLog[]
+  
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@index([slug])
+}
+
+model Branch {
+  id             String       @id @default(uuid())
+  name           String
+  address        String?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  @@index([organizationId])
+}
+
+model AcademicYear {
+  id             String       @id @default(uuid())
+  name           String       // e.g., "2025-2026"
+  startDate      DateTime
+  endDate        DateTime
+  isCurrent      Boolean      @default(false)
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  terms          Term[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  
+  @@index([organizationId])
+}
+
+model Term {
+  id             String       @id @default(uuid())
+  name           String       // e.g., "Semester 1"
+  startDate      DateTime
+  endDate        DateTime
+  
+  academicYearId String
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// 3. Profiles
+model StaffProfile {
+  id             String      @id @default(uuid())
+  userId         String      @unique
+  user           User        @relation(fields: [userId], references: [id])
+  
+  staffId        String      @unique // Employee ID
+  designation    String
+  departmentId   String?
+  department     Department? @relation(fields: [departmentId], references: [id])
+  
+  joiningDate    DateTime?
+  status         StaffStatus @default(ACTIVE)
+  
+  // Payroll & HR
+  baseSalary     Decimal?    @db.Decimal(10, 2)
+  leaves         LeaveRequest[]
+  
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+}
+
+model StudentProfile {
+  id             String        @id @default(uuid())
+  userId         String        @unique
+  user           User          @relation(fields: [userId], references: [id])
+  
+  studentId      String        @unique // Enrollment ID
+  admissionDate  DateTime?
+  birthDate      DateTime?
+  gender         Gender?
+  
+  gradeId        String?
+  grade          Grade?        @relation(fields: [gradeId], references: [id])
+  sectionId      String?
+  section        Section?      @relation(fields: [sectionId], references: [id])
+  
+  status         StudentStatus @default(ACTIVE)
+  
+  // Relations
+  attendance     Attendance[]
+  marks          Gradebook[]
+  
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+}
+
+// 4. Academics
+model Department {
+  id             String       @id @default(uuid())
+  name           String
+  description    String?
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  staff          StaffProfile[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Grade {
+  id             String       @id @default(uuid())
+  name           String       // e.g., "Grade 10"
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  sections       Section[]
+  students       StudentProfile[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Section {
+  id             String       @id @default(uuid())
+  name           String       // e.g., "Section A"
+  capacity       Int?
+  
+  gradeId        String
+  grade          Grade        @relation(fields: [gradeId], references: [id])
+  
+  students       StudentProfile[]
+  timetable      Timetable[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Subject {
+  id             String       @id @default(uuid())
+  name           String
+  code           String?
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  marks          Gradebook[]
+  timetable      Timetable[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// 5. Attendance & Grading
+model Attendance {
+  id             String         @id @default(uuid())
+  date           DateTime
+  isPresent      Boolean        @default(true)
+  remark         String?
+  
+  studentId      String
+  student        StudentProfile @relation(fields: [studentId], references: [id])
+  
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model Gradebook {
+  id             String         @id @default(uuid())
+  marksObtained  Float
+  totalMarks     Float
+  comments       String?
+  
+  studentId      String
+  student        StudentProfile @relation(fields: [studentId], references: [id])
+  
+  subjectId      String
+  subject        Subject        @relation(fields: [subjectId], references: [id])
+  
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+// 6. Scheduling
+model Timetable {
+  id             String   @id @default(uuid())
+  dayOfWeek      Int      // 1-7 (Mon-Sun)
+  startTime      String   // "08:00"
+  endTime        String   // "09:00"
+  roomNumber     String?
+  
+  sectionId      String
+  section        Section  @relation(fields: [sectionId], references: [id])
+  
+  subjectId      String
+  subject        Subject  @relation(fields: [subjectId], references: [id])
+  
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// 7. Finance
+model FeeStructure {
+  id             String       @id @default(uuid())
+  name           String       // e.g., "Annual Tuition Fees"
+  amount         Decimal      @db.Decimal(10, 2)
+  dueDate        DateTime?
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  payments       FeePayment[]
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model FeePayment {
+  id             String       @id @default(uuid())
+  amountPaid     Decimal      @db.Decimal(10, 2)
+  paymentDate    DateTime     @default(now())
+  paymentMethod  String?      // Stripe, Razorpay, Cash
+  transactionId  String?
+  
+  feeStructureId String
+  feeStructure   FeeStructure @relation(fields: [feeStructureId], references: [id])
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// 8. HR & Inventory
+model LeaveRequest {
+  id             String       @id @default(uuid())
+  startDate      DateTime
+  endDate        DateTime
+  reason         String?
+  status         LeaveStatus @default(PENDING)
+  
+  staffProfileId String
+  staffProfile   StaffProfile @relation(fields: [staffProfileId], references: [id])
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model Inventory {
+  id             String       @id @default(uuid())
+  name           String
+  quantity       Int          @default(0)
+  category       String?
+  status         String?      // "Available", "Reparing", "Written Off"
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+// 9. Reliability Layer
+model AuditLog {
+  id             String       @id @default(uuid())
+  action         String       // e.g., "CREATE_STUDENT", "UPDATE_FEES"
+  entity         String       // Model name
+  entityId       String?
+  details        Json?
+  performedBy    String?      // User ID
+  
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  
+  createdAt      DateTime     @default(now())
+}
