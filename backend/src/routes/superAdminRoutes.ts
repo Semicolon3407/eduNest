@@ -20,6 +20,24 @@ router.get('/organizations', superAdminController.listOrganizations);
 
 /**
  * @swagger
+ * /api/superadmin/organizations:
+ *   post:
+ *     summary: Create a new organization
+ *     tags: [SuperAdmin]
+ */
+router.post('/organizations', superAdminController.createOrganization);
+
+/**
+ * @swagger
+ * /api/superadmin/organizations/{id}:
+ *   delete:
+ *     summary: Delete an organization
+ *     tags: [SuperAdmin]
+ */
+router.delete('/organizations/:id', superAdminController.deleteOrganization);
+
+/**
+ * @swagger
  * /api/superadmin/organizations/{id}/status:
  *   patch:
  *     summary: Update organization status

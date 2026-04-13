@@ -30,3 +30,38 @@ export const getDashboard = async (req: Request, res: Response) => {
     return sendError(res, error.message);
   }
 };
+
+export const createOrganization = async (req: Request, res: Response) => {
+  try {
+    const { name, slug, adminEmail, adminPassword, adminName } = req.body;
+    
+    if (!name || !adminEmail || !adminPassword || !adminName) {
+      return sendError(res, 'Name, admin email, password and admin name are required', 400);
+    }
+
+    const result = await superAdminService.createOrganization({
+      name,
+      slug,
+      adminEmail,
+      adminPassword,
+      adminName
+    });
+
+    return sendSuccess(res, result, 'Organization created successfully', 201);
+  } catch (error: any) {
+    if (error.code === 'P2002') {
+      return sendError(res, 'Slug or admin email already exists', 400);
+    }
+    return sendError(res, error.message);
+  }
+};
+
+export const deleteOrganization = async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    await superAdminService.deleteOrganization(id as string);
+    return sendSuccess(res, null, 'Organization deleted successfully');
+  } catch (error: any) {
+    return sendError(res, error.message);
+  }
+};
