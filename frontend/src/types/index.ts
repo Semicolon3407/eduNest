@@ -1,4 +1,4 @@
-export type UserRole = 'SUPER_ADMIN' | 'ORGANIZATION' | 'HR' | 'ADMINISTRATOR' | 'TUTOR' | 'STUDENT';
+export type UserRole = 'SUPER_ADMIN' | 'ORG_ADMIN' | 'HR' | 'ADMIN' | 'TUTOR' | 'STUDENT' | 'PARENT';
 
 export interface User {
   id: string;
@@ -7,6 +7,7 @@ export interface User {
   role: UserRole;
   avatar?: string;
   organizationId?: string;
+  organization?: Organization;
   branchId?: string;
 }
 

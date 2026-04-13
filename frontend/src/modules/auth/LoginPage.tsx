@@ -6,14 +6,25 @@ import { useAuth } from '../../hooks/useAuth';
 export function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
   const { login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login
-    login('SUPER_ADMIN'); // Defaulting to super admin for now
-    navigate('/dashboard');
+    setIsLoading(true);
+    setError('');
+    
+    try {
+      await login({ email, password });
+      navigate('/dashboard');
+    } catch (err: any) {
+      setError(err.message || 'Invalid email or password');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -35,6 +46,12 @@ export function LoginPage() {
                 <h2 className="text-xl font-bold text-foreground">Welcome Back</h2>
                 <p className="text-sm text-muted-foreground mt-1">Please enter your credentials to access your account.</p>
             </div>
+
+            {error && (
+              <div className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-bold animate-in fade-in slide-in-from-top-2">
+                {error}
+              </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="space-y-2">
@@ -70,18 +87,12 @@ export function LoginPage() {
                     </div>
                 </div>
 
-                <div className="flex items-center">
-                    <label className="flex items-center gap-3 cursor-pointer group">
-                        <input type="checkbox" className="h-5 w-5 rounded border-2 border-muted bg-background checked:bg-primary-600 transition-all appearance-none cursor-pointer" />
-                        <span className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">Keep me signed in</span>
-                    </label>
-                </div>
-
                 <button 
                     type="submit"
-                    className="w-full flex items-center justify-center gap-3 rounded-2xl bg-primary-600 py-4 text-sm font-bold text-white shadow-lg shadow-primary-600/20 hover:bg-primary-700 active:scale-[0.98] transition-all"
+                    disabled={isLoading}
+                    className="w-full flex items-center justify-center gap-3 rounded-2xl bg-primary-600 py-4 text-sm font-bold text-white shadow-lg shadow-primary-600/20 hover:bg-primary-700 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Sign In <ArrowRight size={18} />
+                    {isLoading ? 'Authenticating...' : 'Sign In'} <ArrowRight size={18} />
                 </button>
             </form>
         </div>

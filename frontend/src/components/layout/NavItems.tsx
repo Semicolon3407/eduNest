@@ -30,12 +30,13 @@ export const NAV_ITEMS: NavItem[] = [
   { title: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={20} />, roles: ['SUPER_ADMIN'] },
   { title: 'Organizations', href: '/organizations', icon: <School size={20} />, roles: ['SUPER_ADMIN'] },
   { title: 'Subscriptions', href: '/subscriptions', icon: <CreditCard size={20} />, roles: ['SUPER_ADMIN'] },
+  { title: 'Global Settings', href: '/global-config', icon: <Settings size={20} />, roles: ['SUPER_ADMIN'] },
   
   // Organization
-  { title: 'Overview', href: '/dashboard', icon: <LayoutDashboard size={20} />, roles: ['ORGANIZATION'] },
-  { title: 'Branches', href: '/branches', icon: <Building2 size={20} />, roles: ['ORGANIZATION'] },
-  { title: 'Academic Year', href: '/academic-setup', icon: <CalendarDays size={20} />, roles: ['ORGANIZATION'] },
-  { title: 'Staff Mgmt', href: '/staff', icon: <Users size={20} />, roles: ['ORGANIZATION'] },
+  { title: 'Overview', href: '/dashboard', icon: <LayoutDashboard size={20} />, roles: ['ORG_ADMIN'] },
+  { title: 'Branches', href: '/branches', icon: <Building2 size={20} />, roles: ['ORG_ADMIN'] },
+  { title: 'Academic Year', href: '/academic-setup', icon: <CalendarDays size={20} />, roles: ['ORG_ADMIN'] },
+  { title: 'Staff Mgmt', href: '/staff', icon: <Users size={20} />, roles: ['ORG_ADMIN'] },
 
   // HR
   { title: 'Payroll', href: '/payroll', icon: <Banknote size={20} />, roles: ['HR'] },
@@ -43,10 +44,10 @@ export const NAV_ITEMS: NavItem[] = [
   { title: 'Recruitment', href: '/recruitment', icon: <Users size={20} />, roles: ['HR'] },
 
   // Administrator
-  { title: 'Admissions', href: '/admissions', icon: <UserCheck size={20} />, roles: ['ADMINISTRATOR'] },
-  { title: 'Class & Sections', href: '/classes', icon: <Boxes size={20} />, roles: ['ADMINISTRATOR'] },
-  { title: 'Fee Management', href: '/fees', icon: <Banknote size={20} />, roles: ['ADMINISTRATOR'] },
-  { title: 'Inventory', href: '/inventory', icon: <Boxes size={20} />, roles: ['ADMINISTRATOR'] },
+  { title: 'Admissions', href: '/admissions', icon: <UserCheck size={20} />, roles: ['ADMIN'] },
+  { title: 'Class & Sections', href: '/classes', icon: <Boxes size={20} />, roles: ['ADMIN'] },
+  { title: 'Fee Management', href: '/fees', icon: <Banknote size={20} />, roles: ['ADMIN'] },
+  { title: 'Inventory', href: '/inventory', icon: <Boxes size={20} />, roles: ['ADMIN'] },
 
   // Tutor
   { title: 'My Classes', href: '/classes', icon: <BookOpen size={20} />, roles: ['TUTOR'] },
@@ -61,5 +62,5 @@ export const NAV_ITEMS: NavItem[] = [
   { title: 'Library', href: '/library', icon: <Library size={20} />, roles: ['STUDENT'] },
 
   // Shared
-  { title: 'Settings', href: '/settings', icon: <Settings size={20} />, roles: ['SUPER_ADMIN', 'ORGANIZATION', 'HR', 'ADMINISTRATOR', 'TUTOR', 'STUDENT'] },
+  { title: 'Settings', href: '/settings', icon: <Settings size={20} />, roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'HR', 'ADMIN', 'TUTOR', 'STUDENT'] },
 ];

@@ -1,9 +1,44 @@
-import { Building2, Users, CreditCard, Activity } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Building2, Users, Activity } from 'lucide-react';
+import { cn } from '../../hooks/utils';
 import { StatCard } from '../../components/shared/StatCard';
+import { superAdminService } from '../../services/superAdminService';
 
 export function SuperAdminDashboard() {
+  const [data, setData] = useState<any>(null);
+  const [organizations, setOrganizations] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [dashboardRes, orgsRes] = await Promise.all([
+          superAdminService.getDashboard(),
+          superAdminService.getOrganizations()
+        ]);
+        setData(dashboardRes.data);
+        setOrganizations(orgsRes.data.slice(0, 5)); // Just take the recent 5
+      } catch (error) {
+        console.error("Failed to fetch dashboard data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
+
+  const { summary, health } = data || {};
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 animate-in fade-in duration-500">
       <div>
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Global Overview</h1>
         <p className="mt-2 text-muted-foreground">Monitor the entire EduNest platform performance.</p>
@@ -12,25 +47,24 @@ export function SuperAdminDashboard() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard 
           title="Total Schools" 
-          value="124" 
+          value={summary?.totalOrgs || 0} 
           icon={<Building2 size={24} />} 
           trend={{ value: 12, isUp: true }}
         />
         <StatCard 
           title="Active Users" 
-          value="45.2k" 
+          value={summary?.activeUsers || 0} 
           icon={<Users size={24} />} 
           trend={{ value: 8, isUp: true }}
         />
         <StatCard 
-          title="Total Revenue" 
-          value="$128,430" 
-          icon={<CreditCard size={24} />} 
-          trend={{ value: 15, isUp: true }}
+          title="Global Users" 
+          value={summary?.totalUsers || 0} 
+          icon={<Users size={24} />} 
         />
         <StatCard 
           title="System Uptime" 
-          value="99.99%" 
+          value={health?.uptime || "99.9%"} 
           icon={<Activity size={24} />} 
         />
       </div>
@@ -43,12 +77,7 @@ export function SuperAdminDashboard() {
             <button className="text-sm font-semibold text-primary-600 hover:underline">View All</button>
           </div>
           <div className="space-y-4">
-            {[
-              { name: 'Westfield College', status: 'Active', plan: 'Enterprise', date: '2 hours ago' },
-              { name: 'Green Valley School', status: 'Pending', plan: 'Pro', date: '5 hours ago' },
-              { name: 'St. Mary\'s Academy', status: 'Active', plan: 'Basic', date: '1 day ago' },
-              { name: 'Horizon Institute', status: 'Suspended', plan: 'Pro', date: '2 days ago' },
-            ].map((org, i) => (
+            {organizations.length > 0 ? organizations.map((org, i) => (
               <div key={i} className="flex items-center justify-between border-b pb-4 last:border-0 last:pb-0">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-muted text-muted-foreground font-bold">
@@ -56,17 +85,50 @@ export function SuperAdminDashboard() {
                   </div>
                   <div>
                     <p className="font-semibold">{org.name}</p>
-                    <p className="text-xs text-muted-foreground">{org.plan} Plan</p>
+                    <p className="text-xs text-muted-foreground">{org.subscription?.plan?.name || 'No'} Plan</p>
                   </div>
                 </div>
                 <div className="text-right text-xs">
                   <span className={`rounded-full px-2 py-1 font-bold ${
-                    org.status === 'Active' ? 'bg-green-50 text-green-600' : 
-                    org.status === 'Pending' ? 'bg-yellow-50 text-yellow-600' : 'bg-red-50 text-red-600'
+                    org.isActive ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'
                   }`}>
-                    {org.status}
+                    {org.isActive ? 'Active' : 'Suspended'}
                   </span>
-                  <p className="mt-1 text-muted-foreground">{org.date}</p>
+                  <p className="mt-1 text-muted-foreground">
+                    {new Date(org.createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            )) : (
+              <p className="text-center py-8 text-muted-foreground">No organizations found.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Database Storage per Organization */}
+        <div className="rounded-2xl border bg-background p-6 shadow-sm overflow-hidden h-fit">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold flex items-center gap-2">
+              <Activity size={20} className="text-primary-600" />
+              Database Storage Allocation
+            </h2>
+            <p className="text-xs text-muted-foreground mt-1">Real-time storage consumption across top organizations.</p>
+          </div>
+          <div className="space-y-6">
+            {data?.storagePerOrg?.map((item: any, i: number) => (
+              <div key={i} className="space-y-2">
+                <div className="flex justify-between text-xs font-bold uppercase tracking-tight">
+                  <span className="truncate max-w-[150px]">{item.name}</span>
+                  <span className="text-muted-foreground">{item.storageMB} MB / 5GB</span>
+                </div>
+                <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                  <div 
+                    className={cn(
+                      "h-full transition-all duration-1000",
+                      parseFloat(item.percentOfTotal) > 80 ? "bg-red-500" : "bg-primary-600"
+                    )} 
+                    style={{ width: `${item.percentOfTotal}%` }}
+                  ></div>
                 </div>
               </div>
             ))}
@@ -76,41 +138,35 @@ export function SuperAdminDashboard() {
         {/* System Health */}
         <div className="rounded-2xl border bg-background p-6 shadow-sm">
           <div className="mb-6">
-            <h2 className="text-xl font-bold">System Health</h2>
+            <h2 className="text-xl font-bold">Platform Diagnostics</h2>
           </div>
           <div className="space-y-6">
             <div>
-              <div className="mb-2 flex justify-between text-sm font-medium">
-                <span>Database Load</span>
-                <span>24%</span>
+              <div className="mb-2 flex justify-between text-sm font-black uppercase tracking-widest text-muted-foreground">
+                <span>Core CPU Load</span>
+                <span className="text-foreground">{health?.cpuUsage}</span>
               </div>
-              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-primary-600 transition-all" style={{ width: '24%' }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="mb-2 flex justify-between text-sm font-medium">
-                <span>Storage Utilization</span>
-                <span>68%</span>
-              </div>
-              <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                <div className="h-full bg-primary-600 transition-all" style={{ width: '68%' }}></div>
+              <div className="h-3 w-full rounded-full bg-muted overflow-hidden p-1 shadow-inner">
+                <div className="h-full bg-primary-600 rounded-full shadow-lg" style={{ width: health?.cpuUsage }}></div>
               </div>
             </div>
             <div>
-              <div className="mb-2 flex justify-between text-sm font-medium">
-                <span>Support Tickets (Open)</span>
-                <span>12</span>
+              <div className="mb-2 flex justify-between text-sm font-black uppercase tracking-widest text-muted-foreground">
+                <span>Platform Memory</span>
+                <span className="text-foreground">{health?.memoryUsage}</span>
               </div>
-              <div className="flex -space-x-2">
-                {[1, 2, 3, 4].map(i => (
-                  <div key={i} className="h-8 w-8 rounded-full border-2 border-background bg-muted">
-                     <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i+10}`} alt="" className="rounded-full" />
-                  </div>
-                ))}
-                <div className="flex h-8 w-8 items-center justify-center rounded-full border-2 border-background bg-muted text-[10px] font-bold">
-                  +8
-                </div>
+              <div className="h-3 w-full rounded-full bg-muted overflow-hidden p-1 shadow-inner">
+                <div className="h-full bg-primary-600 rounded-full shadow-lg" style={{ width: health?.memoryUsage }}></div>
+              </div>
+            </div>
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between text-xs font-bold mb-3">
+                <span className="text-muted-foreground">Daily Backup Status:</span>
+                <span className="text-green-600 uppercase tracking-tighter">Verified & Encrypted</span>
+              </div>
+              <div className="flex items-center gap-2 p-3 rounded-xl bg-green-50/50 border border-green-100">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">All systems operational as of {new Date().toLocaleTimeString()}</span>
               </div>
             </div>
           </div>

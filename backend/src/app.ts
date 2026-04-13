@@ -14,6 +14,7 @@ import hrRoutes from './routes/hrRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import tutorRoutes from './routes/tutorRoutes.js';
 import superAdminRoutes from './routes/superAdminRoutes.js';
+import organizationRoutes from './routes/organizationRoutes.js';
 
 dotenv.config();
 
@@ -22,7 +23,7 @@ const app: Application = express();
 // Middleware
 app.use(helmet());
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: [process.env.CLIENT_URL || 'http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
 }));
 app.use(morgan('dev'));
@@ -41,6 +42,7 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs));
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/superadmin', superAdminRoutes);
+app.use('/api/organization', organizationRoutes);
 app.use('/api/hr', hrRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/tutor', tutorRoutes);

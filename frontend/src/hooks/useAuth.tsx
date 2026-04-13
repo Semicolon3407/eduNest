@@ -1,48 +1,54 @@
-import { useState, createContext, useContext } from 'react';
+import { useState, createContext, useContext, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import type { User, UserRole } from '../types';
+import type { User } from '../types';
+import { authService } from '../services/authService';
 
 interface AuthContextType {
   user: User | null;
-  setRole: (role: UserRole) => void;
-  login: (role: UserRole) => void;
-  logout: () => void;
+  loading: boolean;
+  login: (credentials: any) => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock users for different roles
-const MOCK_USERS: Record<UserRole, User> = {
-  SUPER_ADMIN: { id: '1', name: 'Super Admin', email: 'super@edunest.com', role: 'SUPER_ADMIN' },
-  ORGANIZATION: { id: '2', name: 'Westfield College', email: 'admin@westfield.edu', role: 'ORGANIZATION', organizationId: 'org1' },
-  HR: { id: '3', name: 'Sarah Wilson', email: 'hr@westfield.edu', role: 'HR', organizationId: 'org1' },
-  ADMINISTRATOR: { id: '4', name: 'John Doe', email: 'office@westfield.edu', role: 'ADMINISTRATOR', organizationId: 'org1' },
-  TUTOR: { id: '5', name: 'Prof. Miller', email: 'miller@westfield.edu', role: 'TUTOR', organizationId: 'org1' },
-  STUDENT: { id: '6', name: 'Alex Smith', email: 'alex@student.com', role: 'STUDENT', organizationId: 'org1' },
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(() => {
-    const savedRole = localStorage.getItem('mock_role');
-    return savedRole ? MOCK_USERS[savedRole as UserRole] : null;
-  });
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = (role: UserRole) => {
-    setUser(MOCK_USERS[role]);
-    localStorage.setItem('mock_role', role);
+  useEffect(() => {
+    const initAuth = async () => {
+      try {
+        const response = await authService.getMe();
+        setUser(response.data.user);
+      } catch (error) {
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    initAuth();
+  }, []);
+
+  const login = async (credentials: any) => {
+    try {
+      const response = await authService.login(credentials);
+      setUser(response.data.user);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.message || 'Login failed');
+    }
   };
 
-  const setRole = (role: UserRole) => {
-    login(role);
-  };
-
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('mock_role');
+  const logout = async () => {
+    try {
+      await authService.logout();
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, setRole, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

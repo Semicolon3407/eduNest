@@ -5,6 +5,7 @@ import { SuperAdminDashboard } from './modules/super-admin/Dashboard';
 import { OrganizationManagement } from './modules/super-admin/OrganizationManagement';
 import { Subscriptions } from './modules/super-admin/Subscriptions';
 import { SupportTicketing } from './modules/super-admin/SupportTicketing';
+import { GlobalSettings as SuperAdminSettings } from './modules/super-admin/GlobalSettings';
 
 import { LoginPage } from './modules/auth/LoginPage';
 import { ForgotPasswordPage } from './modules/auth/ForgotPasswordPage';
@@ -56,15 +57,22 @@ const PlaceholderPage = ({ title }: { title: string }) => (
 );
 
 function AppRoutes() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      </div>
+    );
+  }
 
   const DashboardComponent = () => {
     switch(user.role) {
       case 'SUPER_ADMIN': return <SuperAdminDashboard />;
-      case 'ORGANIZATION': return <OrganizationDashboard />;
+      case 'ORG_ADMIN': return <OrganizationDashboard />;
       case 'HR': return <HRDashboard />;
-      case 'ADMINISTRATOR': return <AdminDashboard />;
+      case 'ADMIN': return <AdminDashboard />;
       case 'TUTOR': return <TutorDashboard />;
       case 'STUDENT': return <StudentDashboard />;
       default: return <SuperAdminDashboard />;
@@ -79,7 +87,7 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/login" element={<LoginPage />} />
+      <Route path="/login" element={user ? <Navigate to="/dashboard" replace /> : <LoginPage />} />
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       
       <Route path="/" element={user ? <Navigate to="/dashboard" /> : <Navigate to="/login" />} />
@@ -91,6 +99,7 @@ function AppRoutes() {
         <Route path="/organizations" element={<OrganizationManagement />} />
         <Route path="/subscriptions" element={<Subscriptions />} />
         <Route path="/support" element={<SupportTicketing />} />
+        <Route path="/global-config" element={<SuperAdminSettings />} />
 
         {/* Organization Admin Routes */}
         <Route path="/branches" element={<BranchManagement />} />
