@@ -1,121 +1,122 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import DashboardLayout from './layouts/DashboardLayout';
+import SuperAdminDashboard from './pages/super-admin/Dashboard';
+import Organizations from './pages/super-admin/Organizations';
+import Billing from './pages/super-admin/Billing';
+import Support from './pages/super-admin/Support';
+import SuperAdminSettings from './pages/super-admin/Settings';
+import StudentDashboard from './pages/student/Dashboard';
+import MyCourses from './pages/student/Courses';
+import Exams from './pages/student/Exams';
+import LibraryPortal from './pages/student/Library';
+import AdminDashboard from './pages/admin/Dashboard';
+import Admissions from './pages/admin/Admissions';
+import Fees from './pages/admin/Fees';
+import Classes from './pages/admin/Classes';
+import Timetable from './pages/admin/Timetable';
+import Inventory from './pages/admin/Inventory';
+import OrganizationDashboard from './pages/organization/Dashboard';
+import Branches from './pages/organization/Branches';
+import AcademicSetup from './pages/organization/Academic';
+import StaffOnboarding from './pages/organization/Staff';
+import OrgSettings from './pages/organization/Settings';
+import TutorDashboard from './pages/tutor/Dashboard';
+import Classroom from './pages/tutor/Classroom';
+import Attendance from './pages/tutor/Attendance';
+import Grades from './pages/tutor/Grades';
+import Messages from './pages/tutor/Messages';
+import BehavioralTracking from './pages/tutor/Behavior';
+import HRDashboard from './pages/hr/Dashboard';
+import StaffManagement from './pages/hr/Staff';
+import Payroll from './pages/hr/Payroll';
+import HRAttendance from './pages/hr/Attendance';
+import Recruitment from './pages/hr/Recruitment';
+import DocumentManagement from './pages/hr/Documents';
+import Login from './pages/Login';
+
+const ComingSoon: React.FC<{ title: string }> = ({ title }) => (
+  <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-4 font-sans">
+    <div className="w-20 h-20 bg-brand-50 rounded-2xl flex items-center justify-center text-brand-500 mb-4 animate-bounce">
+      <h1 className="text-3xl sm:text-4xl font-medium">🚀</h1>
+    </div>
+    <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900   leading-none">{title}</h1>
+    <p className="text-gray-500 max-w-md font-medium   text-[10px] mt-4">Module coming soon to the EduNest ecosystem</p>
+  </div>
+);
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold underline">Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <Router>
+      <Routes>
+        <Route path="/login" element={<Login />} />
 
-      <div className="ticks"></div>
+        {/* Super Admin Routes */}
+        <Route path="/super-admin" element={<DashboardLayout role="SUPER_ADMIN" />}>
+          <Route index element={<SuperAdminDashboard />} />
+          <Route path="organizations" element={<Organizations />} />
+          <Route path="billing" element={<Billing />} />
+          <Route path="support" element={<Support />} />
+          <Route path="settings" element={<SuperAdminSettings />} />
+        </Route>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {/* Organization Admin Routes */}
+        <Route path="/organization" element={<DashboardLayout role="ORGANIZATION" />}>
+          <Route index element={<OrganizationDashboard />} />
+          <Route path="branches" element={<Branches />} />
+          <Route path="academic" element={<AcademicSetup />} />
+          <Route path="staff" element={<StaffOnboarding />} />
+          <Route path="settings" element={<OrgSettings />} />
+        </Route>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+        {/* HR Routes */}
+        <Route path="/hr" element={<DashboardLayout role="HR" />}>
+          <Route index element={<HRDashboard />} />
+          <Route path="payroll" element={<Payroll />} />
+          <Route path="staff" element={<StaffManagement />} />
+          <Route path="attendance" element={<HRAttendance />} />
+          <Route path="recruitment" element={<Recruitment />} />
+          <Route path="documents" element={<DocumentManagement />} />
+          <Route path="settings" element={<ComingSoon title="HR Profile" />} />
+        </Route>
+
+        {/* Admin Routes */}
+        <Route path="/admin" element={<DashboardLayout role="ADMIN" />}>
+          <Route index element={<AdminDashboard />} />
+          <Route path="admissions" element={<Admissions />} />
+          <Route path="fees" element={<Fees />} />
+          <Route path="classes" element={<Classes />} />
+          <Route path="timetable" element={<Timetable />} />
+          <Route path="inventory" element={<Inventory />} />
+          <Route path="settings" element={<ComingSoon title="Admin Control" />} />
+        </Route>
+
+        {/* Tutor Routes */}
+        <Route path="/tutor" element={<DashboardLayout role="TUTOR" />}>
+          <Route index element={<TutorDashboard />} />
+          <Route path="classroom" element={<Classroom />} />
+          <Route path="attendance" element={<Attendance />} />
+          <Route path="grades" element={<Grades />} />
+          <Route path="behavior" element={<BehavioralTracking />} />
+          <Route path="messages" element={<Messages />} />
+          <Route path="settings" element={<ComingSoon title="Tutor Profile" />} />
+        </Route>
+
+        {/* Student Routes */}
+        <Route path="/student" element={<DashboardLayout role="STUDENT" />}>
+          <Route index element={<StudentDashboard />} />
+          <Route path="courses" element={<MyCourses />} />
+          <Route path="exams" element={<Exams />} />
+          <Route path="library" element={<LibraryPortal />} />
+          <Route path="fees" element={<ComingSoon title="My Financials" />} />
+          <Route path="settings" element={<ComingSoon title="Account Preferences" />} />
+        </Route>
+
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </Router>
+  );
 }
 
-export default App
+export default App;

@@ -1,0 +1,73 @@
+import { 
+  LayoutDashboard, 
+  School, 
+  Users, 
+  Settings, 
+  CreditCard, 
+  LifeBuoy, 
+  GitBranch, 
+  Calendar, 
+  Briefcase, 
+  UserRound, 
+  GraduationCap, 
+  BookOpen, 
+  ClipboardList, 
+  FileText, 
+  Package,
+  MessageSquare,
+  Trophy,
+  Library
+} from 'lucide-react';
+
+export type UserRole = 'SUPER_ADMIN' | 'ORGANIZATION' | 'HR' | 'ADMIN' | 'TUTOR' | 'STUDENT';
+
+export interface NavItem {
+  title: string;
+  href: string;
+  icon: any;
+  roles: UserRole[];
+}
+
+export const navItems: NavItem[] = [
+  // Super Admin Items
+  { title: 'Dashboard', href: '/super-admin', icon: LayoutDashboard, roles: ['SUPER_ADMIN'] },
+  { title: 'Organizations', href: '/super-admin/organizations', icon: School, roles: ['SUPER_ADMIN'] },
+  { title: 'Subscriptions', href: '/super-admin/billing', icon: CreditCard, roles: ['SUPER_ADMIN'] },
+  { title: 'Support Tickets', href: '/super-admin/support', icon: LifeBuoy, roles: ['SUPER_ADMIN'] },
+  { title: 'System Settings', href: '/super-admin/settings', icon: Settings, roles: ['SUPER_ADMIN'] },
+
+  // Organization Items
+  { title: 'Dashboard', href: '/organization', icon: LayoutDashboard, roles: ['ORGANIZATION'] },
+  { title: 'Branch Management', href: '/organization/branches', icon: GitBranch, roles: ['ORGANIZATION'] },
+  { title: 'Academic Setup', href: '/organization/academic', icon: Calendar, roles: ['ORGANIZATION'] },
+  { title: 'Staff Onboarding', href: '/organization/staff', icon: UserRound, roles: ['ORGANIZATION'] },
+  { title: 'School Settings', href: '/organization/settings', icon: Settings, roles: ['ORGANIZATION'] },
+
+  // HR Items
+  { title: 'Dashboard', href: '/hr', icon: LayoutDashboard, roles: ['HR'] },
+  { title: 'Payroll', href: '/hr/payroll', icon: CreditCard, roles: ['HR'] },
+  { title: 'Attendance', href: '/hr/attendance', icon: ClipboardList, roles: ['HR'] },
+  { title: 'Document Center', href: '/hr/documents', icon: FileText, roles: ['HR'] },
+  { title: 'Recruitment', href: '/hr/recruitment', icon: Briefcase, roles: ['HR'] },
+
+  // Admin Items
+  { title: 'Dashboard', href: '/admin', icon: LayoutDashboard, roles: ['ADMIN'] },
+  { title: 'Admissions', href: '/admin/admissions', icon: UserRound, roles: ['ADMIN'] },
+  { title: 'Class & Sections', href: '/admin/classes', icon: BookOpen, roles: ['ADMIN'] },
+  { title: 'Fee Management', href: '/admin/fees', icon: CreditCard, roles: ['ADMIN'] },
+  { title: 'Inventory', href: '/admin/inventory', icon: Package, roles: ['ADMIN'] },
+
+  // Tutor Items
+  { title: 'Dashboard', href: '/tutor', icon: LayoutDashboard, roles: ['TUTOR'] },
+  { title: 'Classroom', href: '/tutor/classroom', icon: BookOpen, roles: ['TUTOR'] },
+  { title: 'Mark Attendance', href: '/tutor/attendance', icon: ClipboardList, roles: ['TUTOR'] },
+  { title: 'Gradebook', href: '/tutor/grades', icon: Trophy, roles: ['TUTOR'] },
+  { title: 'Messages', href: '/tutor/messages', icon: MessageSquare, roles: ['TUTOR'] },
+
+  // Student Items
+  { title: 'Dashboard', href: '/student', icon: LayoutDashboard, roles: ['STUDENT'] },
+  { title: 'My Courses', href: '/student/courses', icon: BookOpen, roles: ['STUDENT'] },
+  { title: 'Exams & Reports', href: '/student/exams', icon: FileText, roles: ['STUDENT'] },
+  { title: 'Fees Status', href: '/student/fees', icon: CreditCard, roles: ['STUDENT'] },
+  { title: 'Library', href: '/student/library', icon: Library, roles: ['STUDENT'] },
+];
