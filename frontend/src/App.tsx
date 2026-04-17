@@ -9,13 +9,13 @@ import SuperAdminSettings from './pages/super-admin/Settings';
 import StudentDashboard from './pages/student/Dashboard';
 import MyCourses from './pages/student/Courses';
 import Exams from './pages/student/Exams';
-import LibraryPortal from './pages/student/Library';
+import StudentTimetable from './pages/student/Timetable';
+import StudentFees from './pages/student/Fees';
 import AdminDashboard from './pages/admin/Dashboard';
 import Admissions from './pages/admin/Admissions';
 import Fees from './pages/admin/Fees';
 import Classes from './pages/admin/Classes';
 import Timetable from './pages/admin/Timetable';
-import Inventory from './pages/admin/Inventory';
 import OrganizationDashboard from './pages/organization/Dashboard';
 import Branches from './pages/organization/Branches';
 import AcademicSetup from './pages/organization/Academic';
@@ -25,6 +25,7 @@ import TutorDashboard from './pages/tutor/Dashboard';
 import Classroom from './pages/tutor/Classroom';
 import Attendance from './pages/tutor/Attendance';
 import Grades from './pages/tutor/Grades';
+import TutorTimetable from './pages/tutor/Timetable';
 import Messages from './pages/tutor/Messages';
 import BehavioralTracking from './pages/tutor/Behavior';
 import HRDashboard from './pages/hr/Dashboard';
@@ -87,7 +88,6 @@ function App() {
           <Route path="fees" element={<Fees />} />
           <Route path="classes" element={<Classes />} />
           <Route path="timetable" element={<Timetable />} />
-          <Route path="inventory" element={<Inventory />} />
           <Route path="settings" element={<ComingSoon title="Admin Control" />} />
         </Route>
 
@@ -98,6 +98,7 @@ function App() {
           <Route path="attendance" element={<Attendance />} />
           <Route path="grades" element={<Grades />} />
           <Route path="behavior" element={<BehavioralTracking />} />
+          <Route path="timetable" element={<TutorTimetable />} />
           <Route path="messages" element={<Messages />} />
           <Route path="settings" element={<ComingSoon title="Tutor Profile" />} />
         </Route>
@@ -106,9 +107,10 @@ function App() {
         <Route path="/student" element={<DashboardLayout role="STUDENT" />}>
           <Route index element={<StudentDashboard />} />
           <Route path="courses" element={<MyCourses />} />
+          <Route path="timetable" element={<StudentTimetable />} />
           <Route path="exams" element={<Exams />} />
-          <Route path="library" element={<LibraryPortal />} />
-          <Route path="fees" element={<ComingSoon title="My Financials" />} />
+          <Route path="fees" element={<StudentFees />} />
+          <Route path="messages" element={<Messages />} />
           <Route path="settings" element={<ComingSoon title="Account Preferences" />} />
         </Route>
 

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../../components/ui/Button';
-import { Filter, Save, Users, CheckCircle, XCircle } from 'lucide-react';
+import Modal from '../../components/ui/Modal';
+import Input from '../../components/ui/Input';
+import { Filter, Save, Users, CheckCircle, XCircle, FileText, Plus, User } from 'lucide-react';
 
 const students = [
   { id: 1, name: 'Ava Thompson', roll: 'D2401', status: 'Present' },
@@ -11,16 +13,23 @@ const students = [
 ];
 
 const Attendance: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500 font-sans">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Digital Register</h1>
-          <p className="text-gray-500 mt-1">Mark daily attendance and track behavioral engagement</p>
+          <p className="text-gray-500 mt-1 font-medium">Mark daily attendance and track behavioral engagement</p>
         </div>
-        <div className="flex gap-2 text-sm font-medium  ">
-           <span className="flex items-center gap-2 bg-success/10 text-success px-4 py-2 rounded-xl border border-success/20">Present: 156</span>
-           <span className="flex items-center gap-2 bg-danger/10 text-danger px-4 py-2 rounded-xl border border-danger/20">Absent: 4</span>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+           <div className="flex gap-2 text-sm font-medium  ">
+              <span className="flex items-center gap-2 bg-success/10 text-success px-4 py-2 rounded-xl border border-success/20">Present: 156</span>
+              <span className="flex items-center gap-2 bg-danger/10 text-danger px-4 py-2 rounded-xl border border-danger/20">Absent: 4</span>
+           </div>
+           <Button onClick={() => setIsModalOpen(true)} className="rounded-xl h-12 shadow-premium bg-brand-500 text-white hover:bg-brand-600">
+              <Plus size={18} /> Quick Note
+           </Button>
         </div>
       </div>
 
@@ -70,7 +79,7 @@ const Attendance: React.FC = () => {
                        </button>
                     </div>
                   </td>
-                  <td className="px-6 py-5 text-right font-medium   text-xs text-gray-400 hover:text-brand-600 underline">Add Behavior Note</td>
+                  <td className="px-6 py-5 text-right font-medium text-xs text-gray-400 hover:text-brand-600 underline" onClick={() => setIsModalOpen(true)}>Add Behavior Note</td>
                 </tr>
               ))}
             </tbody>
@@ -84,6 +93,36 @@ const Attendance: React.FC = () => {
            </Button>
         </div>
       </div>
+
+      <Modal
+         isOpen={isModalOpen}
+         onClose={() => setIsModalOpen(false)}
+         title="Behavioral Note"
+         description="Log a quick behavioral observation during class session."
+         maxWidth="xl"
+      >
+         <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+            <div className="space-y-6">
+               <Input label="Student Selection" placeholder="Type student name..." icon={User} required />
+               <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Engagement Level</label>
+                  <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
+                    <option>High (Actively Participating)</option>
+                    <option>Moderate (Listening/Ready)</option>
+                    <option>Low (Distracted/Unresponsive)</option>
+                    <option>Commendable Action</option>
+                    <option>Minor Disruption</option>
+                  </select>
+               </div>
+               <Input label="Observation Note" placeholder="Quick comment (e.g. Led group discussion...)" icon={FileText} required />
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+               <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6">Discard</Button>
+               <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white hover:bg-brand-600">Save Note</Button>
+            </div>
+         </form>
+      </Modal>
     </div>
   );
 };

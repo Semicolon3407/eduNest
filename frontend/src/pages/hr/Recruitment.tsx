@@ -101,6 +101,15 @@ const Recruitment: React.FC = () => {
               <Input label="LinkedIn / Portfolio URL" placeholder="https://linkedin.com/in/..." icon={FileText} />
             </div>
             <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Target Branch</label>
+                <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
+                  <option value="">Select Branch</option>
+                  <option value="main">Main Campus</option>
+                  <option value="north">North Branch</option>
+                  <option value="west">West Side Academy</option>
+                </select>
+            </div>
+            <div className="space-y-2">
                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Candidate Source</label>
                 <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
                   <option>LinkedIn</option>
@@ -109,7 +118,7 @@ const Recruitment: React.FC = () => {
                   <option>Agency</option>
                 </select>
             </div>
-            <div className="space-y-2">
+            <div className="md:col-span-2 space-y-2">
                 <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Initial Screening Score</label>
                 <div className="flex items-center gap-3">
                    <div className="flex-1 bg-slate-50 rounded-xl h-12 flex items-center px-4 border border-slate-200 font-sans font-bold">8.5 / 10</div>

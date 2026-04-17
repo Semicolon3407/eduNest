@@ -1,7 +1,6 @@
 import { 
   LayoutDashboard, 
   School, 
-  Users, 
   Settings, 
   CreditCard, 
   LifeBuoy, 
@@ -9,14 +8,11 @@ import {
   Calendar, 
   Briefcase, 
   UserRound, 
-  GraduationCap, 
   BookOpen, 
   ClipboardList, 
   FileText, 
-  Package,
   MessageSquare,
-  Trophy,
-  Library
+  Trophy
 } from 'lucide-react';
 
 export type UserRole = 'SUPER_ADMIN' | 'ORGANIZATION' | 'HR' | 'ADMIN' | 'TUTOR' | 'STUDENT';
@@ -55,19 +51,20 @@ export const navItems: NavItem[] = [
   { title: 'Admissions', href: '/admin/admissions', icon: UserRound, roles: ['ADMIN'] },
   { title: 'Class & Sections', href: '/admin/classes', icon: BookOpen, roles: ['ADMIN'] },
   { title: 'Fee Management', href: '/admin/fees', icon: CreditCard, roles: ['ADMIN'] },
-  { title: 'Inventory', href: '/admin/inventory', icon: Package, roles: ['ADMIN'] },
 
   // Tutor Items
   { title: 'Dashboard', href: '/tutor', icon: LayoutDashboard, roles: ['TUTOR'] },
   { title: 'Classroom', href: '/tutor/classroom', icon: BookOpen, roles: ['TUTOR'] },
   { title: 'Mark Attendance', href: '/tutor/attendance', icon: ClipboardList, roles: ['TUTOR'] },
   { title: 'Gradebook', href: '/tutor/grades', icon: Trophy, roles: ['TUTOR'] },
+  { title: 'Timetable', href: '/tutor/timetable', icon: Calendar, roles: ['TUTOR'] },
   { title: 'Messages', href: '/tutor/messages', icon: MessageSquare, roles: ['TUTOR'] },
 
   // Student Items
   { title: 'Dashboard', href: '/student', icon: LayoutDashboard, roles: ['STUDENT'] },
   { title: 'My Courses', href: '/student/courses', icon: BookOpen, roles: ['STUDENT'] },
-  { title: 'Exams & Reports', href: '/student/exams', icon: FileText, roles: ['STUDENT'] },
+  { title: 'Class Timetable', href: '/student/timetable', icon: Calendar, roles: ['STUDENT'] },
+  { title: 'Exam Routine', href: '/student/exams', icon: FileText, roles: ['STUDENT'] },
   { title: 'Fees Status', href: '/student/fees', icon: CreditCard, roles: ['STUDENT'] },
-  { title: 'Library', href: '/student/library', icon: Library, roles: ['STUDENT'] },
+  { title: 'Messages', href: '/student/messages', icon: MessageSquare, roles: ['STUDENT'] },
 ];

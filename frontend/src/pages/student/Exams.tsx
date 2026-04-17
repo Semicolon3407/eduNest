@@ -31,8 +31,8 @@ const Exams: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:p-8">
          {/* Exam Schedule */}
          <div className="bg-surface p-4 sm:p-8 rounded-[40px] shadow-soft border border-surface-200">
-            <h2 className="text-2xl font-medium text-gray-900 mb-8   flex items-center gap-3">
-               <Calendar className="text-brand-500" /> Upcoming Exams
+            <h2 className="text-2xl font-medium text-gray-900 mb-8   flex items-center gap-3 font-display leading-none">
+               <Calendar className="text-brand-500" /> Exam Routine
             </h2>
             <div className="space-y-4">
                {examSchedule.map(exam => (

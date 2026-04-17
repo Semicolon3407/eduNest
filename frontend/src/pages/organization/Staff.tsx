@@ -178,23 +178,29 @@ const StaffOnboarding: React.FC = () => {
               <Input label="Employee ID" icon={Hash} placeholder="EMP-001" required />
            </div>
 
-           <div className="grid grid-cols-1 gap-4">
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input label="Department" icon={Briefcase} placeholder="e.g. Science" required />
+              
+              <div className="space-y-1.5 focus-within:z-10 group">
+                <label className="text-xs font-medium text-gray-400 px-1">Branch</label>
+                <select className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10 appearance-none cursor-pointer">
+                  <option value="">Select Branch</option>
+                  <option value="main">Main Campus</option>
+                  <option value="north">North Branch</option>
+                  <option value="west">West Side</option>
+                </select>
+              </div>
            </div>
            
-           <div className="space-y-2">
+           <div className="space-y-1.5 focus-within:z-10 group">
               <label className="text-xs font-medium text-gray-400 px-1">Role</label>
-              <div className="grid grid-cols-2 gap-3">
-                 {['HR Manager', 'Administrator', 'Tutor', 'Registrar'].map(role => (
-                   <label key={role} className="cursor-pointer">
-                     <input type="radio" name="role" value={role} className="peer hidden" defaultChecked={role === 'Tutor'} />
-                     <div className="p-4 rounded-2xl border border-surface-200 text-sm font-medium text-gray-600 peer-checked:border-brand-500 peer-checked:bg-brand-50 hover:border-brand-500 hover:bg-brand-50 transition-all text-left flex items-center justify-between group">
-                       {role}
-                       <div className="w-2 h-2 rounded-full border-2 border-surface-200 peer-checked:border-brand-500 peer-checked:bg-brand-500 group-hover:border-brand-500 transition-all"></div>
-                     </div>
-                   </label>
-                 ))}
-              </div>
+              <select className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10 appearance-none cursor-pointer">
+                <option value="">Select Role</option>
+                <option value="hr">HR Manager</option>
+                <option value="admin">Administrator</option>
+                <option value="tutor">Tutor</option>
+                <option value="registrar">Registrar</option>
+              </select>
            </div>
 
            <div className="p-5 bg-brand-50 rounded-2xl border border-brand-100 flex items-start gap-4">

@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
+import Modal from '../../components/ui/Modal';
+import Input from '../../components/ui/Input';
 import { Plus, FileText, Video, Link, MessageSquare, Download, Trash2, Edit2 } from 'lucide-react';
 
 const materials = [
@@ -10,8 +12,63 @@ const materials = [
 ];
 
 const Classroom: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      <Modal
+         isOpen={isModalOpen}
+         onClose={() => setIsModalOpen(false)}
+         title="Broadcast Learning Asset"
+         description="Upload curriculum materials, lecture videos or external resources for your students."
+         maxWidth="2xl"
+      >
+         <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div className="md:col-span-2">
+                  <Input label="Resource Title" placeholder="e.g. Advanced Calculus - Week 4 Study Guide" icon={FileText} required />
+               </div>
+               <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Target Class</label>
+                  <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
+                    <option>Grade 12-A</option>
+                    <option>Grade 11-B</option>
+                    <option>Grade 10-C</option>
+                    <option>All My Classes</option>
+                  </select>
+               </div>
+               <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Category / Format</label>
+                  <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
+                    <option>PDF / Document</option>
+                    <option>Video Lecture</option>
+                    <option>Interactive Lab</option>
+                    <option>External Quiz Link</option>
+                  </select>
+               </div>
+               <div className="md:col-span-2">
+                  <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 bg-slate-50/50 hover:bg-white hover:border-brand-500 transition-all cursor-pointer group">
+                     <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-brand-500 group-hover:border-brand-100">
+                        <Plus size={24} />
+                     </div>
+                     <div className="text-center">
+                        <p className="text-sm font-bold text-gray-900 leading-none">Click to upload file</p>
+                        <p className="text-[10px] font-medium text-slate-400 mt-2">Maximum file size: 250MB (PDF, MP4, ZIP)</p>
+                     </div>
+                  </div>
+               </div>
+               <div className="md:col-span-2">
+                  <Input label="External Link (Optional)" placeholder="https://youtube.com/..." icon={Link} />
+               </div>
+            </div>
+
+            <div className="flex justify-end gap-3 pt-4">
+               <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6">Discard</Button>
+               <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white hover:bg-brand-600">Publish to Classroom</Button>
+            </div>
+         </form>
+      </Modal>
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Virtual Classroom</h1>
@@ -19,7 +76,7 @@ const Classroom: React.FC = () => {
         </div>
         <div className="flex gap-2">
            <Button variant="outline"><MessageSquare size={18} /> Announcements</Button>
-           <Button><Plus size={18} /> Upload Material</Button>
+           <Button onClick={() => setIsModalOpen(true)}><Plus size={18} /> Upload Material</Button>
         </div>
       </div>
 

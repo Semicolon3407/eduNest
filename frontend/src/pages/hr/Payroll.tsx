@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import { CreditCard, FileText, Download, Send } from 'lucide-react';
+import Modal from '../../components/ui/Modal';
+import Input from '../../components/ui/Input';
+import { CreditCard, FileText, Download, Send, Plus, User, DollarSign, Briefcase } from 'lucide-react';
 
 const staffPayroll = [
   { name: 'Robert Fox', role: 'Teacher', base: '$4,200', bonus: '$200', tax: '$420', net: '$3,980' },
@@ -10,16 +12,19 @@ const staffPayroll = [
 ];
 
 const Payroll: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 animate-in fade-in duration-500 font-sans">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Payroll Engine</h1>
-          <p className="text-gray-500 mt-1">Process salaries, handle statutory deductions and generate payslips</p>
+          <p className="text-gray-500 mt-1 font-medium">Process salaries, handle statutory deductions and generate payslips</p>
         </div>
-        <div className="flex gap-2">
-           <Button variant="outline"><FileText size={18} /> Tax Reports</Button>
-           <Button><CreditCard size={18} /> Disburse Salaries</Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+           <Button variant="outline" className="rounded-xl h-11 flex-1 sm:flex-none"><FileText size={18} /> Tax Reports</Button>
+           <Button onClick={() => setIsModalOpen(true)} className="rounded-xl h-11 bg-brand-500 text-white hover:bg-brand-600 shadow-premium flex-1 sm:flex-none whitespace-nowrap"><Plus size={18} /> Add Adjustment</Button>
+           <Button className="rounded-xl h-11 bg-brand-500 text-white hover:bg-brand-600 shadow-premium flex-1 sm:flex-none whitespace-nowrap"><CreditCard size={18} /> Disburse Salaries</Button>
         </div>
       </div>
 
@@ -79,6 +84,47 @@ const Payroll: React.FC = () => {
           </table></div>
         </div>
       </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Payroll Adjustment"
+        description="Add a bonus, deduction, or salary modification for an employee."
+        maxWidth="2xl"
+      >
+        <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <Input label="Staff Member" placeholder="Search staff..." icon={User} required />
+            </div>
+            <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Adjustment Type</label>
+                <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
+                  <option>Bonus / Incentive</option>
+                  <option>Tax Deduction</option>
+                  <option>Unpaid Leave Deduction</option>
+                  <option>Overtime Pay</option>
+                  <option>Arrears</option>
+                </select>
+            </div>
+            <Input label="Amount ($)" placeholder="0.00" icon={DollarSign} required type="number" />
+            <div className="md:col-span-2">
+              <Input label="Reason / Remarks" placeholder="e.g. Performance bonus for Q3" icon={Briefcase} required />
+            </div>
+            <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Effective Layout Period</label>
+                <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
+                  <option>Current Cycle (Oct 2023)</option>
+                  <option>Next Cycle (Nov 2023)</option>
+                </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6">Cancel</Button>
+            <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white hover:bg-brand-600">Apply Adjustment</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

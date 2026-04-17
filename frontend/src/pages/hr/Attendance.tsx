@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import { Clock, Calendar, CheckCircle2, XCircle, Search, Filter } from 'lucide-react';
+import Modal from '../../components/ui/Modal';
+import Input from '../../components/ui/Input';
+import { Clock, Calendar, CheckCircle2, XCircle, Search, Filter, Plus, User, FileText, MoreVertical } from 'lucide-react';
 
 const leaveRequests = [
   { id: 1, name: 'Alice Johnson', type: 'Sick Leave', duration: '2 Days', status: 'Pending', date: 'Oct 20, 2023' },
@@ -10,14 +12,19 @@ const leaveRequests = [
 ];
 
 const AttendanceLeave: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-8 animate-in fade-in duration-500 font-sans">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900  ">Attendance & Leave</h1>
           <p className="text-gray-500 mt-1 font-medium">Monitor staff clock-ins and manage leave lifecycle</p>
         </div>
-        <Button className="rounded-full shadow-premium"><Calendar size={18} /> Leave Policy</Button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+           <Button variant="outline" className="rounded-xl h-11 flex-1 sm:flex-none whitespace-nowrap"><Calendar size={18} /> Leave Policy</Button>
+           <Button onClick={() => setIsModalOpen(true)} className="rounded-xl h-11 shadow-premium bg-brand-500 text-white hover:bg-brand-600 flex-1 sm:flex-none whitespace-nowrap"><Plus size={18} /> Add Leave Request</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -79,10 +86,13 @@ const AttendanceLeave: React.FC = () => {
                         <td className="px-6 py-5 text-sm font-medium text-slate-600  ">{req.type}</td>
                         <td className="px-6 py-5 text-sm font-medium text-slate-400  ">{req.duration}</td>
                         <td className="px-6 py-5 text-sm font-medium text-slate-500  ">{req.date}</td>
-                        <td className="px-6 py-5 text-right flex items-center justify-end gap-2 pt-6">
+                        <td className="px-6 py-5 text-right flex items-center justify-end gap-2">
                            <Badge variant={req.status === 'Approved' ? 'success' : req.status === 'Rejected' ? 'danger' : 'warning'}>
                               {req.status}
                            </Badge>
+                           <button className="p-2 text-gray-400 hover:bg-surface-100 rounded-lg transition-colors">
+                              <MoreVertical size={18} />
+                           </button>
                         </td>
                      </tr>
                   ))}
@@ -90,6 +100,42 @@ const AttendanceLeave: React.FC = () => {
             </table></div>
          </div>
       </div>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Record Leave Request"
+        description="Log a leave application for a staff member."
+        maxWidth="2xl"
+      >
+        <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2">
+              <Input label="Staff Member" placeholder="Search staff..." icon={User} required />
+            </div>
+            <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Leave Category</label>
+                <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
+                  <option>Annual Leave</option>
+                  <option>Sick Leave</option>
+                  <option>Personal / Casual</option>
+                  <option>Maternity / Paternity</option>
+                  <option>Unpaid Leave</option>
+                </select>
+            </div>
+            <Input label="Duration (Days)" placeholder="e.g. 3" icon={Clock} required type="number" />
+            <Input label="Start Date" icon={Calendar} required type="date" />
+            <Input label="Return Date" icon={Calendar} required type="date" />
+            <div className="md:col-span-2">
+              <Input label="Reason for Leave" placeholder="Brief explanation..." icon={FileText} required />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6">Discard</Button>
+            <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white hover:bg-brand-600">Submit Request</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };
