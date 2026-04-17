@@ -30,36 +30,36 @@ const ClassManagement: React.FC = () => {
         {classes.map(cls => (
           <div key={cls.id} className="bg-white p-4 sm:p-8 rounded-[32px] sm:rounded-[48px] shadow-soft border border-slate-200 group hover:border-brand-500 transition-all">
             <div className="flex justify-between items-start mb-6">
-               <div className="w-14 h-14 bg-brand-50 text-brand-600 rounded-[20px] flex items-center justify-center font-bold text-xl group-hover:bg-brand-500 group-hover:text-white transition-all shadow-sm border border-brand-100">
-                  {cls.name.split(' ')[1]}
-               </div>
-               <Badge variant="neutral" className="text-[10px] font-bold uppercase tracking-widest">Room {cls.room}</Badge>
+              <div className="w-14 h-14 bg-brand-50 text-brand-600 rounded-[20px] flex items-center justify-center font-bold text-xl group-hover:bg-brand-500 group-hover:text-white transition-all shadow-sm border border-brand-100">
+                {cls.name.split(' ')[1]}
+              </div>
+              <Badge variant="neutral" className="text-[10px] font-bold uppercase tracking-widest">Room {cls.room}</Badge>
             </div>
-            
+
             <h3 className="text-2xl font-medium text-gray-900 group-hover:text-brand-600 transition-colors mb-2 uppercase tracking-tight">{cls.name} / {cls.section}</h3>
             <p className="text-xs font-bold text-slate-400 mb-6 flex items-center gap-2 uppercase tracking-widest">
-               <UserCheck size={14} className="text-brand-500" /> Lead: {cls.tutor}
+              <UserCheck size={14} className="text-brand-500" /> Lead: {cls.tutor}
             </p>
 
             <div className="grid grid-cols-2 gap-4 pt-6 border-t border-slate-100">
-               <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Enrolled</p>
-                  <div className="flex items-center gap-2">
-                     <Users size={16} className="text-brand-500" />
-                     <span className="font-bold text-gray-900 text-sm">{cls.strength}</span>
-                  </div>
-               </div>
-               <div>
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Capacity</p>
-                  <div className="flex items-center gap-2">
-                     <Layout size={16} className="text-slate-400" />
-                     <span className="font-bold text-gray-900 text-sm">45</span>
-                  </div>
-               </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Enrolled</p>
+                <div className="flex items-center gap-2">
+                  <Users size={16} className="text-brand-500" />
+                  <span className="font-bold text-gray-900 text-sm">{cls.strength}</span>
+                </div>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Capacity</p>
+                <div className="flex items-center gap-2">
+                  <Layout size={16} className="text-slate-400" />
+                  <span className="font-bold text-gray-900 text-sm">45</span>
+                </div>
+              </div>
             </div>
 
             <Button variant="outline" className="w-full mt-8 rounded-xl gap-2 font-bold text-[10px] uppercase tracking-widest h-11 border-slate-200">
-               Class Schedule <MoreHorizontal size={16} />
+              Class Schedule <MoreHorizontal size={16} />
             </Button>
           </div>
         ))}
@@ -76,15 +76,15 @@ const ClassManagement: React.FC = () => {
         <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-1">
-               <div className="space-y-2">
-                    <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Grade Level</label>
-                    <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
-                      <option>Grade 9</option>
-                      <option>Grade 10</option>
-                      <option>Grade 11</option>
-                      <option>Grade 12</option>
-                    </select>
-                </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Grade Level</label>
+                <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
+                  <option>Grade 9</option>
+                  <option>Grade 10</option>
+                  <option>Grade 11</option>
+                  <option>Grade 12</option>
+                </select>
+              </div>
             </div>
             <Input label="Section Name / ID" placeholder="e.g. Science-A" icon={Layout} required />
             <div className="md:col-span-2">
@@ -95,13 +95,13 @@ const ClassManagement: React.FC = () => {
           </div>
 
           <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100 flex items-start gap-4">
-             <div className="w-10 h-10 bg-brand-500 text-white rounded-xl flex items-center justify-center shrink-0">
-               <GraduationCap size={20} />
-             </div>
-             <div>
-               <p className="text-sm font-bold text-brand-900 leading-tight">Academic Integrity</p>
-               <p className="text-xs text-brand-700 mt-1 leading-relaxed">This section will be automatically linked to the current active session's timetable and grading schema.</p>
-             </div>
+            <div className="w-10 h-10 bg-brand-500 text-white rounded-xl flex items-center justify-center shrink-0">
+              <GraduationCap size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-brand-900 leading-tight">Academic Integrity</p>
+              <p className="text-xs text-brand-700 mt-1 leading-relaxed">This section will be automatically linked to the current active session's timetable and grading schema.</p>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">

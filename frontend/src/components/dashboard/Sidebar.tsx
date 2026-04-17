@@ -20,7 +20,7 @@ const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, onClose }) => {
       isOpen ? "translate-x-0" : "-translate-x-full"
     )}>
       {/* Sidebar Header */}
-      <div className="p-6 flex items-center justify-between">
+      <div className="h-16 sm:h-20 px-6 flex items-center justify-between border-b border-surface-200 shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-brand-500 rounded-xl flex items-center justify-center text-white shadow-soft">
             <GraduationCap size={24} />

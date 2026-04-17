@@ -9,7 +9,7 @@ const GeneralSettings: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 leading-none">Global Configuration</h1>
-          <p className="text-gray-500 mt-2 font-medium   text-[10px]">Manage institutional policies and system-wide parameters</p>
+          <p className="text-gray-500 mt-2 font-medium   text-[10px]">Manage organization policies and system-wide parameters</p>
         </div>
         <Button className="rounded-full shadow-premium"><Save size={18} /> Save All Changes</Button>
       </div>
@@ -33,7 +33,7 @@ const GeneralSettings: React.FC = () => {
          {/* Settings Form */}
          <div className="lg:col-span-2 space-y-8">
             <div className="bg-white p-6 sm:p-10 rounded-[32px] sm:rounded-[48px] shadow-soft border border-slate-200">
-               <h3 className="text-xl font-medium text-gray-900   mb-8">Institutional Branding</h3>
+               <h3 className="text-xl font-medium text-gray-900   mb-8">Organization Branding</h3>
                <div className="flex items-center gap-4 sm:p-8 mb-10">
                   <div className="w-24 h-24 bg-slate-50 border-2 border-dashed border-slate-200 rounded-3xl flex flex-col items-center justify-center text-slate-400 group hover:border-brand-500 hover:text-brand-500 transition-all cursor-pointer">
                      <Upload size={24} />
