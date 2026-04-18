@@ -1,7 +1,9 @@
 import React from 'react';
 import StatCard from '../../components/dashboard/StatCard';
 import Button from '../../components/ui/Button';
-import { DollarSign, CreditCard, PieChart, Plus, Download } from 'lucide-react';
+import { DollarSign, CreditCard, PieChart, Plus, Download, Package, CheckCircle2 } from 'lucide-react';
+import Modal from '../../components/ui/Modal';
+import Input from '../../components/ui/Input';
 
 const plans = [
   { name: 'Standard Plan', price: '$49', period: 'month', features: ['Up to 500 Students', 'Basic Analytics', 'Standard Support'] },
@@ -9,6 +11,8 @@ const plans = [
 ];
 
 const Billing: React.FC = () => {
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -16,7 +20,7 @@ const Billing: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Subscription & Billing</h1>
           <p className="text-gray-500 mt-1 font-medium">Manage pricing plans and track payments</p>
         </div>
-        <Button className="rounded-full shadow-premium"><Plus size={18} /> New Plan</Button>
+        <Button className="rounded-full shadow-premium" onClick={() => setIsModalOpen(true)}><Plus size={18} /> New Plan</Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -62,6 +66,37 @@ const Billing: React.FC = () => {
            </div>
         </div>
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Create New Plan"
+        description="Define a new subscription tier for organizations."
+        maxWidth="xl"
+      >
+        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+          <Input label="Plan Name" placeholder="e.g. Starter Plan" icon={Package} required />
+          <div className="grid grid-cols-2 gap-4">
+            <Input label="Monthly Price ($)" placeholder="49" type="number" required />
+            <Input label="Yearly Price ($)" placeholder="490" type="number" required />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Included Features</label>
+            <textarea 
+              className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all resize-none"
+              placeholder="Enter features separated by new lines..."
+            ></textarea>
+          </div>
+          <div className="flex items-center gap-3 p-4 bg-brand-50 rounded-2xl border border-brand-100">
+            <CheckCircle2 size={20} className="text-brand-600" />
+            <p className="text-xs font-medium text-brand-700">Plans are activated immediately across the platform upon creation.</p>
+          </div>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12">Cancel</Button>
+            <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium">Create Plan</Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

@@ -16,7 +16,7 @@ const students = [
   { id: 'STU-105', name: 'Kevin Brown', email: 'kevin.b@student.com', grade: 'Grade 12', section: 'A', status: 'Active', enrolled: '2022-09-01' },
 ];
 
-const Admissions: React.FC = () => {
+const StudentManagement: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -24,8 +24,8 @@ const Admissions: React.FC = () => {
     <div className="space-y-8 animate-in fade-in duration-500 font-sans">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Student Admission</h1>
-          <p className="text-gray-500 mt-1">Enroll and manage student records for the school</p>
+          <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Student Management</h1>
+          <p className="text-gray-500 mt-1">Enroll and manage student records across all branches</p>
         </div>
         <Button className="w-full sm:w-auto rounded-xl shadow-premium" onClick={() => setIsModalOpen(true)}>
           <UserPlus size={18} /> Add Student
@@ -200,7 +200,7 @@ const Admissions: React.FC = () => {
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5 focus-within:z-10 group">
-                <label className="text-xs font-medium text-gray-400 px-1 text-sm">Target Branch</label>
+                <label className="text-xs font-medium text-gray-400 px-1">Branch</label>
                 <select className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 focus:ring-4 focus:ring-brand-500/10 appearance-none cursor-pointer">
                   <option value="">Select Branch</option>
                   <option value="main">Main Campus</option>
@@ -216,7 +216,7 @@ const Admissions: React.FC = () => {
               </div>
               <div>
                 <h4 className="text-sm font-medium text-brand-500">Student Portal Access</h4>
-                <p className="text-xs text-brand-700 font-medium">An invitation will be sent to the student's emails to set up their portals.</p>
+                <p className="text-xs text-brand-700 font-medium">An invitation will be sent to the student and parent emails to set up their portals.</p>
               </div>
            </div>
 
@@ -231,4 +231,4 @@ const Admissions: React.FC = () => {
   );
 };
 
-export default Admissions;
+export default StudentManagement;

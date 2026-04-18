@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
-import { Search, Plus, Filter, MoreVertical, Building2, MapPin, Calendar, CheckCircle2, Globe, Mail, Phone, Shield } from 'lucide-react';
+import { Search, Plus, Filter, MoreVertical, Building2, MapPin, Calendar, CheckCircle2, Mail, Phone, Shield, Eye, Edit3, Trash2, Ban } from 'lucide-react';
+import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
 
 const organizations = [
   { id: 1, name: 'Springfield Academy', type: 'High School', location: 'New York, USA', schools: 4, status: 'Active', plan: 'Enterprise', created: '2023-01-12' },
@@ -16,6 +18,18 @@ const organizations = [
 const Organizations: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingOrg, setEditingOrg] = useState<any>(null);
+  const navigate = useNavigate();
+
+  const openEditModal = (org: any) => {
+    setEditingOrg(org);
+    setIsModalOpen(true);
+  };
+
+  const openAddModal = () => {
+    setEditingOrg(null);
+    setIsModalOpen(true);
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans">
@@ -24,7 +38,7 @@ const Organizations: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Organization Management</h1>
           <p className="text-gray-500 mt-1">Review, approve, and manage multi-tenant school instances</p>
         </div>
-        <Button className="w-full sm:w-auto rounded-xl shadow-premium" onClick={() => setIsModalOpen(true)}>
+        <Button className="w-full sm:w-auto rounded-xl shadow-premium" onClick={openAddModal}>
           <Plus size={18} /> Add Organization
         </Button>
       </div>
@@ -98,15 +112,29 @@ const Organizations: React.FC = () => {
                       </Badge>
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
                         {org.status === 'Pending' && (
                           <button className="p-2 bg-success-light text-success-dark rounded-lg hover:bg-success transition-all hover:text-white" title="Approve">
                             <CheckCircle2 size={18} />
                           </button>
                         )}
-                        <button className="p-2 text-gray-400 hover:bg-surface-100 rounded-lg">
-                          <MoreVertical size={18} />
-                        </button>
+                        <Dropdown
+                          trigger={
+                            <button className="p-2 text-gray-400 hover:bg-surface-100 rounded-lg transition-colors">
+                              <MoreVertical size={18} />
+                            </button>
+                          }
+                        >
+                          <DropdownItem icon={Eye} onClick={() => navigate(`/super-admin/organizations/${org.id}`)}>View Details</DropdownItem>
+                          <DropdownItem icon={Edit3} onClick={() => openEditModal(org)}>Edit Organization</DropdownItem>
+                          {org.status === 'Suspended' ? (
+                            <DropdownItem icon={CheckCircle2} variant="default">Unblock Organization</DropdownItem>
+                          ) : (
+                            <DropdownItem icon={Ban} variant="warning">Block Organization</DropdownItem>
+                          )}
+                          <div className="my-1 border-t border-gray-100" />
+                          <DropdownItem icon={Trash2} variant="danger">Delete Organization</DropdownItem>
+                        </Dropdown>
                       </div>
                     </td>
                   </tr>
@@ -128,28 +156,22 @@ const Organizations: React.FC = () => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Add Organization"
-        description="Add a new organization to the system."
+        title={editingOrg ? "Edit Organization" : "Add Organization"}
+        description={editingOrg ? "Update information for " + editingOrg.name : "Add a new organization to the system."}
         maxWidth="2xl"
       >
         <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-2">
-              <Input label="Organization Name" placeholder="e.g. Springfield Academy" icon={Building2} required />
+              <Input label="Organization Name" defaultValue={editingOrg?.name} placeholder="e.g. Springfield Academy" icon={Building2} required />
             </div>
-            <Input label="Email Address" placeholder="admin@academy.com" icon={Mail} required type="email" />
-            <Input label="Phone Number" placeholder="+1 (555) 000-0000" icon={Phone} required />
+            <Input label="Business Email" defaultValue={editingOrg?.email || "admin@academy.com"} placeholder="admin@academy.com" icon={Mail} required type="email" />
+            <Input label="Personal Email" defaultValue={editingOrg?.personalEmail || "owner@personal.com"} placeholder="owner@personal.com" icon={Mail} required type="email" />
             <div className="md:col-span-2">
-              <Input label="Address" placeholder="123 Education St, Knowledge City" icon={MapPin} required />
+              <Input label="Phone Number" defaultValue={editingOrg?.phone || "+1 (555) 000-0000"} placeholder="+1 (555) 000-0000" icon={Phone} required />
             </div>
-            <Input label="Domain Name" placeholder="academy.edunest.com" icon={Globe} required />
-            <div className="space-y-2">
-              <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Subscription Plan</label>
-              <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer">
-                <option>Standard Plan ($49/mo)</option>
-                <option>Professional Plan ($99/mo)</option>
-                <option>Enterprise Elite (Custom)</option>
-              </select>
+            <div className="md:col-span-2">
+              <Input label="Address" defaultValue={editingOrg?.location} placeholder="123 Education St, Knowledge City" icon={MapPin} required />
             </div>
           </div>
 
@@ -165,7 +187,9 @@ const Organizations: React.FC = () => {
 
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12">Cancel</Button>
-            <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium">Create Organization</Button>
+            <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium">
+              {editingOrg ? "Save Changes" : "Create Organization"}
+            </Button>
           </div>
         </form>
       </Modal>
