@@ -36,6 +36,7 @@ export const navItems: NavItem[] = [
   { title: 'Branch Management', href: '/organization/branches', icon: GitBranch, roles: ['ORGANIZATION'] },
   { title: 'Student Management', href: '/organization/students', icon: Users, roles: ['ORGANIZATION'] },
   { title: 'Staff Onboarding', href: '/organization/staff', icon: UserRound, roles: ['ORGANIZATION'] },
+  { title: 'My Profile', href: '/organization/profile', icon: UserRound, roles: ['ORGANIZATION'] },
 
   // HR Items
   { title: 'Dashboard', href: '/hr', icon: LayoutDashboard, roles: ['HR'] },
@@ -43,6 +44,7 @@ export const navItems: NavItem[] = [
   { title: 'Attendance', href: '/hr/attendance', icon: ClipboardList, roles: ['HR'] },
   { title: 'Document Center', href: '/hr/documents', icon: FileText, roles: ['HR'] },
   { title: 'Recruitment', href: '/hr/recruitment', icon: Briefcase, roles: ['HR'] },
+  { title: 'My Profile', href: '/hr/profile', icon: UserRound, roles: ['HR'] },
 
   // Admin Items
   { title: 'Dashboard', href: '/admin', icon: LayoutDashboard, roles: ['ADMIN'] },
@@ -51,12 +53,14 @@ export const navItems: NavItem[] = [
   { title: 'Fee Management', href: '/admin/fees', icon: CreditCard, roles: ['ADMIN'] },
   { title: 'Student Schedules', href: '/admin/student-schedules', icon: Calendar, roles: ['ADMIN'] },
   { title: 'Tutor Schedules', href: '/admin/tutor-schedules', icon: Users, roles: ['ADMIN'] },
+  { title: 'My Profile', href: '/admin/profile', icon: UserRound, roles: ['ADMIN'] },
 
   // Tutor Items
   { title: 'Dashboard', href: '/tutor', icon: LayoutDashboard, roles: ['TUTOR'] },
   { title: 'Classroom', href: '/tutor/classroom', icon: BookOpen, roles: ['TUTOR'] },
   { title: 'Mark Attendance', href: '/tutor/attendance', icon: ClipboardList, roles: ['TUTOR'] },
   { title: 'Gradebook', href: '/tutor/grades', icon: Trophy, roles: ['TUTOR'] },
+  { title: 'Assignments', href: '/tutor/assignments', icon: FileText, roles: ['TUTOR'] },
   { title: 'Timetable', href: '/tutor/timetable', icon: Calendar, roles: ['TUTOR'] },
   { title: 'Messages', href: '/tutor/messages', icon: MessageSquare, roles: ['TUTOR'] },
   { title: 'My Profile', href: '/tutor/profile', icon: UserRound, roles: ['TUTOR'] },
@@ -64,6 +68,7 @@ export const navItems: NavItem[] = [
   // Student Items
   { title: 'Dashboard', href: '/student', icon: LayoutDashboard, roles: ['STUDENT'] },
   { title: 'My Courses', href: '/student/courses', icon: BookOpen, roles: ['STUDENT'] },
+  { title: 'Assignments', href: '/student/assignments', icon: FileText, roles: ['STUDENT'] },
   { title: 'Class Timetable', href: '/student/timetable', icon: Calendar, roles: ['STUDENT'] },
   { title: 'Exam Routine & Results', href: '/student/exams', icon: FileText, roles: ['STUDENT'] },
   { title: 'Fees Status', href: '/student/fees', icon: CreditCard, roles: ['STUDENT'] },

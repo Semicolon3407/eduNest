@@ -3,19 +3,36 @@ import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
-import { CreditCard, FileText, Download, Send, Plus, User, DollarSign, Briefcase } from 'lucide-react';
+import { 
+  CreditCard, FileText, Download, Send, Plus, 
+  DollarSign, Briefcase, Calculator, ChevronDown,
+  ShieldCheck, Percent, Search, Filter, GitBranch
+} from 'lucide-react';
 
 const staffPayroll = [
-  { name: 'Robert Fox', role: 'Teacher', base: '$4,200', bonus: '$200', tax: '$420', net: '$3,980' },
-  { name: 'Jane Cooper', role: 'HR Manager', base: '$3,800', bonus: '$500', tax: '$380', net: '$3,920' },
-  { name: 'Guy Hawkins', role: 'Librarian', base: '$2,200', bonus: '-', tax: '$220', net: '$1,980' },
+  { id: 'EMP-001', name: 'Robert Fox', role: 'Tutor', department: 'Science', branch: 'Main Campus', base: '$4,200', bonus: '$200', tax: '$420', net: '$3,980' },
+  { id: 'EMP-002', name: 'Jane Cooper', role: 'HR Manager', department: 'HR', branch: 'North Branch', base: '$3,800', bonus: '$500', tax: '$380', net: '$3,920' },
+  { id: 'EMP-003', name: 'Guy Hawkins', role: 'Librarian', department: 'Library', branch: 'Main Campus', base: '$2,200', bonus: '-', tax: '$220', net: '$1,980' },
+  { id: 'EMP-004', name: 'James Wilson', role: 'Tutor', department: 'Mathematics', branch: 'West Side', base: '$4,500', bonus: '$300', tax: '$450', net: '$4,350' },
+  { id: 'EMP-005', name: 'Emily Davis', role: 'Administrator', department: 'Admin', branch: 'Main Campus', base: '$5,200', bonus: '$1,000', tax: '$520', net: '$5,680' },
 ];
 
 const Payroll: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedBranch, setSelectedBranch] = useState('All Branches');
+  const [selectedRole, setSelectedRole] = useState('All Designations');
+
+  const filteredPayroll = staffPayroll.filter(item => {
+    const matchesSearch = item.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                         item.id.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesBranch = selectedBranch === 'All Branches' || item.branch === selectedBranch;
+    const matchesRole = selectedRole === 'All Designations' || item.role === selectedRole;
+    return matchesSearch && matchesBranch && matchesRole;
+  });
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 font-sans">
+    <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Payroll Engine</h1>
@@ -36,92 +53,189 @@ const Payroll: React.FC = () => {
          </div>
          <div className="relative z-10 grid grid-cols-2 gap-4">
             <div className="bg-white/5 border border-white/10 p-6 rounded-3xl backdrop-blur-md">
-               <p className="text-[10px]  font-medium text-brand-300 ">Base Payout</p>
+               <p className="text-[10px] uppercase font-bold tracking-widest text-brand-300 ">Base Payout</p>
                <h4 className="text-xl font-medium mt-1">$38,200</h4>
             </div>
             <div className="bg-white/5 border border-white/10 p-6 rounded-3xl backdrop-blur-md">
-               <p className="text-[10px]  font-medium text-brand-300 ">Global Bonus</p>
+               <p className="text-[10px] uppercase font-bold tracking-widest text-brand-300 ">Global Bonus</p>
                <h4 className="text-xl font-medium mt-1">$4,300</h4>
             </div>
          </div>
          <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
       </div>
 
-      <div className="bg-surface p-6 rounded-[32px] shadow-soft border border-surface-200">
-        <h3 className="text-lg font-medium text-gray-900 mb-6 px-2">Detailed Payslip Preview</h3>
-        <div className="overflow-x-auto">
-           <div className="overflow-x-auto"><table className="w-full text-left">
+      <div className="bg-white p-4 sm:p-8 rounded-[40px] shadow-soft border border-slate-200">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+           <h3 className="text-xl font-medium text-gray-900 shrink-0">Detailed Payslip Preview</h3>
+           
+           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-grow justify-end max-w-4xl">
+              <div className="relative flex-grow max-w-md">
+                 <Input 
+                   placeholder="Search employee..." 
+                   icon={Search} 
+                   className="h-11 rounded-xl"
+                   value={searchTerm}
+                   onChange={(e) => setSearchTerm(e.target.value)}
+                 />
+              </div>
+
+              <div className="flex items-center gap-2">
+                 <div className="relative min-w-[160px]">
+                    <select 
+                      value={selectedBranch}
+                      onChange={(e) => setSelectedBranch(e.target.value)}
+                      className="w-full h-11 pl-10 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-brand-500 transition-all appearance-none cursor-pointer font-sans"
+                    >
+                      <option>All Branches</option>
+                      <option>Main Campus</option>
+                      <option>North Branch</option>
+                      <option>West Side</option>
+                    </select>
+                    <GitBranch size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500" />
+                    <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                 </div>
+
+                 <div className="relative min-w-[170px]">
+                    <select 
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className="w-full h-11 pl-10 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-brand-500 transition-all appearance-none cursor-pointer font-sans"
+                    >
+                      <option>All Designations</option>
+                      <option>Tutor</option>
+                      <option>Administrator</option>
+                      <option>HR Manager</option>
+                      <option>Librarian</option>
+                    </select>
+                    <Briefcase size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500" />
+                    <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                 </div>
+
+                 <Button variant="outline" className="rounded-xl h-11 w-11 p-0 shrink-0 border-slate-200">
+                    <Filter size={18} className="mx-auto" />
+                 </Button>
+              </div>
+           </div>
+        </div>
+
+        <div className="overflow-x-auto min-w-[1000px]">
+           <table className="w-full text-left">
             <thead>
-              <tr className="bg-surface-50 text-gray-400 text-[10px] font-medium  ">
-                <th className="px-6 py-4 rounded-l-xl">Employee</th>
-                <th className="px-6 py-4">Base Salary</th>
-                <th className="px-6 py-4">Bonuses</th>
-                <th className="px-6 py-4">Tax Ded.</th>
+              <tr className="bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em]">
+                <th className="px-6 py-4">Employee Details</th>
+                <th className="px-6 py-4">Branch</th>
+                <th className="px-6 py-4">Basic Salary</th>
+                <th className="px-6 py-4">Periodic Bonus</th>
+                <th className="px-6 py-4">Tax Deduction</th>
                 <th className="px-6 py-4">Net Payout</th>
-                <th className="px-6 py-4 text-right rounded-r-xl">Actions</th>
+                <th className="px-6 py-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-surface-100">
-              {staffPayroll.map((item) => (
-                <tr key={item.name} className="group hover:bg-brand-50/20 transition-all cursor-pointer">
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-sm text-gray-900 group-hover:text-brand-600 transition-colors">{item.name}</p>
-                    <p className="text-[10px] text-gray-400  font-medium">{item.role}</p>
+            <tbody className="divide-y divide-slate-100">
+              {filteredPayroll.map((item) => (
+                <tr key={item.id} className="group hover:bg-brand-50/20 transition-all font-sans">
+                  <td className="px-6 py-5">
+                    <div className="flex items-center gap-3">
+                       <div className="w-10 h-10 rounded-2xl bg-white border border-slate-100 flex items-center justify-center text-brand-600 font-bold shadow-sm group-hover:scale-110 transition-all">
+                          {item.name.charAt(0)}
+                       </div>
+                       <div>
+                          <p className="font-medium text-sm text-gray-900 group-hover:text-brand-600 transition-colors uppercase tracking-tight">{item.name}</p>
+                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{item.role}</p>
+                       </div>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{item.base}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-success-dark">{item.bonus}</td>
-                  <td className="px-6 py-4 text-sm font-medium text-danger">{item.tax}</td>
-                  <td className="px-6 py-4 font-mono font-medium text-brand-600">{item.net}</td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-5">
+                     <div className="flex items-center gap-2 text-slate-600">
+                        <GitBranch size={14} className="text-brand-400" />
+                        <span className="text-[10px] font-bold uppercase tracking-tight">{item.branch}</span>
+                     </div>
+                  </td>
+                  <td className="px-6 py-5 text-sm font-bold text-slate-700">{item.base}</td>
+                  <td className="px-6 py-5 text-sm font-bold text-success-dark">
+                    {item.bonus === '-' ? <span className="opacity-30">N/A</span> : item.bonus}
+                  </td>
+                  <td className="px-6 py-5 text-sm font-bold text-danger-dark">{item.tax}</td>
+                  <td className="px-6 py-5">
+                     <span className="bg-brand-50 text-brand-600 px-4 py-2 rounded-xl font-bold text-xs border border-brand-100/50">
+                        {item.net}
+                     </span>
+                  </td>
+                  <td className="px-6 py-5 text-right">
                     <div className="flex justify-end gap-2">
-                      <button className="p-2 text-gray-400 hover:text-brand-600 rounded-lg"><Download size={18}/></button>
-                      <button className="p-2 text-gray-400 hover:text-brand-600 rounded-lg"><Send size={18}/></button>
+                       <button className="p-3 text-slate-400 hover:text-brand-600 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100 hover:shadow-sm" title="Edit Component">
+                          <Calculator size={18}/>
+                       </button>
+                       <button className="p-3 text-slate-400 hover:text-brand-600 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100 hover:shadow-sm" title="Download Payslip">
+                          <Download size={18}/>
+                       </button>
+                       <button className="p-3 text-slate-400 hover:text-brand-600 hover:bg-white rounded-xl transition-all border border-transparent hover:border-slate-100 hover:shadow-sm" title="Send Email">
+                          <Send size={18}/>
+                       </button>
                     </div>
                   </td>
                 </tr>
               ))}
             </tbody>
-          </table></div>
+          </table>
         </div>
       </div>
+
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title="Payroll Adjustment"
-        description="Add a bonus, deduction, or salary modification for an employee."
+        title="Institutional Salary Setup"
+        description="Configure basic salary, periodic bonuses, and statutory tax deductions for faculty members."
         maxWidth="2xl"
       >
-        <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="md:col-span-2 space-y-1.5 focus-within:z-10 group font-sans">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Staff Selection</label>
+                <div className="relative">
+                  <select className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-[13px] px-4 text-sm font-bold outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer">
+                    <option value="">Choose Employee...</option>
+                    {staffPayroll.map(s => <option key={s.id} value={s.id}>{s.name} ({s.id})</option>)}
+                  </select>
+                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+            </div>
+
+            <Input label="Basic Salary ($)" placeholder="e.g. 4500.00" icon={DollarSign} required type="number" />
+            <Input label="Performance Bonus ($)" placeholder="e.g. 500.00" icon={Plus} required type="number" />
+            <Input label="Tax Deduction ($)" placeholder="e.g. 450.00" icon={Percent} required type="number" />
+            
+            <div className="space-y-1.5 group font-sans">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Disbursement Cycle</label>
+                <div className="relative">
+                  <select className="w-full bg-slate-50 border border-slate-200 rounded-2xl py-[13px] px-4 text-sm font-bold outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer">
+                    <option>Oct 2023 (Current)</option>
+                    <option>Nov 2023 (Next)</option>
+                  </select>
+                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+            </div>
+
             <div className="md:col-span-2">
-              <Input label="Staff Member" placeholder="Search staff..." icon={User} required />
-            </div>
-            <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Adjustment Type</label>
-                <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
-                  <option>Bonus / Incentive</option>
-                  <option>Tax Deduction</option>
-                  <option>Unpaid Leave Deduction</option>
-                  <option>Overtime Pay</option>
-                  <option>Arrears</option>
-                </select>
-            </div>
-            <Input label="Amount ($)" placeholder="0.00" icon={DollarSign} required type="number" />
-            <div className="md:col-span-2">
-              <Input label="Reason / Remarks" placeholder="e.g. Performance bonus for Q3" icon={Briefcase} required />
-            </div>
-            <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Effective Layout Period</label>
-                <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
-                  <option>Current Cycle (Oct 2023)</option>
-                  <option>Next Cycle (Nov 2023)</option>
-                </select>
+              <Input label="Adjustment Remarks" placeholder="Reason for salary change or bonus..." icon={Briefcase} required />
             </div>
           </div>
 
+          <div className="bg-brand-50/50 p-6 rounded-[32px] border border-brand-100 flex items-start gap-4">
+             <div className="w-10 h-10 bg-brand-500 text-white rounded-xl flex items-center justify-center shrink-0">
+               <ShieldCheck size={20} />
+             </div>
+             <div>
+               <p className="text-sm font-bold text-brand-600 leading-tight uppercase tracking-tight">Financial Audit Lock</p>
+               <p className="text-[10px] text-brand-700/70 mt-1 leading-relaxed italic uppercase font-medium tracking-tight">Changes to salary components require institutional audit clearance. This update will be logged for the quarterly financial review.</p>
+             </div>
+          </div>
+
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6">Cancel</Button>
-            <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white hover:bg-brand-600">Apply Adjustment</Button>
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6 font-sans font-bold text-xs uppercase tracking-widest">Discard</Button>
+            <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white hover:bg-brand-600 flex items-center gap-2 font-sans font-bold text-xs uppercase tracking-widest">
+               <ShieldCheck size={18} /> Update Ledger
+            </Button>
           </div>
         </form>
       </Modal>
