@@ -59,6 +59,7 @@ export const navItems: NavItem[] = [
   { title: 'Gradebook', href: '/tutor/grades', icon: Trophy, roles: ['TUTOR'] },
   { title: 'Timetable', href: '/tutor/timetable', icon: Calendar, roles: ['TUTOR'] },
   { title: 'Messages', href: '/tutor/messages', icon: MessageSquare, roles: ['TUTOR'] },
+  { title: 'My Profile', href: '/tutor/profile', icon: UserRound, roles: ['TUTOR'] },
 
   // Student Items
   { title: 'Dashboard', href: '/student', icon: LayoutDashboard, roles: ['STUDENT'] },

@@ -28,6 +28,8 @@ import Grades from './pages/tutor/Grades';
 import TutorTimetable from './pages/tutor/Timetable';
 import Messages from './pages/tutor/Messages';
 import BehavioralTracking from './pages/tutor/Behavior';
+import TutorProfile from './pages/tutor/Profile';
+import StudentResult from './pages/tutor/StudentResult';
 import HRDashboard from './pages/hr/Dashboard';
 import StaffManagement from './pages/hr/Staff';
 import Payroll from './pages/hr/Payroll';
@@ -88,6 +90,8 @@ function App() {
           <Route path="behavior" element={<BehavioralTracking />} />
           <Route path="timetable" element={<TutorTimetable />} />
           <Route path="messages" element={<Messages />} />
+          <Route path="profile" element={<TutorProfile />} />
+          <Route path="grades/:studentId" element={<StudentResult />} />
         </Route>
 
         {/* Student Routes */}

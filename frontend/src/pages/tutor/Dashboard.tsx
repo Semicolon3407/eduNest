@@ -1,6 +1,6 @@
 import React from 'react';
 import StatCard from '../../components/dashboard/StatCard';
-import { ClipboardList, Trophy, MessageSquare, Plus, Bell, ArrowRight, User } from 'lucide-react';
+import { ClipboardList, Trophy, MessageSquare, Bell, ArrowRight, User } from 'lucide-react';
 import { cn } from '../../utils/cn';
 
 const teacherClasses = [
@@ -16,16 +16,6 @@ const TutorDashboard: React.FC = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Academic Central</h1>
           <p className="text-gray-500 mt-1">Managed your classes, mark attendance, and grade students</p>
-        </div>
-        <div className="flex gap-4">
-           <button className="bg-surface border border-surface-200 text-gray-600 px-6 py-2.5 rounded-xl font-medium text-sm hover:bg-surface-50 transition-all flex items-center gap-2">
-             <MessageSquare size={18} />
-             Announcements
-           </button>
-           <button className="bg-brand-500 hover:bg-brand-600 text-white px-6 py-2.5 rounded-xl font-medium text-sm shadow-premium flex items-center gap-2 transition-all active:scale-95">
-             <Plus size={18} />
-             Add Materials
-           </button>
         </div>
       </div>
 
