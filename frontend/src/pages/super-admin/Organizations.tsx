@@ -163,8 +163,7 @@ const Organizations: React.FC = () => {
                   <tr className="bg-surface-50 text-gray-400 text-[10px] font-bold tracking-[0.2em] px-6">
                     <th className="px-6 py-4">Organization Name</th>
                     <th className="px-6 py-4">Branch Count</th>
-                    <th className="px-6 py-4">Status</th>
-                    <th className="px-4 py-4 text-right">Actions</th>
+                    <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-100">
@@ -185,11 +184,10 @@ const Organizations: React.FC = () => {
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex flex-col gap-1">
-                          <span className="text-sm font-medium text-gray-900">{org.branchCount} Active Sites</span>
+                          <span className="text-sm font-medium text-gray-900">{org.branchCount || 0} Active Sites</span>
                           <span className="text-[10px] font-medium text-gray-400 flex items-center gap-1"><Calendar size={10} /> Since {new Date(org.createdAt).toLocaleDateString()}</span>
                         </div>
                       </td>
-
                       <td className="px-6 py-5">
                         <Badge variant={
                           org.status === 'Active' ? 'success' :

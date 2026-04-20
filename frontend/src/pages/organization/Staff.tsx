@@ -5,22 +5,121 @@ import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import { 
   UserPlus, Mail, Shield, Phone, Briefcase, Hash, 
-  Search, Filter, MoreVertical, Users, CheckCircle2, 
-  AlertCircle, Eye, Edit, Trash2, ChevronDown 
+  Search, Filter, MoreVertical, Users, 
+  AlertCircle, Eye, Edit, Trash2, ChevronDown, Loader2
 } from 'lucide-react';
-
-const staffMembers = [
-  { id: 'EMP-001', name: 'Sarah Wilson', email: 'sarah.w@school.com', role: 'Tutor', department: 'Science', status: 'Active', joined: '2023-01-15' },
-  { id: 'EMP-002', name: 'Michael Brown', email: 'michael.b@school.com', role: 'Administrator', department: 'Administration', status: 'Pending', joined: '2023-11-20' },
-  { id: 'EMP-003', name: 'Emily Davis', email: 'emily.d@school.com', role: 'HR Manager', department: 'Human Resources', status: 'Active', joined: '2022-08-01' },
-  { id: 'EMP-004', name: 'James Wilson', email: 'james.w@school.com', role: 'Registrar', department: 'Admissions', status: 'Active', joined: '2022-09-10' },
-  { id: 'EMP-005', name: 'Linda Taylor', email: 'linda.t@school.com', role: 'Tutor', department: 'Mathematics', status: 'Inactive', joined: '2021-05-22' },
-];
+import { tenantService } from '../../services/tenantService';
+import toast from 'react-hot-toast';
 
 const StaffOnboarding: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [staff, setStaff] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    personalEmail: '',
+    phone: '',
+    employeeId: '',
+    department: '',
+    branch: '',
+    role: ''
+  });
+
+  const [editingStaff, setEditingStaff] = useState<any | null>(null);
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [staffRes, branchRes] = await Promise.all([
+        tenantService.getStaff(),
+        tenantService.getBranches()
+      ]);
+      setStaff(staffRes.data);
+      setBranches(branchRes.data);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to fetch directory');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  React.useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.branch || !formData.role) {
+      toast.error('Please assign a branch and role');
+      return;
+    }
+    try {
+      setIsSubmitting(true);
+      if (editingStaff) {
+        await tenantService.updateStaff(editingStaff._id, formData);
+        toast.success('Staff records updated');
+      } else {
+        await tenantService.onboardStaff(formData);
+        toast.success('Commission sent successfully');
+      }
+      handleCloseModal();
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || `Failed to ${editingStaff ? 'update' : 'onboard'} staff`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEdit = (member: any) => {
+    setEditingStaff(member);
+    setFormData({
+      firstName: member.firstName,
+      lastName: member.lastName,
+      email: member.user?.email || '',
+      personalEmail: member.personalEmail || '',
+      phone: member.phone || '',
+      employeeId: member.employeeId,
+      department: member.department,
+      branch: member.branch || '',
+      role: member.user?.role || ''
+    });
+    setIsModalOpen(true);
+    setOpenMenuId(null);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setEditingStaff(null);
+    setFormData({
+      firstName: '',
+      lastName: '',
+      email: '',
+      personalEmail: '',
+      phone: '',
+      employeeId: '',
+      department: '',
+      branch: '',
+      role: ''
+    });
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to terminate this staff member? All access will be revoked immediately.')) return;
+    try {
+      await tenantService.deleteStaff(id);
+      toast.success('Staff records terminated');
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to terminate records');
+    }
+  };
 
   const toggleMenu = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -47,7 +146,7 @@ const StaffOnboarding: React.FC = () => {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500">Total Active Staff</p>
-            <p className="text-2xl font-display font-medium text-gray-900">128</p>
+            <p className="text-2xl font-display font-medium text-gray-900">{staff.length}</p>
           </div>
         </div>
         
@@ -56,8 +155,10 @@ const StaffOnboarding: React.FC = () => {
             <AlertCircle size={24} />
           </div>
           <div>
-            <p className="text-sm font-medium text-gray-500">Pending Invites</p>
-            <p className="text-2xl font-display font-medium text-gray-900">12</p>
+            <p className="text-sm font-medium text-gray-500">Pending Setup</p>
+            <p className="text-2xl font-display font-medium text-gray-900">
+              {staff.filter(s => s.status === 'Pending').length}
+            </p>
           </div>
         </div>
 
@@ -67,7 +168,9 @@ const StaffOnboarding: React.FC = () => {
           </div>
           <div>
             <p className="text-sm font-medium text-gray-500">Departments</p>
-            <p className="text-2xl font-display font-medium text-gray-900">8</p>
+            <p className="text-2xl font-display font-medium text-gray-900">
+              {new Set(staff.map(s => s.department)).size}
+            </p>
           </div>
         </div>
       </div>
@@ -106,74 +209,92 @@ const StaffOnboarding: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-surface-100">
-                {staffMembers.map((staff) => (
-                  <tr key={staff.id} className="group hover:bg-brand-50/20 transition-all cursor-pointer">
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-600 font-medium text-sm transition-all group-hover:bg-white group-hover:scale-110 shadow-sm border border-transparent group-hover:border-brand-100">
-                          {staff.name.charAt(0)}
-                        </div>
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-none mb-1">{staff.name}</p>
-                          <p className="text-xs text-gray-400 font-medium flex items-center gap-1">
-                            <Mail size={12} /> {staff.email}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <span className="text-sm font-medium text-gray-900">{staff.id}</span>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col gap-0.5">
-                        <p className="text-sm font-medium text-gray-900">{staff.department}</p>
-                        <p className="text-[10px] text-brand-500 font-medium uppercase tracking-wide">{staff.role}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <Badge variant={
-                        staff.status === 'Active' ? 'success' :
-                          staff.status === 'Pending' ? 'warning' : 'danger'
-                      }>
-                        {staff.status}
-                      </Badge>
-                    </td>
-                    <td className="px-6 py-5 text-right relative">
-                      <div className="flex items-center justify-end gap-2 text-left">
-                        {staff.status === 'Pending' && (
-                          <button className="p-2 bg-success/10 text-success-dark rounded-lg hover:bg-success transition-all hover:text-white" title="Approve">
-                            <CheckCircle2 size={18} />
-                          </button>
-                        )}
-                        <button 
-                          onClick={(e) => toggleMenu(staff.id, e)}
-                          className={`p-2 rounded-lg transition-all ${openMenuId === staff.id ? 'bg-brand-500 text-white' : 'text-gray-400 hover:bg-surface-100'}`}
-                        >
-                          <MoreVertical size={18} />
-                        </button>
-
-                        {/* Dropdown Menu */}
-                        {openMenuId === staff.id && (
-                          <>
-                            <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)}></div>
-                            <div className="absolute right-0 top-12 w-48 bg-white rounded-2xl shadow-premium border border-surface-100 p-2 z-50 animate-in zoom-in-95 duration-200">
-                              <button className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-600 rounded-xl transition-all">
-                                 <Eye size={16} /> View Profile
-                              </button>
-                              <button className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-slate-50 rounded-xl transition-all">
-                                 <Edit size={16} /> Edit Records
-                              </button>
-                              <div className="my-1 border-t border-surface-50"></div>
-                              <button className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-danger hover:bg-danger/5 rounded-xl transition-all">
-                                 <Trash2 size={16} /> Terminate
-                              </button>
-                            </div>
-                          </>
-                        )}
-                      </div>
+                {loading ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-20 text-center text-gray-500">
+                      <Loader2 size={32} className="animate-spin mx-auto mb-4 text-brand-600" />
+                      <p className="text-sm font-medium uppercase tracking-widest">Synchronizing staff directory...</p>
                     </td>
                   </tr>
-                ))}
+                ) : staff.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="px-6 py-20 text-center text-gray-500 uppercase tracking-widest text-xs font-bold">
+                      Institutional directory is empty
+                    </td>
+                  </tr>
+                ) : (
+                  staff.map((member) => (
+                    <tr key={member._id} className="group hover:bg-brand-50/20 transition-all cursor-pointer">
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-4">
+                          <div className="w-10 h-10 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-600 font-medium text-sm transition-all group-hover:bg-white group-hover:scale-110 shadow-sm border border-transparent group-hover:border-brand-100">
+                            {member.firstName.charAt(0)}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900 text-sm group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-none mb-1">
+                              {member.firstName} {member.lastName}
+                            </p>
+                            <p className="text-xs text-gray-400 font-medium flex items-center gap-1">
+                              <Mail size={12} /> {member.user?.email}
+                            </p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="text-sm font-medium text-gray-900">{member.employeeId}</span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-0.5 text-left">
+                          <p className="text-sm font-medium text-gray-900">{member.department}</p>
+                          <p className="text-[10px] text-brand-500 font-medium uppercase tracking-wide">{member.user?.role}</p>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <Badge variant={
+                          member.status === 'Active' ? 'success' :
+                            member.status === 'Pending' ? 'warning' : 'danger'
+                        }>
+                          {member.status}
+                        </Badge>
+                      </td>
+                      <td className="px-6 py-5 text-right relative">
+                        <div className="flex items-center justify-end gap-2 text-left">
+                          <button 
+                            onClick={(e) => toggleMenu(member._id, e)}
+                            className={`p-2 rounded-lg transition-all ${openMenuId === member._id ? 'bg-brand-500 text-white' : 'text-gray-400 hover:bg-surface-100'}`}
+                          >
+                            <MoreVertical size={18} />
+                          </button>
+  
+                          {/* Dropdown Menu */}
+                          {openMenuId === member._id && (
+                            <>
+                              <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)}></div>
+                              <div className="absolute right-0 top-12 w-48 bg-white rounded-2xl shadow-premium border border-surface-100 p-2 z-50 animate-in zoom-in-95 duration-200">
+                                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-600 rounded-xl transition-all">
+                                   <Eye size={16} /> View Profile
+                                </button>
+                                <button 
+                                  onClick={() => handleEdit(member)}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-slate-50 rounded-xl transition-all"
+                                >
+                                   <Edit size={16} /> Edit Records
+                                </button>
+                                <div className="my-1 border-t border-surface-50"></div>
+                                <button 
+                                  onClick={() => handleDelete(member._id)}
+                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-danger hover:bg-danger/5 rounded-xl transition-all"
+                                >
+                                   <Trash2 size={16} /> Terminate
+                                </button>
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -190,51 +311,107 @@ const StaffOnboarding: React.FC = () => {
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Institutional Staff Onboarding"
-        description="Invite new educators, administrators, and HR personnel to the institution."
+        onClose={handleCloseModal}
+        title={editingStaff ? "Edit Staff Configuration" : "Institutional Staff Onboarding"}
+        description={editingStaff ? "Modify institutional roles, departments, and campus allocations." : "Invite new educators, administrators, and HR personnel to the institution."}
         maxWidth="2xl"
       >
-        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+        <form className="space-y-6" onSubmit={handleSubmit}>
            <div className="grid grid-cols-2 gap-4">
-              <Input label="First Name" placeholder="e.g. John" required />
-              <Input label="Last Name" placeholder="e.g. Doe" required />
+              <Input 
+                label="First Name" 
+                placeholder="e.g. John" 
+                required 
+                value={formData.firstName}
+                onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+              />
+              <Input 
+                label="Last Name" 
+                placeholder="e.g. Doe" 
+                required 
+                value={formData.lastName}
+                onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+              />
            </div>
            
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Official Email" icon={Mail} placeholder="name@school.com" type="email" required />
-              <Input label="Personal Email" icon={Mail} placeholder="name@personal.com" type="email" />
+              <Input 
+                label="Official Email" 
+                icon={Mail} 
+                placeholder="name@school.com" 
+                type="email" 
+                required 
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+              />
+              <Input 
+                label="Personal Email" 
+                icon={Mail} 
+                placeholder="name@personal.com" 
+                type="email" 
+                value={formData.personalEmail}
+                onChange={(e) => setFormData({...formData, personalEmail: e.target.value})}
+              />
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Phone Number" icon={Phone} placeholder="+1 (555) 000-0000" />
-              <Input label="Employee ID" icon={Hash} placeholder="EMP-001" required />
+              <Input 
+                label="Phone Number" 
+                icon={Phone} 
+                placeholder="+1 (555) 000-0000" 
+                value={formData.phone}
+                onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              />
+              <Input 
+                label="Employee ID" 
+                icon={Hash} 
+                placeholder="EMP-001" 
+                required 
+                value={formData.employeeId}
+                onChange={(e) => setFormData({...formData, employeeId: e.target.value})}
+              />
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Department" icon={Briefcase} placeholder="e.g. Science" required />
+              <Input 
+                label="Department" 
+                icon={Briefcase} 
+                placeholder="e.g. Science" 
+                required 
+                value={formData.department}
+                onChange={(e) => setFormData({...formData, department: e.target.value})}
+              />
               
-              <div className="space-y-1.5 focus-within:z-10 group">
+              <div className="space-y-1.5 focus-within:z-10 group text-left">
                 <label className="text-xs font-medium text-gray-400 px-1">Branch Allocation</label>
                 <div className="relative">
-                  <select className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer">
+                  <select 
+                    className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer"
+                    value={formData.branch}
+                    onChange={(e) => setFormData({...formData, branch: e.target.value})}
+                  >
                     <option value="">Select Branch</option>
-                    <option value="main">Main Campus</option>
-                    <option value="north">North Branch</option>
-                    <option value="west">West Side</option>
+                    {branches.map(b => (
+                      <option key={b._id} value={b._id}>{b.name} ({b.code})</option>
+                    ))}
                   </select>
                   <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
               </div>
            </div>
            
-           <div className="space-y-1.5 focus-within:z-10 group">
+           <div className="space-y-1.5 focus-within:z-10 group text-left">
               <label className="text-xs font-medium text-gray-400 px-1">Institutional Role</label>
               <div className="relative">
-                <select className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer">
+                <select 
+                  className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer"
+                  value={formData.role}
+                  onChange={(e) => setFormData({...formData, role: e.target.value})}
+                >
                   <option value="">Select Role</option>
-                  <option value="hr">HR Manager</option>
-                  <option value="admin">Administrator</option>
+                  <option value="HR">HR Manager</option>
+                  <option value="ADMIN">Administrator</option>
+                  <option value="TUTOR">Academic Tutor</option>
                 </select>
                 <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
@@ -244,15 +421,17 @@ const StaffOnboarding: React.FC = () => {
               <div className="w-10 h-10 bg-brand-500 text-white rounded-xl flex items-center justify-center shrink-0">
                  <Shield size={20} />
               </div>
-              <div>
-                <h4 className="text-sm font-medium text-brand-500 uppercase tracking-tight">Access Control Protocol</h4>
-                <p className="text-xs text-brand-700 font-medium italic opacity-80 mt-1">Institutional permissions and system scope will be automatically initialized based on the assigned role.</p>
+              <div className="text-left">
+                <h4 className="text-sm font-medium text-brand-500 uppercase tracking-tight leading-none mb-1">Access Control Protocol</h4>
+                <p className="text-xs text-brand-700 font-medium italic opacity-80 mt-1 leading-relaxed">Institutional permissions and system scope will be automatically initialized based on the assigned role. Password: EduNest@123</p>
               </div>
            </div>
 
            <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12">Discard</Button>
-              <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium text-[10px] uppercase font-black tracking-widest">Send Commission</Button>
+              <Button variant="outline" type="button" onClick={handleCloseModal} className="rounded-xl h-12">Discard</Button>
+              <Button type="submit" disabled={isSubmitting} className="rounded-xl h-12 px-8 shadow-premium text-[10px] uppercase font-black tracking-widest flex items-center justify-center">
+                {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : (editingStaff ? 'Update Records' : 'Send Commission')}
+              </Button>
            </div>
         </form>
       </Modal>

@@ -13,6 +13,7 @@ import errorHandler from './middlewares/errorMiddleware';
 // Routes
 import authRoutes from './routes/authRoutes';
 import superAdminRoutes from './routes/superAdminRoutes';
+import tenantRoutes from './routes/tenantRoutes';
 
 // Load env vars
 dotenv.config();
@@ -51,6 +52,7 @@ app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Mount routers
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/super-admin', superAdminRoutes);
+app.use('/api/v1/tenant', tenantRoutes);
 
 // Error handler
 app.use(errorHandler);

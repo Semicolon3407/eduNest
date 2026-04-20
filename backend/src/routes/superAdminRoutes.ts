@@ -1,12 +1,11 @@
 import express from 'express';
 import { 
   getOrganizations, 
+  getOrganization,
   createOrganization, 
   updateOrganizationStatus, 
-  getPlans, 
-  updatePlan,
-  deleteOrganization,
-  updateOrganization
+  deleteOrganization, 
+  updateOrganization 
 } from '../controllers/superAdminController';
 import { protect, authorize } from '../middlewares/auth';
 
@@ -61,6 +60,17 @@ router.route('/organizations')
 /**
  * @swagger
  * /super-admin/organizations/{id}:
+ *   get:
+ *     summary: Get a single organization
+ *     tags: [Super Admin]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Organization data
  *   put:
  *     summary: Update an organization
  *     tags: [Super Admin]
@@ -96,6 +106,7 @@ router.route('/organizations')
  *         description: Organization deleted
  */
 router.route('/organizations/:id')
+  .get(getOrganization)
   .put(updateOrganization)
   .delete(deleteOrganization);
 
@@ -123,35 +134,5 @@ router.route('/organizations/:id')
  *         description: Status updated
  */
 router.patch('/organizations/:id/status', updateOrganizationStatus);
-
-/**
- * @swagger
- * /super-admin/plans:
- *   get:
- *     summary: Get all subscription plans
- *     tags: [Super Admin]
- *     responses:
- *       200:
- *         description: List of plans
- *   post:
- *     summary: Create a new subscription plan
- *     tags: [Super Admin]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name: { type: string }
- *               monthlyPrice: { type: number }
- *               yearlyPrice: { type: number }
- *               features: { type: array, items: { type: string } }
- *     responses:
- *       201:
- *         description: Plan created
- */
-router.get('/plans', getPlans);
-router.put('/plans/:id', updatePlan);
 
 export default router;

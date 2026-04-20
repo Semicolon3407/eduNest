@@ -9,21 +9,18 @@ export interface OrganizationData {
   personalEmail: string;
   phone: string;
   branchCount?: number;
-  subscriptionPlan?: string;
   status?: 'Active' | 'Pending' | 'Suspended';
-}
-
-export interface SubscriptionPlanData {
-  name: string;
-  monthlyPrice: number;
-  yearlyPrice: number;
-  features: string[];
 }
 
 export const superAdminService = {
   // Organization Management
   getOrganizations: async () => {
     const response = await api.get('/super-admin/organizations');
+    return response.data;
+  },
+
+  getOrganizationById: async (id: string) => {
+    const response = await api.get(`/super-admin/organizations/${id}`);
     return response.data;
   },
 
@@ -44,17 +41,6 @@ export const superAdminService = {
 
   updateOrganizationStatus: async (id: string, status: string) => {
     const response = await api.patch(`/super-admin/organizations/${id}/status`, { status });
-    return response.data;
-  },
-
-  // Subscription Management
-  getPlans: async () => {
-    const response = await api.get('/super-admin/plans');
-    return response.data;
-  },
-
-  updatePlan: async (id: string, data: Partial<SubscriptionPlanData>) => {
-    const response = await api.put(`/super-admin/plans/${id}`, data);
     return response.data;
   },
 };

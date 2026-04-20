@@ -3,7 +3,6 @@ import DashboardLayout from './layouts/DashboardLayout';
 import SuperAdminDashboard from './pages/super-admin/Dashboard';
 import Organizations from './pages/super-admin/Organizations';
 import OrganizationDetails from './pages/super-admin/OrganizationDetails';
-import Billing from './pages/super-admin/Billing';
 import Support from './pages/super-admin/Support';
 import StudentDashboard from './pages/student/Dashboard';
 import MyCourses from './pages/student/Courses';
@@ -45,10 +44,23 @@ import AdminProfile from './pages/admin/Profile';
 import Login from './pages/Login';
 
 import ProtectedRoute from './components/ProtectedRoute';
+import { Toaster } from 'react-hot-toast';
 
 function App() {
   return (
-    <Router>
+    <>
+      <Toaster position="top-right" toastOptions={{
+        duration: 4000,
+        style: {
+          background: '#fff',
+          color: '#363636',
+          borderRadius: '16px',
+          fontSize: '14px',
+          fontWeight: '500',
+          boxShadow: '0 10px 40px -10px rgba(0,0,0,0.1)'
+        }
+      }} />
+      <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
 
@@ -61,7 +73,6 @@ function App() {
           <Route index element={<SuperAdminDashboard />} />
           <Route path="organizations" element={<Organizations />} />
           <Route path="organizations/:id" element={<OrganizationDetails />} />
-          <Route path="billing" element={<Billing />} />
           <Route path="support" element={<Support />} />
         </Route>
 
@@ -147,6 +158,7 @@ function App() {
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </Router>
+    </>
   );
 }
 

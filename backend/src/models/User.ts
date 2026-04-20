@@ -31,6 +31,10 @@ const userSchema = new Schema({
   },
   resetPasswordToken: String,
   resetPasswordExpire: Date,
+  organization: {
+    type: Schema.Types.ObjectId,
+    ref: 'Organization',
+  },
 }, {
   timestamps: true,
 });

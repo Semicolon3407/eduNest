@@ -23,10 +23,6 @@ const organizationSchema = new Schema({
     enum: ['Active', 'Pending', 'Suspended'],
     default: 'Pending',
   },
-  subscriptionPlan: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'SubscriptionPlan',
-  },
   email: {
     type: String,
     required: [true, 'Please add a business email'],

@@ -1,37 +1,70 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Building2, Users, UserRound, GraduationCap, Briefcase, ShieldCheck, 
-  ArrowLeft, MapPin, Calendar, Globe, Mail, Phone, ExternalLink,
-  Crown, Clock, Ban, CheckCircle2
+  ArrowLeft, MapPin, Calendar, Mail, Phone, Clock, Ban, CheckCircle2
 } from 'lucide-react';
 import StatCard from '../../components/dashboard/StatCard';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-
-const organizationsMock = [
-  { id: 1, name: 'Springfield Academy', type: 'High School', location: 'New York, USA', schools: 4, status: 'Active', plan: 'Enterprise', created: '2023-01-12', email: 'admin@springfield.edu', phone: '+1 (555) 123-4567', website: 'springfield.edu' },
-  { id: 2, name: 'Lakeside College', type: 'University', location: 'Oxford, UK', schools: 1, status: 'Pending', plan: 'Standard', created: '2023-05-24', email: 'contact@lakeside.edu', phone: '+44 20 7123 4567', website: 'lakeside.edu' },
-  { id: 3, name: 'Elite International', type: 'Primary School', location: 'Dubai, UAE', schools: 2, status: 'Active', plan: 'Enterprise', created: '2023-08-02', email: 'info@elite-intl.ae', phone: '+971 4 123 4567', website: 'elite-intl.ae' },
-  { id: 4, name: 'Greenwood High', type: 'High School', location: 'Sydney, AU', schools: 1, status: 'Suspended', plan: 'Free', created: '2023-09-15', email: 'admin@greenwood.au', phone: '+61 2 1234 5678', website: 'greenwood.au' },
-  { id: 5, name: 'Tech Prep Institute', type: 'Vocational', location: 'Berlin, DE', schools: 1, status: 'Active', plan: 'Standard', created: '2023-10-01', email: 'hello@techprep.de', phone: '+49 30 123456', website: 'techprep.de' },
-];
-
-const statsMock = {
-  1: { branches: 4, students: '1,250', staffs: 85, tutors: 42, hr: 4, admins: 2 },
-  2: { branches: 1, students: '450', staffs: 32, tutors: 18, hr: 2, admins: 1 },
-  3: { branches: 2, students: '890', staffs: 64, tutors: 35, hr: 3, admins: 2 },
-  4: { branches: 1, students: '320', staffs: 24, tutors: 14, hr: 1, admins: 1 },
-  5: { branches: 1, students: '560', staffs: 40, tutors: 22, hr: 2, admins: 1 },
-};
+import { superAdminService } from '../../services/superAdminService';
 
 const OrganizationDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const [org, setOrg] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
-  const orgId = parseInt(id || '1');
-  const org = organizationsMock.find(o => o.id === orgId) || organizationsMock[0];
-  const stats = statsMock[orgId as keyof typeof statsMock] || statsMock[1];
+  const fetchOrganization = async () => {
+    if (!id) return;
+    try {
+      setIsLoading(true);
+      const response = await superAdminService.getOrganizationById(id);
+      if (response.success) {
+        setOrg(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch organization:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchOrganization();
+  }, [id]);
+
+  const handleUpdateStatus = async (status: string) => {
+    if (!org) return;
+    try {
+      const response = await superAdminService.updateOrganizationStatus(org._id, status);
+      if (response.success) {
+        setOrg(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to update status:', error);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="py-20 flex flex-col items-center justify-center gap-4 animate-pulse">
+        <div className="w-12 h-12 border-4 border-brand-100 border-t-brand-500 rounded-full animate-spin"></div>
+        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Retrieving Details...</p>
+      </div>
+    );
+  }
+
+  if (!org) {
+    return (
+      <div className="py-20 text-center">
+        <h2 className="text-xl font-bold text-gray-900">Organization not found</h2>
+        <Button onClick={() => navigate('/super-admin/organizations')} className="mt-4 rounded-xl">
+          Back to List
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -71,12 +104,12 @@ const OrganizationDetails: React.FC = () => {
 
       {/* Overview Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6">
-        <StatCard title="Branches" value={stats.branches.toString()} icon={Building2} color="brand" />
-        <StatCard title="Total Students" value={stats.students} icon={Users} color="success" />
-        <StatCard title="Administrative" value={stats.admins.toString()} icon={ShieldCheck} color="warning" />
-        <StatCard title="Total Staffs" value={stats.staffs.toString()} icon={UserRound} color="brand" />
-        <StatCard title="Expert Tutors" value={stats.tutors.toString()} icon={GraduationCap} color="success" />
-        <StatCard title="HR Personnel" value={stats.hr.toString()} icon={Briefcase} color="brand" />
+        <StatCard title="Branches" value={(org.branchCount || 0).toString()} icon={Building2} color="brand" />
+        <StatCard title="Total Students" value="--" icon={Users} color="success" />
+        <StatCard title="Administrative" value="--" icon={ShieldCheck} color="warning" />
+        <StatCard title="Total Staffs" value="--" icon={UserRound} color="brand" />
+        <StatCard title="Expert Tutors" value="--" icon={GraduationCap} color="success" />
+        <StatCard title="HR Personnel" value="--" icon={Briefcase} color="brand" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -99,6 +132,16 @@ const OrganizationDetails: React.FC = () => {
 
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-surface-50 flex items-center justify-center text-gray-400 shrink-0">
+                <Mail size={18} />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Personal Email</p>
+                <p className="text-sm font-medium text-gray-900 mt-1">{org.personalEmail}</p>
+              </div>
+            </div>
+
+            <div className="flex items-start gap-4">
+              <div className="w-10 h-10 rounded-xl bg-surface-50 flex items-center justify-center text-gray-400 shrink-0">
                 <Phone size={18} />
               </div>
               <div>
@@ -109,34 +152,12 @@ const OrganizationDetails: React.FC = () => {
 
             <div className="flex items-start gap-4">
               <div className="w-10 h-10 rounded-xl bg-surface-50 flex items-center justify-center text-gray-400 shrink-0">
-                <Globe size={18} />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Public Domain</p>
-                <a href={`https://${org.website}`} target="_blank" rel="noreferrer" className="text-sm font-medium text-brand-600 mt-1 flex items-center gap-1 hover:underline">
-                  {org.website} <ExternalLink size={12} />
-                </a>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="w-10 h-10 rounded-xl bg-surface-50 flex items-center justify-center text-gray-400 shrink-0">
                 <Calendar size={18} />
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Registered Since</p>
-                <p className="text-sm font-medium text-gray-900 mt-1">{org.created}</p>
+                <p className="text-sm font-medium text-gray-900 mt-1">{new Date(org.createdAt).toLocaleDateString()}</p>
               </div>
-            </div>
-          </div>
-
-          <div className="mt-8 p-4 bg-brand-50 rounded-2xl border border-brand-100 flex items-center gap-4">
-            <div className="w-10 h-10 bg-brand-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-brand-500/20">
-              <Crown size={20} />
-            </div>
-            <div>
-              <p className="text-sm font-bold text-brand-900">{org.plan} Plan</p>
-              <p className="text-[10px] text-brand-700 font-medium">Auto-renewing on {org.created.split('-')[0]}-12-31</p>
             </div>
           </div>
         </div>
@@ -144,51 +165,53 @@ const OrganizationDetails: React.FC = () => {
         {/* Quick Actions / More Info */}
         <div className="lg:col-span-2 space-y-8">
           <div className="bg-surface rounded-3xl p-8 shadow-soft border border-surface-200">
-            <h2 className="text-lg font-bold text-gray-900 mb-6">Subscription Status</h2>
-            <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100 mb-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-xl border border-slate-200 flex items-center justify-center text-brand-500 shadow-sm">
-                  <CheckCircle2 size={24} />
+            <h2 className="text-lg font-bold text-gray-900 mb-6">Administrative Control</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                   <ShieldCheck size={18} className="text-brand-500" /> Account Status
+                </h3>
+                <p className="text-sm text-gray-500 mt-2">
+                  Maintain and monitor the institutional access to the EduNest platform.
+                </p>
+                <div className="mt-4">
+                   <Badge variant={org.status === 'Active' ? 'success' : 'danger'}>{org.status}</Badge>
                 </div>
+              </div>
+              <div className="p-6 bg-slate-50 rounded-2xl border border-slate-100 flex flex-col justify-between">
                 <div>
-                  <h3 className="font-bold text-gray-900">Current Plan: {org.plan}</h3>
-                  <p className="text-sm text-gray-500">All features unlocked for this institutional tenant.</p>
+                  <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                    <Ban size={18} className="text-red-500" /> Resource Lock
+                  </h3>
+                  <p className="text-xs text-gray-400 mt-1 italic font-sans">Toggle tenant accessibility</p>
                 </div>
-              </div>
-              <Button variant="outline" size="sm" className="bg-white">Upgrade</Button>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Start Date</p>
-                <p className="text-base font-medium text-gray-900 mt-1">{org.created}</p>
-              </div>
-              <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">End Date</p>
-                <p className="text-base font-medium text-gray-900 mt-1">{org.created.split('-')[0]}-12-31</p>
-              </div>
-              <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Next Billing</p>
-                <p className="text-base font-medium text-gray-900 mt-1">Oct 12, 2026</p>
-              </div>
-              <div className="p-4 rounded-2xl border border-slate-100 bg-slate-50/50">
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Payment Method</p>
-                <p className="text-base font-medium text-gray-900 mt-1">Visa •••• 4242</p>
+                <div className="mt-4">
+                  {org.status === 'Suspended' ? (
+                    <Button onClick={() => handleUpdateStatus('Active')} className="w-full rounded-xl bg-success hover:bg-success-dark">
+                      <CheckCircle2 size={16} className="mr-2" /> Unblock Organization
+                    </Button>
+                  ) : (
+                    <Button onClick={() => handleUpdateStatus('Suspended')} className="w-full rounded-xl bg-red-500 hover:bg-red-600">
+                      <Ban size={16} className="mr-2" /> Block Organization
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="bg-surface rounded-3xl p-8 shadow-soft border border-surface-200 flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Ban size={20} className="text-red-500" /> Resource Management
-              </h2>
-              <p className="text-sm text-gray-500 mt-1">Immediate control over organization access and data.</p>
-            </div>
-            <div className="flex gap-3">
-              <Button variant="outline" className="text-red-600 border-red-100 hover:bg-red-50 hover:border-red-200 rounded-xl">
-                 Block Tenant
-              </Button>
+          <div className="bg-surface rounded-3xl p-8 shadow-soft border border-surface-200">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Quick Statistics</h2>
+            <p className="text-sm text-gray-500 mb-6">Detailed breakdown of institutional resources.</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-surface-50 rounded-xl">
+                 <span className="text-sm font-medium text-gray-600">Total Branches Created</span>
+                 <span className="font-bold text-gray-900">{org.branchCount || 0}</span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-surface-50 rounded-xl">
+                 <span className="text-sm font-medium text-gray-600">Staff Capacity</span>
+                 <span className="font-bold text-gray-900 uppercase tracking-widest text-xs">Full Access</span>
+              </div>
             </div>
           </div>
         </div>

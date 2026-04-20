@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import User from '../models/User';
+import Organization from '../models/Organization';
 import { generateTokens, sendTokenResponse } from '../utils/token';
 import jwt from 'jsonwebtoken';
 
@@ -57,6 +58,14 @@ export const login = async (req: Request, res: Response) => {
 
     if (!isMatch) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+
+    // Check if organization is suspended for ORGANIZATION roles
+    if (user.role === 'ORGANIZATION') {
+      const org = await Organization.findOne({ email: user.email });
+      if (org && org.status === 'Suspended') {
+        return res.status(403).json({ success: false, message: 'Your organization has been blocked. Please contact support.' });
+      }
     }
 
     const { accessToken, refreshToken } = generateTokens(user._id.toString());
