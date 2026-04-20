@@ -38,7 +38,6 @@ import HRDashboard from './pages/hr/Dashboard';
 import StaffManagement from './pages/hr/Staff';
 import Payroll from './pages/hr/Payroll';
 import HRAttendance from './pages/hr/Attendance';
-import Recruitment from './pages/hr/Recruitment';
 import DocumentManagement from './pages/hr/Documents';
 import HRProfile from './pages/hr/Profile';
 import AdminProfile from './pages/admin/Profile';
@@ -102,7 +101,6 @@ function App() {
           <Route path="payroll" element={<Payroll />} />
           <Route path="staff" element={<StaffManagement />} />
           <Route path="attendance" element={<HRAttendance />} />
-          <Route path="recruitment" element={<Recruitment />} />
           <Route path="documents" element={<DocumentManagement />} />
           <Route path="profile" element={<HRProfile />} />
         </Route>

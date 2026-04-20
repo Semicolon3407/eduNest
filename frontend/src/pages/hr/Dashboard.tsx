@@ -1,15 +1,42 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import StatCard from '../../components/dashboard/StatCard';
-import { CreditCard, ClipboardList, Briefcase, FileText, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { CreditCard, ClipboardList, Briefcase, FileText, CheckCircle2, XCircle, Clock, Loader2 } from 'lucide-react';
 import { cn } from '../../utils/cn';
-
-const leaveRequests = [
-  { id: 1, staff: 'Sarah Connor', role: 'Teacher', type: 'Sick Leave', duration: '2 Days', status: 'Pending' },
-  { id: 2, staff: 'Michael Scott', role: 'Admin', type: 'Annual Leave', duration: '5 Days', status: 'Approved' },
-  { id: 3, staff: 'Dwight Schrute', role: 'Teacher', type: 'Casual Leave', duration: '1 Day', status: 'Rejected' },
-];
+import { hrService } from '../../services/hrService';
 
 const HRDashboard: React.FC = () => {
+  const [stats, setStats] = useState<any>(null);
+  const [leaves, setLeaves] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const [statsRes, leavesRes] = await Promise.all([
+        hrService.getStats(),
+        hrService.getLeaves()
+      ]);
+      if (statsRes.success) setStats(statsRes.data);
+      if (leavesRes.success) setLeaves(leavesRes.data.slice(0, 5));
+    } catch (error) {
+      console.error('Dashboard fetch failed:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <Loader2 size={40} className="animate-spin text-brand-500" />
+        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Compiling HR Insights...</p>
+      </div>
+    );
+  }
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
@@ -18,10 +45,10 @@ const HRDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Total Staff" value="142" icon={Briefcase} color="brand" />
-        <StatCard title="Active Payroll" value="$42,500" icon={CreditCard} color="success" />
-        <StatCard title="Leave Requests" value="8 Pending" icon={ClipboardList} color="warning" />
-        <StatCard title="Documents Due" value="14" icon={FileText} color="danger" />
+        <StatCard title="Total Staff" value={stats?.totalStaff || '0'} icon={Briefcase} color="brand" />
+        <StatCard title="Active Payroll" value={`$${stats?.lastPayroll?.toLocaleString() || '0'}`} icon={CreditCard} color="success" />
+        <StatCard title="Leave Requests" value={`${stats?.pendingLeaves || '0'} Pending`} icon={ClipboardList} color="warning" />
+        <StatCard title="Verified Docs" value="98%" icon={FileText} color="brand" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:p-8">
@@ -32,21 +59,21 @@ const HRDashboard: React.FC = () => {
               <button className="text-brand-600 font-medium text-sm">View History</button>
            </div>
            <div className="p-4 space-y-4">
-              {leaveRequests.map((request) => (
-                <div key={request.id} className="flex items-center justify-between p-4 rounded-2xl border border-surface-100 hover:bg-surface-50 transition-all">
+              {leaves.map((request) => (
+                <div key={request._id} className="flex items-center justify-between p-4 rounded-2xl border border-surface-100 hover:bg-surface-50 transition-all">
                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600 font-medium   text-sm">
-                         {request.staff.split(' ').map(n => n[0]).join('')}
+                      <div className="w-12 h-12 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600 font-medium text-sm uppercase">
+                         {request.staff?.firstName?.[0]}{request.staff?.lastName?.[0]}
                       </div>
                       <div>
-                        <h4 className="font-medium text-gray-900   text-sm">{request.staff}</h4>
-                        <p className="text-xs text-gray-500 font-medium">{request.role} • {request.type}</p>
+                        <h4 className="font-medium text-gray-900 text-sm whitespace-nowrap">{request.staff?.firstName} {request.staff?.lastName}</h4>
+                        <p className="text-xs text-gray-500 font-medium truncate max-w-[150px]">{request.staff?.designation} • {request.type}</p>
                       </div>
                    </div>
-                   <div className="flex items-center gap-6">
-                      <div className="text-right mr-4">
-                        <p className="text-[10px] font-medium text-gray-400  ">Duration</p>
-                        <p className="text-xs font-medium text-gray-900">{request.duration}</p>
+                   <div className="flex items-center gap-6 shrink-0">
+                      <div className="text-right mr-4 hidden sm:block">
+                        <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Date</p>
+                        <p className="text-xs font-medium text-gray-900">{new Date(request.appliedDate).toLocaleDateString()}</p>
                       </div>
                       <div className={cn(
                         "flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium border",
@@ -56,11 +83,16 @@ const HRDashboard: React.FC = () => {
                       )}>
                         {request.status === 'Approved' ? <CheckCircle2 size={12} /> : 
                          request.status === 'Pending' ? <Clock size={12} /> : <XCircle size={12} />}
-                        {request.status}
+                        <span className="capitalize">{request.status}</span>
                       </div>
                    </div>
                 </div>
               ))}
+              {leaves.length === 0 && (
+                <div className="py-10 text-center text-gray-400 text-xs font-bold uppercase tracking-widest italic">
+                  No pending leave requests
+                </div>
+              )}
            </div>
         </div>
 

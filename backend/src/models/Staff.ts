@@ -10,6 +10,8 @@ export interface IStaff extends Document {
   lastName: string;
   personalEmail?: string;
   phone?: string;
+  designation: string;
+  salary: number;
   status: 'Active' | 'Pending' | 'Inactive';
 }
 
@@ -23,6 +25,8 @@ const staffSchema = new Schema<IStaff>({
   lastName: { type: String, required: true },
   personalEmail: { type: String },
   phone: { type: String },
+  designation: { type: String, required: true, default: 'Staff' },
+  salary: { type: Number, default: 0 },
   status: { type: String, enum: ['Active', 'Pending', 'Inactive'], default: 'Active' }
 }, { timestamps: true });
 

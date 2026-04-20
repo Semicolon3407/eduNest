@@ -5,7 +5,6 @@ import {
   LifeBuoy, 
   GitBranch, 
   Calendar, 
-  Briefcase, 
   UserRound, 
   BookOpen, 
   ClipboardList, 
@@ -40,10 +39,10 @@ export const navItems: NavItem[] = [
 
   // HR Items
   { title: 'Dashboard', href: '/hr', icon: LayoutDashboard, roles: ['HR'] },
+  { title: 'Staff Directory', href: '/hr/staff', icon: Users, roles: ['HR'] },
   { title: 'Payroll', href: '/hr/payroll', icon: CreditCard, roles: ['HR'] },
   { title: 'Attendance', href: '/hr/attendance', icon: ClipboardList, roles: ['HR'] },
   { title: 'Document Center', href: '/hr/documents', icon: FileText, roles: ['HR'] },
-  { title: 'Recruitment', href: '/hr/recruitment', icon: Briefcase, roles: ['HR'] },
   { title: 'My Profile', href: '/hr/profile', icon: UserRound, roles: ['HR'] },
 
   // Admin Items

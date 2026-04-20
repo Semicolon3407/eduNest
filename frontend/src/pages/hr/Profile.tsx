@@ -1,13 +1,44 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { 
   UserRound, Mail, Phone, Briefcase, 
   MapPin, Shield, Calendar, Users, 
-  Camera, Edit2, FileText, PieChart
+  Camera, Edit2, FileText, PieChart, Loader2
 } from 'lucide-react';
+import { hrService } from '../../services/hrService';
+import toast from 'react-hot-toast';
 
 const HRProfile: React.FC = () => {
+  const [profile, setProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await hrService.getMyProfile();
+      if (response.success) setProfile(response.data);
+    } catch (error) {
+      toast.error('Identity verification failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <Loader2 size={40} className="animate-spin text-brand-500" />
+        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Verifying Identity...</p>
+      </div>
+    );
+  }
+
+  const initials = profile ? `${profile.firstName?.[0]}${profile.lastName?.[0]}` : '??';
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -28,23 +59,23 @@ const HRProfile: React.FC = () => {
             <div className="relative pt-4">
               <div className="relative inline-block">
                 <div className="w-32 h-32 bg-slate-100 rounded-[48px] border-4 border-white shadow-soft flex items-center justify-center text-brand-600 text-4xl font-display font-medium transition-transform group-hover:scale-105">
-                  ED
+                   {initials}
                 </div>
                 <button className="absolute -bottom-2 -right-2 w-10 h-10 bg-brand-500 text-white rounded-2xl border-4 border-white flex items-center justify-center shadow-premium hover:bg-brand-600 transition-all active:scale-90">
-                  <Camera size={18} />
+                   <Camera size={18} />
                 </button>
               </div>
-              <h3 className="mt-6 text-xl font-bold text-slate-800 tracking-tight text-uppercase uppercase">Emily Davis</h3>
-              <p className="text-sm font-medium text-slate-400 mt-1">Senior HR Manager</p>
+              <h3 className="mt-6 text-xl font-bold text-slate-800 tracking-tight text-uppercase uppercase">{profile?.firstName} {profile?.lastName}</h3>
+              <p className="text-sm font-medium text-slate-400 mt-1 uppercase tracking-widest italic">{profile?.designation}</p>
               
               <div className="mt-8 pt-8 border-t border-slate-100 space-y-4">
                  <div className="flex items-center gap-3 text-left p-3 rounded-2xl bg-slate-50 border border-slate-100">
                     <Mail className="text-brand-500 shrink-0" size={16} />
-                    <p className="text-xs font-bold text-slate-600 truncate uppercase tracking-tighter">emily.d@school.com</p>
+                    <p className="text-xs font-bold text-slate-600 truncate uppercase tracking-tighter">{profile?.personalEmail}</p>
                  </div>
                  <div className="flex items-center gap-3 text-left p-3 rounded-2xl bg-slate-50 border border-slate-100">
                     <Shield className="text-brand-500 shrink-0" size={16} />
-                    <p className="text-xs font-black text-slate-600 uppercase tracking-widest">HR-EXEC-22</p>
+                    <p className="text-xs font-black text-slate-600 uppercase tracking-widest">{profile?.employeeId}</p>
                  </div>
               </div>
             </div>
@@ -61,19 +92,19 @@ const HRProfile: React.FC = () => {
                   </div>
                   <span className="text-xs font-medium text-white/80">Staff Oversight</span>
                 </div>
-                <span className="text-lg font-bold">128</span>
+                <span className="text-lg font-bold">Active</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-success">
                     <PieChart size={18} />
                   </div>
-                  <span className="text-xs font-medium text-white/80">Payroll Accuracy</span>
+                  <span className="text-xs font-medium text-white/80 uppercase">Status</span>
                 </div>
-                <span className="text-lg font-bold">100%</span>
+                <span className="text-lg font-bold uppercase">{profile?.status}</span>
               </div>
               <div className="pt-4 border-t border-white/10 text-center">
-                 <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Next Review: Oct 2024</p>
+                 <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Verified Multi-Tenant Node</p>
               </div>
             </div>
           </div>
@@ -88,14 +119,15 @@ const HRProfile: React.FC = () => {
               </h3>
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input label="Full Name" defaultValue="Emily Davis" icon={UserRound} />
-              <Input label="Staff ID" defaultValue="EMP-003" icon={Shield} />
-              <Input label="Official Email" defaultValue="emily.d@school.com" icon={Mail} />
-              <Input label="Contact Number" defaultValue="+1 (555) 888-2222" icon={Phone} />
-              <Input label="Department" defaultValue="Human Resources" icon={Briefcase} />
-              <Input label="Joined Date" defaultValue="Aug 01, 2022" icon={Calendar} />
+              <Input label="First Name" value={profile?.firstName} icon={UserRound} />
+              <Input label="Last Name" value={profile?.lastName} icon={UserRound} />
+              <Input label="Staff ID" value={profile?.employeeId} icon={Shield} />
+              <Input label="Official Email" value={profile?.personalEmail} icon={Mail} />
+              <Input label="Contact Number" value={profile?.phone || 'N/A'} icon={Phone} />
+              <Input label="Department" value={profile?.department} icon={Briefcase} />
+              <Input label="Designation" value={profile?.designation} icon={Calendar} />
               <div className="md:col-span-2">
-                <Input label="Office Location" defaultValue="HR Suite, North Wing, Level 2" icon={MapPin} />
+                <Input label="Branch" value={profile?.branch?.name || 'Main Campus'} icon={MapPin} />
               </div>
             </div>
           </div>
