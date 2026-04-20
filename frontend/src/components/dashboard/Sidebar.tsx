@@ -1,9 +1,10 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { navItems } from '../../utils/navigation';
 import type { UserRole } from '../../utils/navigation';
 import { cn } from '../../utils/cn';
 import { LogOut, GraduationCap, X } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface SidebarProps {
   role: UserRole;
@@ -13,6 +14,17 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, onClose }) => {
   const filteredNavItems = navItems.filter((item) => item.roles.includes(role));
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
 
   return (
     <aside className={cn(
@@ -63,7 +75,10 @@ const Sidebar: React.FC<SidebarProps> = ({ role, isOpen, onClose }) => {
       </nav>
 
       <div className="p-4 border-t border-surface-200">
-        <button className="flex items-center gap-3 w-full px-4 py-3 text-gray-500 hover:text-danger hover:bg-danger-light/30 rounded-xl transition-colors duration-200">
+        <button 
+          onClick={handleLogout}
+          className="flex items-center gap-3 w-full px-4 py-3 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors duration-200"
+        >
           <LogOut size={20} />
           <span className="font-medium">Logout</span>
         </button>

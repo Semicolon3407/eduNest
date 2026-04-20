@@ -1,20 +1,21 @@
 import React from 'react';
 import { Bell, User, Calendar, Menu, GraduationCap } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 interface NavbarProps {
   onMenuClick: () => void;
 }
 
 const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
-  const currentPath = window.location.pathname;
+  const { user } = useAuth();
   
   // Mapping roles for display in user info
-  const roleLabel = currentPath.includes('/super-admin') ? 'Super Admin' :
-                    currentPath.includes('/organization') ? 'Org Admin' :
-                    currentPath.includes('/hr') ? 'HR Manager' :
-                    currentPath.includes('/admin') ? 'Administrator' :
-                    currentPath.includes('/tutor') ? 'Tutor' :
-                    currentPath.includes('/student') ? 'Student' : 'User';
+  const roleLabel = user?.role === 'SUPER_ADMIN' ? 'Super Admin' :
+                    user?.role === 'ORGANIZATION' ? 'Org Admin' :
+                    user?.role === 'HR' ? 'HR Manager' :
+                    user?.role === 'ADMIN' ? 'Administrator' :
+                    user?.role === 'TUTOR' ? 'Tutor' :
+                    user?.role === 'STUDENT' ? 'Student' : 'User';
 
   const today = new Intl.DateTimeFormat('en-US', { 
     weekday: 'short', 
@@ -52,14 +53,14 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
       <div className="flex items-center gap-2 sm:gap-4">
         <button className="relative p-2 text-gray-500 hover:bg-surface-100 rounded-xl transition-colors">
           <Bell size={18} className="sm:w-5 sm:h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-danger rounded-full border-2 border-surface"></span>
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-surface"></span>
         </button>
         
         <div className="h-8 w-px bg-surface-200 mx-1 hidden sm:block"></div>
 
         <div className="flex items-center gap-2 cursor-pointer group">
           <div className="text-right hidden md:block">
-            <p className="text-sm font-bold text-gray-900 group-hover:text-brand-600 transition-colors whitespace-nowrap">Anup Sharma</p>
+            <p className="text-sm font-bold text-gray-900 group-hover:text-brand-600 transition-colors whitespace-nowrap">{user?.name || 'User'}</p>
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{roleLabel}</p>
           </div>
           <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 border border-brand-200 flex items-center justify-center text-white shadow-soft shrink-0 overflow-hidden">

@@ -44,6 +44,8 @@ import HRProfile from './pages/hr/Profile';
 import AdminProfile from './pages/admin/Profile';
 import Login from './pages/Login';
 
+import ProtectedRoute from './components/ProtectedRoute';
+
 function App() {
   return (
     <Router>
@@ -51,7 +53,11 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         {/* Super Admin Routes */}
-        <Route path="/super-admin" element={<DashboardLayout role="SUPER_ADMIN" />}>
+        <Route path="/super-admin" element={
+          <ProtectedRoute allowedRoles={['SUPER_ADMIN']}>
+            <DashboardLayout role="SUPER_ADMIN" />
+          </ProtectedRoute>
+        }>
           <Route index element={<SuperAdminDashboard />} />
           <Route path="organizations" element={<Organizations />} />
           <Route path="organizations/:id" element={<OrganizationDetails />} />
@@ -60,7 +66,11 @@ function App() {
         </Route>
 
         {/* Organization Admin Routes */}
-        <Route path="/organization" element={<DashboardLayout role="ORGANIZATION" />}>
+        <Route path="/organization" element={
+          <ProtectedRoute allowedRoles={['ORGANIZATION']}>
+            <DashboardLayout role="ORGANIZATION" />
+          </ProtectedRoute>
+        }>
           <Route index element={<OrganizationDashboard />} />
           <Route path="branches" element={<Branches />} />
           <Route path="students" element={<StudentManagement />} />
@@ -70,7 +80,11 @@ function App() {
         </Route>
 
         {/* HR Routes */}
-        <Route path="/hr" element={<DashboardLayout role="HR" />}>
+        <Route path="/hr" element={
+          <ProtectedRoute allowedRoles={['HR']}>
+            <DashboardLayout role="HR" />
+          </ProtectedRoute>
+        }>
           <Route index element={<HRDashboard />} />
           <Route path="payroll" element={<Payroll />} />
           <Route path="staff" element={<StaffManagement />} />
@@ -81,7 +95,11 @@ function App() {
         </Route>
 
         {/* Admin Routes */}
-        <Route path="/admin" element={<DashboardLayout role="ADMIN" />}>
+        <Route path="/admin" element={
+          <ProtectedRoute allowedRoles={['ADMIN']}>
+            <DashboardLayout role="ADMIN" />
+          </ProtectedRoute>
+        }>
           <Route index element={<AdminDashboard />} />
           <Route path="admissions" element={<Admissions />} />
           <Route path="fees" element={<Fees />} />
@@ -92,7 +110,11 @@ function App() {
         </Route>
 
         {/* Tutor Routes */}
-        <Route path="/tutor" element={<DashboardLayout role="TUTOR" />}>
+        <Route path="/tutor" element={
+          <ProtectedRoute allowedRoles={['TUTOR']}>
+            <DashboardLayout role="TUTOR" />
+          </ProtectedRoute>
+        }>
           <Route index element={<TutorDashboard />} />
           <Route path="classroom" element={<Classroom />} />
           <Route path="assignments" element={<Assignments />} />
@@ -106,7 +128,11 @@ function App() {
         </Route>
 
         {/* Student Routes */}
-        <Route path="/student" element={<DashboardLayout role="STUDENT" />}>
+        <Route path="/student" element={
+          <ProtectedRoute allowedRoles={['STUDENT']}>
+            <DashboardLayout role="STUDENT" />
+          </ProtectedRoute>
+        }>
           <Route index element={<StudentDashboard />} />
           <Route path="courses" element={<MyCourses />} />
           <Route path="assignments" element={<StudentAssignments />} />

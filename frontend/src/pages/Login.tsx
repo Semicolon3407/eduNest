@@ -3,21 +3,40 @@ import { useNavigate } from 'react-router-dom';
 import { GraduationCap, Mail, Lock, ArrowRight, ShieldCheck, Globe, Zap } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
+import { useAuth } from '../context/AuthContext';
 
 const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const { login, isLoading, error } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate('/super-admin');
-    }, 1500);
+    try {
+      await login({ email, password });
+      // The redirect logic will be handled by the user role in the response
+      // For now, we'll fetch the user from context after successful login
+    } catch (err) {
+      console.error('Login failed:', err);
+    }
   };
+
+  // Effect to navigate based on role once authenticated
+  const { user, isAuthenticated } = useAuth();
+  React.useEffect(() => {
+    if (isAuthenticated && user) {
+      const roleRedirects: Record<string, string> = {
+        'SUPER_ADMIN': '/super-admin',
+        'ORGANIZATION': '/organization',
+        'HR': '/hr',
+        'ADMIN': '/admin',
+        'TUTOR': '/tutor',
+        'STUDENT': '/student',
+      };
+      navigate(roleRedirects[user.role] || '/login');
+    }
+  }, [isAuthenticated, user, navigate]);
 
   return (
     <div className="min-h-screen w-full bg-[#f8fafc] flex items-center justify-center p-4 md:p-4 sm:p-8 font-sans overflow-hidden">
@@ -88,6 +107,11 @@ const Login: React.FC = () => {
                 </div>
 
                 <form onSubmit={handleLogin} className="space-y-8">
+                    {error && (
+                        <div className="p-4 bg-red-50 border border-red-100 text-red-600 text-xs font-bold rounded-2xl flex items-center gap-2 animate-in slide-in-from-top-2 duration-300">
+                           <ShieldCheck size={16} /> {error}
+                        </div>
+                    )}
                     <div className="space-y-2">
                         <Input 
                             label="Email Address" 

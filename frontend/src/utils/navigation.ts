@@ -28,7 +28,7 @@ export const navItems: NavItem[] = [
   // Super Admin Items
   { title: 'Dashboard', href: '/super-admin', icon: LayoutDashboard, roles: ['SUPER_ADMIN'] },
   { title: 'Organizations', href: '/super-admin/organizations', icon: School, roles: ['SUPER_ADMIN'] },
-  { title: 'Subscriptions', href: '/super-admin/billing', icon: CreditCard, roles: ['SUPER_ADMIN'] },
+  { title: 'Billing', href: '/super-admin/billing', icon: CreditCard, roles: ['SUPER_ADMIN'] },
   { title: 'Support Tickets', href: '/super-admin/support', icon: LifeBuoy, roles: ['SUPER_ADMIN'] },
 
   // Organization Items

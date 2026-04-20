@@ -14,11 +14,6 @@ const subscriptionPlanSchema = new Schema({
     type: Number,
     required: [true, 'Please add a yearly price'],
   },
-  features: [
-    {
-      type: String,
-    }
-  ],
   isActive: {
     type: Boolean,
     default: true,

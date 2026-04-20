@@ -4,8 +4,9 @@ import {
   createOrganization, 
   updateOrganizationStatus, 
   getPlans, 
-  createPlan,
-  deleteOrganization
+  updatePlan,
+  deleteOrganization,
+  updateOrganization
 } from '../controllers/superAdminController';
 import { protect, authorize } from '../middlewares/auth';
 
@@ -60,6 +61,28 @@ router.route('/organizations')
 /**
  * @swagger
  * /super-admin/organizations/{id}:
+ *   put:
+ *     summary: Update an organization
+ *     tags: [Super Admin]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string }
+ *               location: { type: string }
+ *               email: { type: string }
+ *               phone: { type: string }
+ *     responses:
+ *       200:
+ *         description: Organization updated
  *   delete:
  *     summary: Delete an organization
  *     tags: [Super Admin]
@@ -73,6 +96,7 @@ router.route('/organizations')
  *         description: Organization deleted
  */
 router.route('/organizations/:id')
+  .put(updateOrganization)
   .delete(deleteOrganization);
 
 /**
@@ -127,8 +151,7 @@ router.patch('/organizations/:id/status', updateOrganizationStatus);
  *       201:
  *         description: Plan created
  */
-router.route('/plans')
-  .get(getPlans)
-  .post(createPlan);
+router.get('/plans', getPlans);
+router.put('/plans/:id', updatePlan);
 
 export default router;

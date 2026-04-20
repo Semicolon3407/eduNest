@@ -9,6 +9,7 @@ interface ModalProps {
   description?: string;
   children: React.ReactNode;
   maxWidth?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '4xl';
+  className?: string;
 }
 
 const Modal: React.FC<ModalProps> = ({ 
@@ -17,7 +18,8 @@ const Modal: React.FC<ModalProps> = ({
   title, 
   description, 
   children, 
-  maxWidth = 'lg' 
+  maxWidth = 'lg',
+  className
 }) => {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -53,12 +55,13 @@ const Modal: React.FC<ModalProps> = ({
       
       <div className={cn(
         "bg-white w-full rounded-[32px] sm:rounded-[48px] shadow-2xl relative z-10 animate-in zoom-in-95 fade-in duration-300 border border-white",
-        maxWidthClasses[maxWidth]
+        maxWidthClasses[maxWidth],
+        className
       )}>
         <div className="p-8 sm:p-10">
           <div className="flex items-center justify-between mb-8">
             <div>
-              <h2 className="text-2xl font-display font-medium text-gray-900 leading-none">{title}</h2>
+              <h2 className="text-xl font-display font-medium text-gray-900 leading-none">{title}</h2>
               {description && <p className="text-sm text-gray-500 mt-2 font-medium">{description}</p>}
             </div>
             <button 
