@@ -7,6 +7,12 @@ import {
   deleteOrganization, 
   updateOrganization 
 } from '../controllers/superAdminController';
+import {
+  getSubscriptions,
+  createSubscription,
+  updateSubscription,
+  deleteSubscription
+} from '../controllers/subscriptionController';
 import { protect, authorize } from '../middlewares/auth';
 
 const router = express.Router();
@@ -134,5 +140,14 @@ router.route('/organizations/:id')
  *         description: Status updated
  */
 router.patch('/organizations/:id/status', updateOrganizationStatus);
+
+// Subscription Management
+router.route('/subscriptions')
+  .get(getSubscriptions as any)
+  .post(createSubscription as any);
+
+router.route('/subscriptions/:id')
+  .put(updateSubscription as any)
+  .delete(deleteSubscription as any);
 
 export default router;

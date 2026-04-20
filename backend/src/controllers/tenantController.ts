@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
-import Branch from '../models/Branch';
 import Staff from '../models/Staff';
 import User from '../models/User';
+import Organization from '../models/Organization';
+import Branch from '../models/Branch';
 import { AuthRequest } from '../middlewares/auth';
 import mongoose from 'mongoose';
 
@@ -24,11 +25,28 @@ export const getBranches = async (req: AuthRequest, res: Response) => {
 // @access  Private (Organization Admin)
 export const addBranch = async (req: AuthRequest, res: Response) => {
   try {
-    req.body.organization = req.user.organization;
-    const branch = await Branch.create(req.body);
+    if (!req.user.organization) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'User is not associated with any organization. Please contact support.' 
+      });
+    }
+
+    const branchData = {
+      ...req.body,
+      organization: req.user.organization
+    };
+
+    const branch = await Branch.create(branchData);
     res.status(201).json({ success: true, data: branch });
   } catch (err: any) {
-    res.status(400).json({ success: false, message: err.message });
+    console.error('Error adding branch:', err);
+    res.status(400).json({ 
+      success: false, 
+      message: err.code === 11000 
+        ? 'A branch with this code already exists. Codes must be globally unique.' 
+        : err.message 
+    });
   }
 };
 
@@ -37,14 +55,24 @@ export const addBranch = async (req: AuthRequest, res: Response) => {
 // @access  Private (Organization Admin)
 export const updateBranch = async (req: AuthRequest, res: Response) => {
   try {
-    let branch = await Branch.findOne({ _id: req.params.id, organization: req.user.organization });
+    const branch = await Branch.findOneAndUpdate(
+      { _id: req.params.id, organization: req.user.organization },
+      req.body,
+      { new: true, runValidators: true }
+    );
+
     if (!branch) {
-      return res.status(404).json({ success: false, message: 'Branch not found' });
+      return res.status(404).json({ success: false, message: 'Branch not found or unauthorized' });
     }
-    branch = await Branch.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after', runValidators: true });
+
     res.status(200).json({ success: true, data: branch });
   } catch (err: any) {
-    res.status(400).json({ success: false, message: err.message });
+    res.status(400).json({ 
+      success: false, 
+      message: err.code === 11000 
+        ? 'A branch with this code already exists.' 
+        : err.message 
+    });
   }
 };
 
@@ -89,8 +117,6 @@ export const getStaff = async (req: AuthRequest, res: Response) => {
 // @route   POST /api/v1/tenant/staff
 // @access  Private (Organization Admin)
 export const onboardStaff = async (req: AuthRequest, res: Response) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
   try {
     const { firstName, lastName, email, role, department, employeeId, branch: branchId, phone, personalEmail, password } = req.body;
 
@@ -101,17 +127,17 @@ export const onboardStaff = async (req: AuthRequest, res: Response) => {
     }
 
     // 1. Create User
-    const user = await User.create([{
+    const user = await User.create({
       name: `${firstName} ${lastName}`,
       email,
       password: password || 'EduNest@123', // Default strong password
       role,
       organization: req.user.organization
-    }], { session });
+    });
 
     // 2. Create Staff Profile
-    const staff = await Staff.create([{
-      user: user[0]._id,
+    const staff = await Staff.create({
+      user: user._id,
       organization: req.user.organization,
       branch: branchId,
       employeeId,
@@ -121,15 +147,11 @@ export const onboardStaff = async (req: AuthRequest, res: Response) => {
       phone,
       personalEmail,
       status: 'Active'
-    }], { session });
+    });
 
-    await session.commitTransaction();
-    res.status(201).json({ success: true, data: staff[0] });
+    res.status(201).json({ success: true, data: staff });
   } catch (err: any) {
-    await session.abortTransaction();
     res.status(400).json({ success: false, message: err.message });
-  } finally {
-    session.endSession();
   }
 };
 
@@ -145,13 +167,25 @@ export const updateStaff = async (req: AuthRequest, res: Response) => {
 
     staff = await Staff.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after', runValidators: true });
     
-    // If name or role updated, update User model too
-    if (req.body.firstName || req.body.lastName || req.body.role) {
-      const updateData: any = {};
-      if (req.body.firstName && req.body.lastName) updateData.name = `${req.body.firstName} ${req.body.lastName}`;
-      if (req.body.role) updateData.role = req.body.role;
-      
-      await User.findByIdAndUpdate(staff?.user, updateData);
+    if (!staff) {
+      return res.status(404).json({ success: false, message: 'Staff profile not found' });
+    }
+    
+    // If name, role, or password updated, update User model too
+    if (req.body.firstName || req.body.lastName || req.body.role || req.body.password) {
+      const user = await User.findById(staff.user);
+      if (user) {
+        if (req.body.firstName && req.body.lastName) {
+          user.name = `${req.body.firstName} ${req.body.lastName}`;
+        }
+        if (req.body.role) {
+          user.role = req.body.role;
+        }
+        if (req.body.password) {
+          user.password = req.body.password;
+        }
+        await user.save();
+      }
     }
 
     res.status(200).json({ success: true, data: staff });
@@ -164,8 +198,6 @@ export const updateStaff = async (req: AuthRequest, res: Response) => {
 // @route   DELETE /api/v1/tenant/staff/:id
 // @access  Private (Organization Admin)
 export const deleteStaff = async (req: AuthRequest, res: Response) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
   try {
     const staff = await Staff.findOne({ _id: req.params.id, organization: req.user.organization });
     if (!staff) {
@@ -173,15 +205,48 @@ export const deleteStaff = async (req: AuthRequest, res: Response) => {
     }
 
     // Delete both Staff profile and User account
-    await User.findByIdAndDelete(staff.user).session(session);
-    await staff.deleteOne({ session });
+    if (staff.user) {
+      await User.findByIdAndDelete(staff.user);
+    }
+    await staff.deleteOne();
 
-    await session.commitTransaction();
     res.status(200).json({ success: true, data: {} });
   } catch (err: any) {
-    await session.abortTransaction();
     res.status(400).json({ success: false, message: err.message });
-  } finally {
-    session.endSession();
+  }
+};
+
+// --- Organization Profile ---
+
+// @desc    Get organization profile
+// @route   GET /api/v1/tenant/profile
+// @access  Private (Organization Admin)
+export const getOrganizationProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const org = await Organization.findById(req.user.organization);
+    if (!org) {
+      return res.status(404).json({ success: false, message: 'Organization not found' });
+    }
+    res.status(200).json({ success: true, data: org });
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+
+// @desc    Update organization profile
+// @route   PUT /api/v1/tenant/profile
+// @access  Private (Organization Admin)
+export const updateOrganizationProfile = async (req: AuthRequest, res: Response) => {
+  try {
+    const org = await Organization.findByIdAndUpdate(req.user.organization, req.body, {
+      new: true,
+      runValidators: true
+    });
+    if (!org) {
+      return res.status(404).json({ success: false, message: 'Organization not found' });
+    }
+    res.status(200).json({ success: true, data: org });
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
   }
 };

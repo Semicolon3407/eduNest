@@ -13,7 +13,7 @@ export interface IBranch extends Document {
 
 const branchSchema = new Schema<IBranch>({
   name: { type: String, required: true },
-  code: { type: String, required: true, unique: true },
+  code: { type: String, required: true },
   type: { 
     type: String, 
     required: true, 
@@ -25,5 +25,8 @@ const branchSchema = new Schema<IBranch>({
   organization: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
   status: { type: String, enum: ['Active', 'Pending', 'Suspended'], default: 'Active' }
 }, { timestamps: true });
+
+// Ensure code is unique within an organization
+branchSchema.index({ organization: 1, code: 1 }, { unique: true });
 
 export default mongoose.model<IBranch>('Branch', branchSchema);

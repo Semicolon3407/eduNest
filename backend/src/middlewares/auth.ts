@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import User from '../models/User';
+import Organization from '../models/Organization';
 
 export interface AuthRequest extends Request {
   user?: any;
@@ -30,6 +31,15 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
     if (!req.user) {
       return res.status(401).json({ success: false, message: 'User not found' });
+    }
+
+    // Auto-repair missing organization link for ORGANIZATION role
+    if (req.user.role === 'ORGANIZATION' && !req.user.organization) {
+      const org = await Organization.findOne({ email: req.user.email });
+      if (org) {
+        req.user.organization = org._id;
+        await req.user.save();
+      }
     }
 
     next();

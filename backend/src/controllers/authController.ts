@@ -63,6 +63,12 @@ export const login = async (req: Request, res: Response) => {
     // Check if organization is suspended for ORGANIZATION roles
     if (user.role === 'ORGANIZATION') {
       const org = await Organization.findOne({ email: user.email });
+      
+      // Auto-repair missing organization link if it exists
+      if (org && !user.organization) {
+        user.organization = org._id;
+      }
+
       if (org && org.status === 'Suspended') {
         return res.status(403).json({ success: false, message: 'Your organization has been blocked. Please contact support.' });
       }

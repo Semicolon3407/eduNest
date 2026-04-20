@@ -1,7 +1,8 @@
 import express from 'express';
 import { 
   getBranches, addBranch, updateBranch, deleteBranch,
-  getStaff, onboardStaff, updateStaff, deleteStaff 
+  getStaff, onboardStaff, updateStaff, deleteStaff,
+  getOrganizationProfile, updateOrganizationProfile
 } from '../controllers/tenantController';
 import { protect, authorize } from '../middlewares/auth';
 
@@ -28,5 +29,10 @@ router.route('/staff')
 router.route('/staff/:id')
   .put(updateStaff)
   .delete(deleteStaff);
+
+// Profile Routes
+router.route('/profile')
+  .get(getOrganizationProfile)
+  .put(updateOrganizationProfile);
 
 export default router;

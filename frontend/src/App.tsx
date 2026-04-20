@@ -3,6 +3,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import SuperAdminDashboard from './pages/super-admin/Dashboard';
 import Organizations from './pages/super-admin/Organizations';
 import OrganizationDetails from './pages/super-admin/OrganizationDetails';
+import Subscriptions from './pages/super-admin/Subscriptions';
 import Support from './pages/super-admin/Support';
 import StudentDashboard from './pages/student/Dashboard';
 import MyCourses from './pages/student/Courses';
@@ -73,6 +74,7 @@ function App() {
           <Route index element={<SuperAdminDashboard />} />
           <Route path="organizations" element={<Organizations />} />
           <Route path="organizations/:id" element={<OrganizationDetails />} />
+          <Route path="subscriptions" element={<Subscriptions />} />
           <Route path="support" element={<Support />} />
         </Route>
 

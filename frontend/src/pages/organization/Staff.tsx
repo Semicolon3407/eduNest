@@ -3,21 +3,23 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
-import { 
-  UserPlus, Mail, Shield, Phone, Briefcase, Hash, 
-  Search, Filter, MoreVertical, Users, 
-  AlertCircle, Eye, Edit, Trash2, ChevronDown, Loader2
+import {
+  UserPlus, Mail, Shield, Phone, Briefcase, Hash,
+  Search, MoreVertical, Users,
+  AlertCircle, Eye, Trash2, ChevronDown, Loader2, Edit3, Lock
 } from 'lucide-react';
+import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
 import { tenantService } from '../../services/tenantService';
 import toast from 'react-hot-toast';
 
 const StaffOnboarding: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [staff, setStaff] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filterBranch, setFilterBranch] = useState('');
+  const [filterDepartment, setFilterDepartment] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
@@ -28,7 +30,8 @@ const StaffOnboarding: React.FC = () => {
     employeeId: '',
     department: '',
     branch: '',
-    role: ''
+    role: '',
+    password: ''
   });
 
   const [editingStaff, setEditingStaff] = useState<any | null>(null);
@@ -88,10 +91,10 @@ const StaffOnboarding: React.FC = () => {
       employeeId: member.employeeId,
       department: member.department,
       branch: member.branch || '',
-      role: member.user?.role || ''
+      role: member.user?.role || '',
+      password: ''
     });
     setIsModalOpen(true);
-    setOpenMenuId(null);
   };
 
   const handleCloseModal = () => {
@@ -106,7 +109,8 @@ const StaffOnboarding: React.FC = () => {
       employeeId: '',
       department: '',
       branch: '',
-      role: ''
+      role: '',
+      password: ''
     });
   };
 
@@ -121,10 +125,22 @@ const StaffOnboarding: React.FC = () => {
     }
   };
 
-  const toggleMenu = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setOpenMenuId(openMenuId === id ? null : id);
-  };
+
+  const filteredStaff = staff.filter(member => {
+    const searchLower = searchTerm.toLowerCase();
+    const matchesSearch =
+      member.firstName.toLowerCase().includes(searchLower) ||
+      member.lastName.toLowerCase().includes(searchLower) ||
+      member.department.toLowerCase().includes(searchLower) ||
+      member.user?.role?.toLowerCase().includes(searchLower);
+
+    const matchesBranch = !filterBranch || member.branch?._id === filterBranch;
+    const matchesDepartment = !filterDepartment || member.department === filterDepartment;
+
+    return matchesSearch && matchesBranch && matchesDepartment;
+  });
+
+  const departments = Array.from(new Set(staff.map(s => s.department))).filter(Boolean);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-12">
@@ -149,7 +165,7 @@ const StaffOnboarding: React.FC = () => {
             <p className="text-2xl font-display font-medium text-gray-900">{staff.length}</p>
           </div>
         </div>
-        
+
         <div className="bg-surface p-6 rounded-[32px] border border-surface-200 flex items-center gap-4 transition-all hover:border-warning/30">
           <div className="w-14 h-14 rounded-2xl bg-warning-light/50 text-warning-dark flex items-center justify-center">
             <AlertCircle size={24} />
@@ -186,19 +202,47 @@ const StaffOnboarding: React.FC = () => {
               className="rounded-xl h-12"
             />
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1 sm:flex-none py-3 rounded-xl border-surface-200">
-              <Filter size={18} /> Filters
+          <div className="flex flex-wrap gap-2">
+            <div className="relative min-w-[160px]">
+              <select
+                className="w-full h-12 bg-surface-50 border border-surface-200 rounded-xl px-4 py-2 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer pr-10"
+                value={filterBranch}
+                onChange={(e) => setFilterBranch(e.target.value)}
+              >
+                <option value="">All Branches</option>
+                {branches.map(b => (
+                  <option key={b._id} value={b._id}>{b.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+
+            <div className="relative min-w-[160px]">
+              <select
+                className="w-full h-12 bg-surface-50 border border-surface-200 rounded-xl px-4 py-2 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer pr-10"
+                value={filterDepartment}
+                onChange={(e) => setFilterDepartment(e.target.value)}
+              >
+                <option value="">All Departments</option>
+                {departments.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+              <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+
+            <Button variant="outline" className="h-12 py-3 rounded-xl border-surface-200" onClick={() => { setFilterBranch(''); setFilterDepartment(''); setSearchTerm(''); }}>
+              Clear
             </Button>
-            <Button variant="outline" className="flex-1 sm:flex-none py-3 rounded-xl border-surface-200">
+            <Button variant="outline" className="h-12 py-3 rounded-xl border-surface-200">
               Export CSV
             </Button>
           </div>
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:-mx-6">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[1000px]">
+        <div className="overflow-visible">
+          <div className="px-0 relative">
+            <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-surface-50 text-gray-400 text-[10px] font-bold tracking-[0.2em] px-6">
                   <th className="px-6 py-4">Staff Member</th>
@@ -216,18 +260,18 @@ const StaffOnboarding: React.FC = () => {
                       <p className="text-sm font-medium uppercase tracking-widest">Synchronizing staff directory...</p>
                     </td>
                   </tr>
-                ) : staff.length === 0 ? (
+                ) : filteredStaff.length === 0 ? (
                   <tr>
                     <td colSpan={5} className="px-6 py-20 text-center text-gray-500 uppercase tracking-widest text-xs font-bold">
-                      Institutional directory is empty
+                      No staff members match the current filters
                     </td>
                   </tr>
                 ) : (
-                  staff.map((member) => (
+                  filteredStaff.map((member) => (
                     <tr key={member._id} className="group hover:bg-brand-50/20 transition-all cursor-pointer">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-600 font-medium text-sm transition-all group-hover:bg-white group-hover:scale-110 shadow-sm border border-transparent group-hover:border-brand-100">
+                          <div className="w-12 h-12 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm transition-all group-hover:bg-white group-hover:scale-110 shadow-sm border border-transparent group-hover:border-brand-100">
                             {member.firstName.charAt(0)}
                           </div>
                           <div>
@@ -257,39 +301,19 @@ const StaffOnboarding: React.FC = () => {
                           {member.status}
                         </Badge>
                       </td>
-                      <td className="px-6 py-5 text-right relative">
-                        <div className="flex items-center justify-end gap-2 text-left">
-                          <button 
-                            onClick={(e) => toggleMenu(member._id, e)}
-                            className={`p-2 rounded-lg transition-all ${openMenuId === member._id ? 'bg-brand-500 text-white' : 'text-gray-400 hover:bg-surface-100'}`}
+                      <td className="px-6 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Dropdown
+                            trigger={
+                              <button className="p-2 text-gray-400 hover:bg-surface-100 rounded-lg transition-colors">
+                                <MoreVertical size={18} />
+                              </button>
+                            }
                           >
-                            <MoreVertical size={18} />
-                          </button>
-  
-                          {/* Dropdown Menu */}
-                          {openMenuId === member._id && (
-                            <>
-                              <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)}></div>
-                              <div className="absolute right-0 top-12 w-48 bg-white rounded-2xl shadow-premium border border-surface-100 p-2 z-50 animate-in zoom-in-95 duration-200">
-                                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-600 rounded-xl transition-all">
-                                   <Eye size={16} /> View Profile
-                                </button>
-                                <button 
-                                  onClick={() => handleEdit(member)}
-                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-slate-50 rounded-xl transition-all"
-                                >
-                                   <Edit size={16} /> Edit Records
-                                </button>
-                                <div className="my-1 border-t border-surface-50"></div>
-                                <button 
-                                  onClick={() => handleDelete(member._id)}
-                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-danger hover:bg-danger/5 rounded-xl transition-all"
-                                >
-                                   <Trash2 size={16} /> Terminate
-                                </button>
-                              </div>
-                            </>
-                          )}
+                            <DropdownItem icon={Eye} onClick={() => { }}>View Profile</DropdownItem>
+                            <DropdownItem icon={Edit3} onClick={() => handleEdit(member)}>Edit Records</DropdownItem>
+                            <DropdownItem icon={Trash2} onClick={() => handleDelete(member._id)} variant="danger">Terminate</DropdownItem>
+                          </Dropdown>
                         </div>
                       </td>
                     </tr>
@@ -299,9 +323,9 @@ const StaffOnboarding: React.FC = () => {
             </table>
           </div>
         </div>
-        
+
         <div className="mt-8 flex items-center justify-between px-2">
-          <p className="text-xs font-medium text-gray-400">Showing 1 to 5 of 128 staff records</p>
+          <p className="text-xs font-medium text-gray-400">Showing {filteredStaff.length} of {staff.length} staff records</p>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="rounded-lg h-9" disabled>Previous</Button>
             <Button variant="outline" size="sm" className="rounded-lg h-9">Next</Button>
@@ -317,122 +341,132 @@ const StaffOnboarding: React.FC = () => {
         maxWidth="2xl"
       >
         <form className="space-y-6" onSubmit={handleSubmit}>
-           <div className="grid grid-cols-2 gap-4">
-              <Input 
-                label="First Name" 
-                placeholder="e.g. John" 
-                required 
-                value={formData.firstName}
-                onChange={(e) => setFormData({...formData, firstName: e.target.value})}
-              />
-              <Input 
-                label="Last Name" 
-                placeholder="e.g. Doe" 
-                required 
-                value={formData.lastName}
-                onChange={(e) => setFormData({...formData, lastName: e.target.value})}
-              />
-           </div>
-           
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input 
-                label="Official Email" 
-                icon={Mail} 
-                placeholder="name@school.com" 
-                type="email" 
-                required 
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-              />
-              <Input 
-                label="Personal Email" 
-                icon={Mail} 
-                placeholder="name@personal.com" 
-                type="email" 
-                value={formData.personalEmail}
-                onChange={(e) => setFormData({...formData, personalEmail: e.target.value})}
-              />
-           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="First Name"
+              placeholder="e.g. John"
+              required
+              value={formData.firstName}
+              onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+            />
+            <Input
+              label="Last Name"
+              placeholder="e.g. Doe"
+              required
+              value={formData.lastName}
+              onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+            />
+          </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input 
-                label="Phone Number" 
-                icon={Phone} 
-                placeholder="+1 (555) 000-0000" 
-                value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              />
-              <Input 
-                label="Employee ID" 
-                icon={Hash} 
-                placeholder="EMP-001" 
-                required 
-                value={formData.employeeId}
-                onChange={(e) => setFormData({...formData, employeeId: e.target.value})}
-              />
-           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Official Email"
+              icon={Mail}
+              placeholder="name@school.com"
+              type="email"
+              required
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+            <Input
+              label="Personal Email"
+              icon={Mail}
+              placeholder="name@personal.com"
+              type="email"
+              value={formData.personalEmail}
+              onChange={(e) => setFormData({ ...formData, personalEmail: e.target.value })}
+            />
+          </div>
 
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input 
-                label="Department" 
-                icon={Briefcase} 
-                placeholder="e.g. Science" 
-                required 
-                value={formData.department}
-                onChange={(e) => setFormData({...formData, department: e.target.value})}
-              />
-              
-              <div className="space-y-1.5 focus-within:z-10 group text-left">
-                <label className="text-xs font-medium text-gray-400 px-1">Branch Allocation</label>
-                <div className="relative">
-                  <select 
-                    className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer"
-                    value={formData.branch}
-                    onChange={(e) => setFormData({...formData, branch: e.target.value})}
-                  >
-                    <option value="">Select Branch</option>
-                    {branches.map(b => (
-                      <option key={b._id} value={b._id}>{b.name} ({b.code})</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-           </div>
-           
-           <div className="space-y-1.5 focus-within:z-10 group text-left">
-              <label className="text-xs font-medium text-gray-400 px-1">Institutional Role</label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Phone Number"
+              icon={Phone}
+              placeholder="+1 (555) 000-0000"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+            <Input
+              label="Employee ID"
+              icon={Hash}
+              placeholder="EMP-001"
+              required
+              value={formData.employeeId}
+              onChange={(e) => setFormData({ ...formData, employeeId: e.target.value })}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Department"
+              icon={Briefcase}
+              placeholder="e.g. Science"
+              required
+              value={formData.department}
+              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+            />
+
+            <div className="space-y-1.5 focus-within:z-10 group text-left">
+              <label className="text-xs font-medium text-gray-400 px-1">Branch Allocation</label>
               <div className="relative">
-                <select 
+                <select
                   className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer"
-                  value={formData.role}
-                  onChange={(e) => setFormData({...formData, role: e.target.value})}
+                  value={formData.branch}
+                  onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
                 >
-                  <option value="">Select Role</option>
-                  <option value="HR">HR Manager</option>
-                  <option value="ADMIN">Administrator</option>
-                  <option value="TUTOR">Academic Tutor</option>
+                  <option value="">Select Branch</option>
+                  {branches.map(b => (
+                    <option key={b._id} value={b._id}>{b.name} ({b.code})</option>
+                  ))}
                 </select>
                 <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
               </div>
-           </div>
+            </div>
+          </div>
+          <div className="space-y-1.5 focus-within:z-10 group text-left">
+            <label className="text-xs font-medium text-gray-400 px-1">Institutional Role</label>
+            <div className="relative">
+              <select
+                className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer"
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              >
+                <option value="">Select Role</option>
+                <option value="HR">HR Manager</option>
+                <option value="ADMIN">Administrator</option>
+                <option value="TUTOR">Academic Tutor</option>
+              </select>
+              <ChevronDown size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
 
-           <div className="p-5 bg-brand-50 rounded-2xl border border-brand-100 flex items-start gap-4">
-              <div className="w-10 h-10 bg-brand-500 text-white rounded-xl flex items-center justify-center shrink-0">
-                 <Shield size={20} />
-              </div>
-              <div className="text-left">
-                <h4 className="text-sm font-medium text-brand-500 uppercase tracking-tight leading-none mb-1">Access Control Protocol</h4>
-                <p className="text-xs text-brand-700 font-medium italic opacity-80 mt-1 leading-relaxed">Institutional permissions and system scope will be automatically initialized based on the assigned role. Password: EduNest@123</p>
-              </div>
-           </div>
+          <Input
+            label={editingStaff ? "Reset Access Password" : "Set Admin Password"}
+            name="password"
+            type="password"
+            placeholder={editingStaff ? "Leave blank to keep unchanged" : "••••••••"}
+            icon={Lock}
+            required={!editingStaff}
+            value={formData.password}
+            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          />
 
-           <div className="flex justify-end gap-3 pt-4">
-              <Button variant="outline" type="button" onClick={handleCloseModal} className="rounded-xl h-12">Discard</Button>
-              <Button type="submit" disabled={isSubmitting} className="rounded-xl h-12 px-8 shadow-premium text-[10px] uppercase font-black tracking-widest flex items-center justify-center">
-                {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : (editingStaff ? 'Update Records' : 'Send Commission')}
-              </Button>
-           </div>
+          <div className="p-5 bg-brand-50 rounded-2xl border border-brand-100 flex items-start gap-4">
+            <div className="w-10 h-10 bg-brand-500 text-white rounded-xl flex items-center justify-center shrink-0">
+              <Shield size={20} />
+            </div>
+            <div className="text-left">
+              <h4 className="text-sm font-medium text-brand-500 uppercase tracking-tight leading-none mb-1">Access Control Protocol</h4>
+              <p className="text-xs text-brand-700 font-medium italic opacity-80 mt-1 leading-relaxed">Institutional permissions and system scope will be automatically initialized based on the assigned role. Password: EduNest@123</p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" type="button" onClick={handleCloseModal} className="rounded-xl h-12">Discard</Button>
+            <Button type="submit" disabled={isSubmitting} className="rounded-xl h-12 px-8 shadow-premium text-[10px] uppercase font-black tracking-widest flex items-center justify-center">
+              {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : (editingStaff ? 'Update Records' : 'Send Commission')}
+            </Button>
+          </div>
         </form>
       </Modal>
     </div>

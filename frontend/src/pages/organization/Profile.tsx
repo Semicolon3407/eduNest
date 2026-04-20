@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
@@ -6,8 +6,10 @@ import {
   Building2, Mail, Phone, MapPin, 
   Globe, Shield, CreditCard, Users, 
   GitBranch, Camera, Edit2, Check,
-  Zap, Star, Rocket
+  Zap, Star, Rocket, Loader2
 } from 'lucide-react';
+import { tenantService } from '../../services/tenantService';
+import toast from 'react-hot-toast';
 
 const plans = [
   {
@@ -42,6 +44,61 @@ const plans = [
 
 const OrganizationProfile: React.FC = () => {
   const [currentPlan, _setCurrentPlan] = useState('Cloud Enterprise');
+  const [loading, setLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [profile, setProfile] = useState({
+    name: '',
+    email: '',
+    personalEmail: '',
+    phone: '',
+    location: '',
+    taxId: 'VAT-9988-1122', // Placeholder as not in schema yet
+    website: 'www.edunest.com' // Placeholder
+  });
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const response = await tenantService.getProfile();
+      if (response.success) {
+        setProfile({
+          ...profile,
+          ...response.data
+        });
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to load profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleUpdate = async () => {
+    try {
+      setIsUpdating(true);
+      const response = await tenantService.updateProfile(profile);
+      if (response.success) {
+        toast.success('Profile updated successfully');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <Loader2 size={40} className="animate-spin text-brand-500" />
+        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Accessing Institutional Profile...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
@@ -50,8 +107,13 @@ const OrganizationProfile: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Organization Profile</h1>
           <p className="text-gray-500 mt-1">Manage institutional branding and administrative credentials</p>
         </div>
-        <Button className="rounded-xl shadow-premium h-12 flex items-center gap-2">
-          <Edit2 size={18} /> Update Profile
+        <Button 
+          onClick={handleUpdate}
+          disabled={isUpdating}
+          className="rounded-xl shadow-premium h-12 flex items-center gap-2"
+        >
+          {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <Edit2 size={18} />} 
+          Update Profile
         </Button>
       </div>
 
@@ -63,23 +125,23 @@ const OrganizationProfile: React.FC = () => {
             <div className="relative pt-4">
               <div className="relative inline-block">
                 <div className="w-32 h-32 bg-slate-100 rounded-[48px] border-4 border-white shadow-soft flex items-center justify-center text-brand-600 text-4xl font-display font-medium transition-transform group-hover:scale-105">
-                  E
+                  {profile.name.charAt(0)}
                 </div>
                 <button className="absolute -bottom-2 -right-2 w-10 h-10 bg-brand-500 text-white rounded-2xl border-4 border-white flex items-center justify-center shadow-premium hover:bg-brand-600 transition-all active:scale-90">
                   <Camera size={18} />
                 </button>
               </div>
-              <h3 className="mt-6 text-xl font-bold text-slate-800 tracking-tight">EduNest International</h3>
-              <p className="text-sm font-medium text-slate-400 mt-1">Premium Education Network</p>
+              <h3 className="mt-6 text-xl font-bold text-slate-800 tracking-tight">{profile.name}</h3>
+              <p className="text-sm font-medium text-slate-400 mt-1">Institutional Network</p>
               
               <div className="mt-8 pt-8 border-t border-slate-100 space-y-4">
                 <div className="flex items-center gap-3 text-left p-3 rounded-2xl bg-slate-50 border border-slate-100">
                   <Mail className="text-brand-500 shrink-0" size={16} />
-                  <p className="text-xs font-bold text-slate-600 truncate">admin@edunest.com</p>
+                  <p className="text-xs font-bold text-slate-600 truncate">{profile.email}</p>
                 </div>
                 <div className="flex items-center gap-3 text-left p-3 rounded-2xl bg-slate-50 border border-slate-100">
                   <Globe className="text-brand-500 shrink-0" size={16} />
-                  <p className="text-xs font-bold text-slate-600">www.edunest.com</p>
+                  <p className="text-xs font-bold text-slate-600">{profile.website}</p>
                 </div>
               </div>
             </div>
@@ -96,7 +158,7 @@ const OrganizationProfile: React.FC = () => {
                   </div>
                   <span className="text-xs font-medium text-white/80">Active Branches</span>
                 </div>
-                <span className="text-lg font-bold">04</span>
+                <span className="text-lg font-bold">--</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -105,7 +167,7 @@ const OrganizationProfile: React.FC = () => {
                   </div>
                   <span className="text-xs font-medium text-white/80">Total Students</span>
                 </div>
-                <span className="text-lg font-bold">2,482</span>
+                <span className="text-lg font-bold">--</span>
               </div>
               <div className="pt-4 border-t border-white/10">
                  <button className="w-full h-12 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all">
@@ -125,12 +187,37 @@ const OrganizationProfile: React.FC = () => {
               </h3>
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input label="Organization Name" defaultValue="EduNest International" icon={Building2} />
-              <Input label="Tax Identification (VAT)" defaultValue="VAT-9988-1122" icon={Shield} />
-              <Input label="Official Email" defaultValue="contact@edunest-corp.com" icon={Mail} />
-              <Input label="Business Phone" defaultValue="+1 (555) 000-1111" icon={Phone} />
+              <Input 
+                label="Organization Name" 
+                value={profile.name} 
+                onChange={(e) => setProfile({...profile, name: e.target.value})}
+                icon={Building2} 
+              />
+              <Input 
+                label="Tax Identification (VAT)" 
+                value={profile.taxId} 
+                onChange={(e) => setProfile({...profile, taxId: e.target.value})}
+                icon={Shield} 
+              />
+              <Input 
+                label="Official Email" 
+                value={profile.email} 
+                onChange={(e) => setProfile({...profile, email: e.target.value})}
+                icon={Mail} 
+              />
+              <Input 
+                label="Business Phone" 
+                value={profile.phone} 
+                onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                icon={Phone} 
+              />
               <div className="md:col-span-2">
-                <Input label="Headquarters Address" defaultValue="Suite 500, Tech Plaza, Silicon Valley, CA" icon={MapPin} />
+                <Input 
+                  label="Headquarters Address" 
+                  value={profile.location} 
+                  onChange={(e) => setProfile({...profile, location: e.target.value})}
+                  icon={MapPin} 
+                />
               </div>
             </div>
           </div>

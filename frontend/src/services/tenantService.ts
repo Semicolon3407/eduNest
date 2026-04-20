@@ -53,5 +53,16 @@ export const tenantService = {
   deleteStaff: async (id: string) => {
     const response = await axios.delete(`${API_URL}/staff/${id}`, getAuthHeaders());
     return response.data;
+  },
+
+  // Profile Management
+  getProfile: async () => {
+    const response = await axios.get(`${API_URL}/profile`, getAuthHeaders());
+    return response.data;
+  },
+
+  updateProfile: async (orgData: any) => {
+    const response = await axios.put(`${API_URL}/profile`, orgData, getAuthHeaders());
+    return response.data;
   }
 };

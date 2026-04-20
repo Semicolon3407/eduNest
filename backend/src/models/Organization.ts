@@ -36,6 +36,14 @@ const organizationSchema = new Schema({
     type: String,
     required: [true, 'Please add a phone number'],
   },
+  taxId: {
+    type: String,
+    default: 'VAT-9988-1122',
+  },
+  website: {
+    type: String,
+    default: 'www.edunest.com',
+  },
 }, {
   timestamps: true,
 });

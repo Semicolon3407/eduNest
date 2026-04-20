@@ -6,16 +6,16 @@ import Modal from '../../components/ui/Modal';
 import { 
   Building2, MapPin, Users, Phone, Mail, 
   Search, Filter, MoreVertical, 
-  Shield, Loader2, Edit, Trash2, 
-  Eye, ChevronDown, AlertCircle, Link
+  Shield, Loader2, Trash2, 
+  Eye, ChevronDown, AlertCircle, Link, Edit3
 } from 'lucide-react';
+import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
 import { tenantService } from '../../services/tenantService';
 import toast from 'react-hot-toast';
 
 const Branches: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [branches, setBranches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -77,7 +77,6 @@ const Branches: React.FC = () => {
       email: branch.email
     });
     setIsModalOpen(true);
-    setOpenMenuId(null);
   };
 
   const handleCloseModal = () => {
@@ -104,10 +103,6 @@ const Branches: React.FC = () => {
     }
   };
 
-  const toggleMenu = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setOpenMenuId(openMenuId === id ? null : id);
-  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-12">
@@ -179,9 +174,9 @@ const Branches: React.FC = () => {
           </div>
         </div>
 
-        <div className="overflow-x-auto -mx-4 sm:-mx-6">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[1000px]">
+        <div className="overflow-visible">
+          <div className="px-0 relative">
+            <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-surface-50 text-gray-400 text-[10px] font-bold tracking-[0.2em] px-6">
                   <th className="px-6 py-4">Branch Name</th>
@@ -210,8 +205,8 @@ const Branches: React.FC = () => {
                     <tr key={branch._id} className="group hover:bg-brand-50/20 transition-all cursor-pointer">
                       <td className="px-6 py-5">
                         <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-2xl bg-surface-100 flex items-center justify-center text-brand-600 font-medium text-sm transition-all group-hover:bg-white group-hover:scale-110 shadow-sm border border-transparent group-hover:border-brand-100">
-                            <Building2 size={20} />
+                          <div className="w-12 h-12 rounded-2xl bg-surface-100 flex items-center justify-center text-brand-600 transition-all group-hover:bg-white group-hover:scale-110 shadow-sm border border-transparent group-hover:border-brand-100">
+                            <Building2 size={22} />
                           </div>
                           <div>
                             <p className="font-medium text-gray-900 text-sm group-hover:text-brand-600 transition-colors uppercase tracking-tight">{branch.name}</p>
@@ -238,39 +233,19 @@ const Branches: React.FC = () => {
                           {branch.status}
                         </Badge>
                       </td>
-                      <td className="px-6 py-5 text-right relative">
-                        <div className="flex items-center justify-end gap-2">
-                          <button 
-                            onClick={(e) => toggleMenu(branch._id, e)}
-                            className="p-2 text-gray-400 hover:bg-surface-100 rounded-lg transition-all"
+                      <td className="px-6 py-5 text-right">
+                        <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                          <Dropdown
+                            trigger={
+                              <button className="p-2 text-gray-400 hover:bg-surface-100 rounded-lg transition-colors">
+                                <MoreVertical size={18} />
+                              </button>
+                            }
                           >
-                            <MoreVertical size={18} />
-                          </button>
-                          
-                          {/* Dropdown Menu */}
-                          {openMenuId === branch._id && (
-                            <>
-                              <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)}></div>
-                              <div className="absolute right-0 top-12 w-48 bg-white rounded-2xl shadow-premium border border-surface-100 p-2 z-50 animate-in zoom-in-95 duration-200 text-left">
-                                <button className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-brand-50 hover:text-brand-600 rounded-xl transition-all">
-                                   <Eye size={16} /> View Scope
-                                </button>
-                                <button 
-                                  onClick={() => handleEdit(branch)}
-                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-gray-700 hover:bg-slate-50 rounded-xl transition-all"
-                                >
-                                   <Edit size={16} /> Edit Node
-                                </button>
-                                <div className="my-1 border-t border-surface-50"></div>
-                                <button 
-                                  onClick={() => handleDelete(branch._id)}
-                                  className="w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold text-danger hover:bg-danger/5 rounded-xl transition-all"
-                                >
-                                   <Trash2 size={16} /> Decommission
-                                </button>
-                              </div>
-                            </>
-                          )}
+                            <DropdownItem icon={Eye} onClick={() => {}}>View Scope</DropdownItem>
+                            <DropdownItem icon={Edit3} onClick={() => handleEdit(branch)}>Edit Node</DropdownItem>
+                            <DropdownItem icon={Trash2} onClick={() => handleDelete(branch._id)} variant="danger">Decommission</DropdownItem>
+                          </Dropdown>
                         </div>
                       </td>
                     </tr>
