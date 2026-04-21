@@ -7,7 +7,7 @@ import {
   getHRStaff,
   getLeaveRequests, updateLeaveStatus,
   getMyProfile,
-  getDocuments, uploadStaffDocument,
+  getDocuments, uploadStaffDocument, deleteDocument, updateDocument,
   getBranches
 } from '../controllers/hrController';
 import { onboardStaff, updateStaff, deleteStaff } from '../controllers/tenantController';
@@ -35,6 +35,8 @@ router.put('/leaves/:id', updateLeaveStatus);
 router.get('/profile', getMyProfile);
 router.get('/documents', getDocuments);
 router.post('/documents/upload', uploadStaffDocument);
+router.put('/documents/:id', updateDocument);
+router.delete('/documents/:id', deleteDocument);
 router.get('/branches', getBranches);
 
 export default router;

@@ -139,7 +139,7 @@ const TutorProfile: React.FC = () => {
                     <BookOpen size={28} />
                   </div>
                   <div>
-                    <h4 className="text-xl font-medium text-brand-900 leading-none  ">Professional Profile</h4>
+                    <h4 className="text-xl font-medium text-brand-700 leading-none  ">Professional Profile</h4>
                     <p className="text-brand-600 text-sm mt-2 font-medium">Joining Date: {tutor.joiningDate}</p>
                   </div>
                 </div>

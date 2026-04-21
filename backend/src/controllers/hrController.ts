@@ -231,7 +231,11 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
 
 export const getDocuments = async (req: AuthRequest, res: Response) => {
   try {
-    const docs = await StaffDocument.find({ organization: req.user.organization })
+    const { staffId } = req.query;
+    const query: any = { organization: req.user.organization };
+    if (staffId) query.staff = staffId;
+
+    const docs = await StaffDocument.find(query)
       .populate('staff', 'firstName lastName employeeId')
       .sort({ createdAt: -1 });
 
@@ -243,24 +247,82 @@ export const getDocuments = async (req: AuthRequest, res: Response) => {
 
 export const uploadStaffDocument = async (req: AuthRequest, res: Response) => {
   try {
-    const { staffId, title, category, status } = req.body;
-    
-    const doc = await StaffDocument.create({
-      organization: req.user.organization,
-      staff: staffId,
-      title,
-      category,
-      type: 'PDF', // Mocked format
-      size: `${(Math.random() * 5 + 1).toFixed(1)} MB`, // Mocked size
-      status,
-      url: '#' // Mocked URL
-    });
+    const { staffId, documents } = req.body;
 
-    res.status(201).json({ success: true, data: doc });
+    if (!documents || !Array.isArray(documents)) {
+      // Fallback for single document upload if needed
+      const { title, category, status } = req.body;
+      const doc = await StaffDocument.create({
+        organization: req.user.organization,
+        staff: staffId,
+        title,
+        category,
+        type: 'PDF',
+        size: `${(Math.random() * 5 + 1).toFixed(1)} MB`,
+        status: status || 'Pending Verification',
+        url: '#'
+      });
+      return res.status(201).json({ success: true, data: doc });
+    }
+
+    const createdDocs = await Promise.all(documents.map(doc => 
+      StaffDocument.create({
+        organization: req.user.organization,
+        staff: staffId,
+        title: doc.title,
+        category: doc.category,
+        type: doc.type || 'PDF',
+        size: doc.size || `${(Math.random() * 5 + 1).toFixed(1)} MB`,
+        status: doc.status || 'Pending Verification',
+        url: doc.url || '#'
+      })
+    ));
+
+    res.status(201).json({ success: true, data: createdDocs });
   } catch (err: any) {
     res.status(400).json({ success: false, message: err.message });
   }
 };
+
+export const deleteDocument = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const doc = await StaffDocument.findOneAndDelete({
+      _id: id,
+      organization: req.user.organization
+    });
+
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Document not found' });
+    }
+
+    res.status(200).json({ success: true, message: 'Document deleted successfully' });
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+
+export const updateDocument = async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+    const { title, category, status, url, size, type } = req.body;
+    
+    const doc = await StaffDocument.findOneAndUpdate(
+      { _id: id, organization: req.user.organization },
+      { title, category, status, url, size, type },
+      { new: true, runValidators: true }
+    );
+
+    if (!doc) {
+      return res.status(404).json({ success: false, message: 'Document not found' });
+    }
+
+    res.status(200).json({ success: true, data: doc });
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+
 export const getBranches = async (req: AuthRequest, res: Response) => {
   try {
     const branches = await Branch.find({ organization: req.user.organization });

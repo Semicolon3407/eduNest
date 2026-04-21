@@ -121,7 +121,7 @@ const SuperAdminDashboard: React.FC = () => {
           </div>
 
           <div className="mt-12 p-4 bg-brand-50 rounded-xl border border-brand-100">
-            <h4 className="font-medium text-brand-900 text-sm">Pro Tip from System</h4>
+            <h4 className="font-medium text-brand-700 text-sm">Pro Tip from System</h4>
             <p className="text-xs text-brand-700 mt-1 leading-relaxed">
               Enable "Auto-Suspend" for organizations with overdue invoices longer than 30 days to optimize system resources.
             </p>

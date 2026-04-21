@@ -139,7 +139,7 @@ const StudentProfile: React.FC = () => {
                     <BookOpen size={28} />
                   </div>
                   <div>
-                    <h4 className="text-xl font-medium text-brand-900 leading-none  ">Academic Summary</h4>
+                    <h4 className="text-xl font-medium text-brand-700 leading-none  ">Academic Summary</h4>
                     <p className="text-brand-600 text-sm mt-2 font-medium">Admission Date: {student.admissionDate}</p>
                   </div>
                 </div>

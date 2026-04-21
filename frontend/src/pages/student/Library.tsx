@@ -62,10 +62,10 @@ const LibraryPortal: React.FC = () => {
             <h3 className="text-2xl font-medium text-brand-500  leading-none">Digital Archive</h3>
             <p className="mt-4 text-brand-700 text-sm font-medium leading-relaxed">You have unlimited access to over 12,000+ peer-reviewed journals and academic publications through our VPN.</p>
             <div className="mt-8 space-y-3">
-               <div className="flex items-center gap-2 text-xs font-medium text-brand-900  ">
+               <div className="flex items-center gap-2 text-xs font-medium text-brand-700  ">
                   <CheckCircle2 size={16} className="text-success" /> JSTOR Access: Active
                </div>
-               <div className="flex items-center gap-2 text-xs font-medium text-brand-900  ">
+               <div className="flex items-center gap-2 text-xs font-medium text-brand-700  ">
                   <CheckCircle2 size={16} className="text-success" /> IEEE Xplore: Active
                </div>
             </div>

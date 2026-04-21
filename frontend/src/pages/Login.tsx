@@ -135,7 +135,7 @@ const Login: React.FC = () => {
                             onChange={(e) => setPassword(e.target.value)}
                         />
                         <div className="flex justify-end">
-                            <button type="button" className="text-xs font-bold text-brand-600 hover:text-brand-800 transition-colors uppercase tracking-widest">
+                            <button type="button" className="text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors uppercase tracking-widest">
                                 Forgot password?
                             </button>
                         </div>

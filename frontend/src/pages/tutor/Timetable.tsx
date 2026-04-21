@@ -61,7 +61,7 @@ const TutorTimetable: React.FC = () => {
          </div>
       </div>
 
-      <div className="bg-brand-900 rounded-[40px] p-8 text-white relative overflow-hidden shadow-premium">
+      <div className="bg-brand-700 rounded-[40px] p-8 text-white relative overflow-hidden shadow-premium">
          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-6">
                <div className="w-16 h-16 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center border border-white/20">
@@ -72,7 +72,7 @@ const TutorTimetable: React.FC = () => {
                   <p className="text-brand-200 mt-1 font-medium">You have been assigned as a substitute for Grade 10-C Physics this Thursday.</p>
                </div>
             </div>
-            <button className="h-14 px-8 bg-white text-brand-900 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-brand-50 transition-all shadow-premium whitespace-nowrap">View Shift Details</button>
+            <button className="h-14 px-8 bg-white text-brand-700 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-brand-50 transition-all shadow-premium whitespace-nowrap">View Shift Details</button>
          </div>
          <div className="absolute top-0 right-0 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
       </div>

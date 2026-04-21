@@ -92,13 +92,23 @@ export const hrService = {
     return response.data;
   },
 
-  getDocuments: async () => {
-    const response = await axios.get(`${API_URL}/hr/documents`, getAuthHeaders());
+  getDocuments: async (staffId?: string) => {
+    const response = await axios.get(`${API_URL}/hr/documents${staffId ? `?staffId=${staffId}` : ''}`, getAuthHeaders());
     return response.data;
   },
   
   uploadStaffDocument: async (data: any) => {
     const response = await axios.post(`${API_URL}/hr/documents/upload`, data, getAuthHeaders());
+    return response.data;
+  },
+  
+  deleteDocument: async (id: string) => {
+    const response = await axios.delete(`${API_URL}/hr/documents/${id}`, getAuthHeaders());
+    return response.data;
+  },
+
+  updateDocument: async (id: string, data: any) => {
+    const response = await axios.put(`${API_URL}/hr/documents/${id}`, data, getAuthHeaders());
     return response.data;
   },
 

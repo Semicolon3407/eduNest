@@ -51,6 +51,40 @@ const HRDashboard: React.FC = () => {
         <StatCard title="Verified Docs" value="98%" icon={FileText} color="brand" />
       </div>
 
+      {/* Quick Actions */}
+      <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-soft">
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-medium text-gray-900">Institutional Governance</h2>
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest bg-slate-50 px-3 py-1 rounded-full border border-slate-100">Quick Actions</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <button onClick={() => window.location.href='/hr/staff'} className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-brand-50 transition-all group border border-transparent hover:border-brand-100">
+            <div className="w-12 h-12 bg-brand-50 text-brand-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Briefcase size={24} />
+            </div>
+            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Onboard Staff</span>
+          </button>
+          <button onClick={() => window.location.href='/hr/documents'} className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-brand-50 transition-all group border border-transparent hover:border-brand-100">
+            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <FileText size={24} />
+            </div>
+            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Vault Upload</span>
+          </button>
+          <button onClick={() => window.location.href='/hr/payroll'} className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-brand-50 transition-all group border border-transparent hover:border-brand-100">
+            <div className="w-12 h-12 bg-success-light text-success-dark rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <CreditCard size={24} />
+            </div>
+            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Run Payroll</span>
+          </button>
+          <button onClick={() => window.location.href='/hr/attendance'} className="flex flex-col items-center gap-3 p-4 rounded-2xl hover:bg-brand-50 transition-all group border border-transparent hover:border-brand-100">
+            <div className="w-12 h-12 bg-warning-light text-warning-dark rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+              <Clock size={24} />
+            </div>
+            <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Compliance</span>
+          </button>
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:p-8">
         {/* Leave Requests */}
         <div className="bg-surface rounded-2xl shadow-soft border border-surface-200">

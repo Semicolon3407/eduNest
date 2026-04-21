@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import { 
   FileText, Shield, Briefcase, Download, Search, MoreVertical, 
-  Paperclip, Plus, User, FileUp, Loader2, GitBranch, ChevronDown 
+  Paperclip, Plus, User, FileUp, Loader2, GitBranch, CheckCircle2,
+  Eye, Edit3, Trash2
 } from 'lucide-react';
 import { hrService } from '../../services/hrService';
 import toast from 'react-hot-toast';
+import { cn } from '../../utils/cn';
 
 const DocumentManagement: React.FC = () => {
+  const navigate = useNavigate();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [documents, setDocuments] = useState<any[]>([]);
   const [branches, setBranches] = useState<any[]>([]);
@@ -19,14 +23,23 @@ const DocumentManagement: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [modalBranch, setModalBranch] = useState('All Branches');
   const [staffSearch, setStaffSearch] = useState('');
-  const [selectedStaffName, setSelectedStaffName] = useState('');
   const [showStaffResults, setShowStaffResults] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
+  
+  // Filters
+  const [branchFilter, setBranchFilter] = useState('All Branches');
+  const [deptFilter, setDeptFilter] = useState('All Departments');
+  const [searchQuery, setSearchQuery] = useState('');
+
   const [formData, setFormData] = useState({
     staffId: '',
-    title: '',
-    category: 'Employment Contract',
-    status: 'Pending Verification'
+    documents: [
+      { id: Date.now().toString(), title: '', category: 'Employment Contract', file: null as File | null }
+    ]
   });
+  const [globalStatus, setGlobalStatus] = useState('Pending Verification');
 
   const fetchData = async () => {
     try {
@@ -50,7 +63,19 @@ const DocumentManagement: React.FC = () => {
     fetchData();
   }, []);
 
-  const handleUpload = async (e: React.FormEvent) => {
+  const departments = Array.from(new Set(staffList.map(s => s.designation || 'General'))).sort();
+
+  const filteredDocuments = documents.filter(doc => {
+    const branchMatch = branchFilter === 'All Branches' || doc.staff?.branch?.name === branchFilter;
+    const deptMatch = deptFilter === 'All Departments' || doc.staff?.designation === deptFilter;
+    const searchMatch = !searchQuery || 
+      doc.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      `${doc.staff?.firstName} ${doc.staff?.lastName}`.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    return branchMatch && deptMatch && searchMatch;
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.staffId) {
       toast.error('Please select a staff member from the search results');
@@ -58,25 +83,116 @@ const DocumentManagement: React.FC = () => {
     }
     try {
       setIsSubmitting(true);
-      const response = await hrService.uploadStaffDocument(formData);
-      if (response.success) {
-        toast.success('Institutional document archived');
-        setIsModalOpen(false);
-        fetchData();
+      
+      const processedDocs = await Promise.all(formData.documents.map(async (doc) => {
+        let fileUrl = (isEditMode && doc.id === editingDocId) ? documents.find(d => d._id === editingDocId)?.url : '#';
+        const docTitle = (doc.title || doc.category).trim();
         
-        // Audit-safe Reset
-        setFormData({
-          staffId: '',
-          title: '',
-          category: 'Employment Contract',
-          status: 'Pending Verification'
-        });
-        setStaffSearch('');
+        if (doc.file) {
+          const fileKey = `eduNest_doc_${Date.now()}_${Math.random().toString(36).substring(7)}_${docTitle.replace(/[^a-z0-9]/gi, '_')}`;
+          
+          try {
+            const base64 = await new Promise<string>((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(doc.file!);
+            });
+            
+            localStorage.setItem(fileKey, base64);
+            fileUrl = fileKey;
+          } catch (e) {
+            console.error('LocalStorage upload failed:', e);
+            toast.error('File too large for local demo. Try a smaller PDF.');
+          }
+        }
+
+        return {
+          title: docTitle,
+          category: doc.category,
+          status: globalStatus,
+          url: fileUrl,
+          size: doc.file ? `${(doc.file.size / (1024 * 1024)).toFixed(2)} MB` : '0.1 MB',
+          type: doc.file?.type || 'application/pdf'
+        };
+      }));
+
+      if (isEditMode && editingDocId) {
+        // Update the existing document (first in list)
+        const updateRes = await hrService.updateDocument(editingDocId, processedDocs[0]);
+        
+        // If there are additional documents, upload them as new
+        if (processedDocs.length > 1) {
+          const newDocsPayload = {
+            staffId: formData.staffId,
+            documents: processedDocs.slice(1)
+          };
+          await hrService.uploadStaffDocument(newDocsPayload);
+        }
+
+        if (updateRes.success) {
+          toast.success('Institutional archive updated');
+          closeModal();
+          fetchData();
+        }
+      } else {
+        const payload = {
+          staffId: formData.staffId,
+          documents: processedDocs
+        };
+        
+        const response = await hrService.uploadStaffDocument(payload);
+        if (response.success) {
+          toast.success(`${payload.documents.length} institutional documents archived`);
+          closeModal();
+          fetchData();
+        }
       }
     } catch (error) {
-      toast.error('Archive operation failed');
+      console.error(error);
+      toast.error('Operation failed');
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEdit = (doc: any) => {
+    setIsEditMode(true);
+    setEditingDocId(doc._id);
+    setFormData({
+      staffId: doc.staff?._id || '',
+      documents: [
+        { id: doc._id, title: doc.title, category: doc.category, file: null }
+      ]
+    });
+    setStaffSearch(`${doc.staff?.firstName} ${doc.staff?.lastName} (${doc.staff?.employeeId})`);
+    setModalBranch(doc.staff?.branch?.name || 'All Branches');
+    setGlobalStatus(doc.status || 'Pending Verification');
+    setIsModalOpen(true);
+    setActiveDropdown(null);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setIsEditMode(false);
+    setEditingDocId(null);
+    setFormData({
+      staffId: '',
+      documents: [{ id: Date.now().toString(), title: '', category: 'Employment Contract', file: null }]
+    });
+    setStaffSearch('');
+    setModalBranch('All Branches');
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this document record?')) return;
+    try {
+       const response = await hrService.deleteDocument(id);
+       if (response.success) {
+         toast.success('Document purged from archive');
+         fetchData();
+       }
+    } catch (error) {
+       toast.error('Failed to purge archive');
     }
   };
 
@@ -98,7 +214,7 @@ const DocumentManagement: React.FC = () => {
         </div>
         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
            <Button variant="outline" className="rounded-xl h-11 flex-1 sm:flex-none whitespace-nowrap"><Paperclip size={18} /> Upload Archive</Button>
-           <Button onClick={() => setIsModalOpen(true)} className="rounded-xl h-11 shadow-premium bg-brand-500 text-white hover:bg-brand-600 flex-1 sm:flex-none whitespace-nowrap"><Plus size={18} /> Add New Document</Button>
+           <Button onClick={() => { setIsEditMode(false); setIsModalOpen(true); }} className="rounded-xl h-11 shadow-premium bg-brand-500 text-white hover:bg-brand-600 flex-1 sm:flex-none whitespace-nowrap"><Plus size={18} /> Add New Document</Button>
         </div>
       </div>
 
@@ -132,19 +248,47 @@ const DocumentManagement: React.FC = () => {
          </div>
       </div>
 
-      <div className="bg-white p-4 sm:p-8 rounded-[40px] shadow-soft border border-slate-200 font-sans">
-         <div className="flex items-center justify-between mb-8 overflow-hidden font-sans">
+      <div className="bg-white p-4 sm:p-8 rounded-[40px] shadow-soft border border-slate-200 font-sans mt-8">
+         <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-8 gap-4 overflow-visible font-sans">
             <h2 className="text-xl font-medium text-gray-900  ">Staff Credentials</h2>
-            <div className="flex gap-2 font-sans">
-               <div className="hidden sm:flex items-center bg-slate-50 rounded-2xl px-4 py-2 border border-slate-100">
+            <div className="flex flex-wrap items-center gap-3 font-sans">
+               <div className="flex items-center bg-slate-50 rounded-2xl px-4 py-2 border border-slate-100 min-w-[200px]">
                   <Search size={16} className="text-slate-400 font-sans" />
-                  <input type="text" placeholder="Search files..." className="bg-transparent border-none focus:ring-0 text-sm font-medium ml-2 w-48 outline-none font-sans" />
+                  <input 
+                    type="text" 
+                    placeholder="Search files or staff..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="bg-transparent border-none focus:ring-0 text-sm font-medium ml-2 w-full outline-none font-sans" 
+                  />
                </div>
+               
+               <select 
+                  value={branchFilter}
+                  onChange={(e) => setBranchFilter(e.target.value)}
+                  className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-2 text-xs font-bold text-slate-600 outline-none focus:border-brand-500/50 transition-all cursor-pointer"
+               >
+                  <option>All Branches</option>
+                  {branches.map(b => (
+                    <option key={b._id} value={b.name}>{b.name}</option>
+                  ))}
+               </select>
+
+               <select 
+                  value={deptFilter}
+                  onChange={(e) => setDeptFilter(e.target.value)}
+                  className="bg-slate-50 border border-slate-100 rounded-2xl px-4 py-2 text-xs font-bold text-slate-600 outline-none focus:border-brand-500/50 transition-all cursor-pointer"
+               >
+                  <option>All Departments</option>
+                  {departments.map(d => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+               </select>
             </div>
          </div>
 
-         <div className="overflow-x-auto font-sans">
-              <div className="overflow-x-auto font-sans"><table className="w-full text-left font-sans">
+         <div className="overflow-visible font-sans relative">
+              <table className="w-full text-left font-sans">
                 <thead>
                    <tr className="bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-widest border-b border-slate-100 font-sans">
                       <th className="px-6 py-4">Staff Member</th>
@@ -154,7 +298,7 @@ const DocumentManagement: React.FC = () => {
                    </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-sans">
-                   {documents.map((doc: any) => (
+                   {filteredDocuments.map((doc: any) => (
                       <tr key={doc._id} className="group hover:bg-slate-50/50 transition-all font-sans">
                          <td className="px-6 py-5">
                             <div className="flex items-center gap-3">
@@ -172,28 +316,74 @@ const DocumentManagement: React.FC = () => {
                                <Badge variant="neutral" className="font-bold text-[10px] uppercase tracking-widest">{doc.category}</Badge>
                             </div>
                          </td>
-                         <td className="px-6 py-5 text-right">
+                         <td className="px-6 py-5 text-right relative">
                             <div className="flex items-center justify-end gap-2">
                                <Badge variant={doc.status === 'Verified & Active' ? 'success' : 'brand'} className="font-black tracking-tighter text-[10px]">{doc.status?.toUpperCase() || 'PENDING'}</Badge>
                                <button className="p-2 text-slate-400 hover:text-brand-600 transition-colors"><Download size={18}/></button>
-                               <button className="p-2 text-slate-400 hover:text-brand-600 transition-colors"><MoreVertical size={18}/></button>
+                               <div className="relative">
+                                  <button 
+                                    onClick={() => setActiveDropdown(activeDropdown === doc._id ? null : doc._id)}
+                                    className={cn(
+                                      "p-2 rounded-lg transition-all",
+                                      activeDropdown === doc._id ? "bg-brand-50 text-brand-600" : "text-slate-400 hover:text-brand-600"
+                                    )}
+                                  >
+                                    <MoreVertical size={18}/>
+                                  </button>
+                                  
+                                  {activeDropdown === doc._id && (
+                                    <>
+                                      <div 
+                                        className="fixed inset-0 z-10" 
+                                        onClick={() => setActiveDropdown(null)}
+                                      />
+                                      <div className="absolute right-0 mt-2 w-48 bg-white border border-slate-200 rounded-2xl shadow-premium z-20 py-2 animate-in fade-in zoom-in-95 duration-100">
+                                        <button 
+                                          onClick={() => {
+                                            navigate(`/hr/documents/staff/${doc.staff?._id}`);
+                                            setActiveDropdown(null);
+                                          }}
+                                          className="w-full px-4 py-2 text-left text-xs font-bold text-slate-600 hover:bg-brand-50 hover:text-brand-600 flex items-center gap-3 transition-colors uppercase tracking-widest"
+                                        >
+                                          <Eye size={16} /> View Documents
+                                        </button>
+                                        <button 
+                                          onClick={() => handleEdit(doc)}
+                                          className="w-full px-4 py-2 text-left text-xs font-bold text-slate-600 hover:bg-brand-50 hover:text-brand-600 flex items-center gap-3 transition-colors uppercase tracking-widest"
+                                        >
+                                          <Edit3 size={16} /> Edit Record
+                                        </button>
+                                        <div className="h-px bg-slate-100 my-1" />
+                                        <button 
+                                          onClick={() => {
+                                            handleDelete(doc._id);
+                                            setActiveDropdown(null);
+                                          }}
+                                          className="w-full px-4 py-2 text-left text-xs font-bold text-red-500 hover:bg-red-50 flex items-center gap-3 transition-colors uppercase tracking-widest"
+                                        >
+                                          <Trash2 size={16} /> Delete Archive
+                                        </button>
+                                      </div>
+                                    </>
+                                  )}
+                               </div>
                             </div>
                          </td>
                       </tr>
                    ))}
                 </tbody>
-             </table></div>
+             </table>
          </div>
       </div>
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Upload Staff Document"
-        description="Verify and archive a new credential or contract for a staff member."
+        onClose={closeModal}
+        title={isEditMode ? "Edit Staff Document" : "Upload Staff Document"}
+        description={isEditMode ? "Update the existing credential or contract details." : "Verify and archive a new credential or contract for a staff member."}
         maxWidth="2xl"
       >
-        <form className="space-y-8" onSubmit={handleUpload}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+        <form className="space-y-8" onSubmit={handleSubmit}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-1.5 focus-within:z-10 group font-sans">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">Filter by Branch</label>
                 <div className="relative">
@@ -238,7 +428,6 @@ const DocumentManagement: React.FC = () => {
                           <div 
                             key={s._id}
                             onClick={() => {
-                              setSelectedStaffName(`${s.firstName} {s.lastName}`);
                               setStaffSearch(`${s.firstName} ${s.lastName} (${s.employeeId})`);
                               setFormData({...formData, staffId: s._id});
                               setShowStaffResults(false);
@@ -257,60 +446,124 @@ const DocumentManagement: React.FC = () => {
                 </div>
             </div>
 
-            <div className="md:col-span-2">
-              <Input 
-                label="Document Title" 
-                placeholder="e.g. Master's Degree Certificate" 
-                icon={FileText} 
-                required 
-                value={formData.title}
-                onChange={(e) => setFormData({...formData, title: e.target.value})}
-              />
-            </div>
-            <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Document Category</label>
-                <select 
-                  value={formData.category}
-                  onChange={(e) => setFormData({...formData, category: e.target.value})}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans"
+            <div className="md:col-span-2 space-y-4">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Documents to Upload</label>
+                <button 
+                  type="button"
+                  onClick={() => setFormData({
+                    ...formData, 
+                    documents: [...formData.documents, { id: Date.now().toString(), title: '', category: 'Employment Contract', file: null }]
+                  })}
+                  className="text-[10px] font-bold text-brand-600 hover:text-brand-700 uppercase tracking-widest flex items-center gap-1 transition-colors"
                 >
-                  <option>Employment Contract</option>
-                  <option>Identity Proof (Passport/ID)</option>
-                  <option>Academic Certification</option>
-                  <option>Professional License</option>
-                  <option>Police Clearance</option>
-                  <option>Health Records</option>
-                </select>
+                  <Plus size={14} /> Add Another
+                </button>
+              </div>
+              
+              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                {formData.documents.map((doc, index) => (
+                  <div key={doc.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-4 relative group/item transition-all hover:border-brand-200">
+                    {formData.documents.length > 1 && (
+                      <button 
+                        type="button"
+                        onClick={() => setFormData({
+                          ...formData,
+                          documents: formData.documents.filter(d => d.id !== doc.id)
+                        })}
+                        className="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors"
+                      >
+                         <MoreVertical size={16} />
+                      </button>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5 font-sans">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Category</label>
+                        <select 
+                          value={doc.category}
+                          onChange={(e) => {
+                            const newDocs = [...formData.documents];
+                            newDocs[index].category = e.target.value;
+                            setFormData({...formData, documents: newDocs});
+                          }}
+                          className="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-brand-500 cursor-pointer"
+                        >
+                          <option>CV / Resume</option>
+                          <option>Transcripts / Degree</option>
+                          <option>Citizenship / ID</option>
+                          <option>PAN Card</option>
+                          <option>Employment Contract</option>
+                          <option>Professional License</option>
+                          <option>Police Clearance</option>
+                          <option>Health Records</option>
+                        </select>
+                      </div>
+                      <div className="space-y-1.5 font-sans">
+                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Document Title</label>
+                        <input 
+                          type="text"
+                          placeholder="e.g. Master's Degree"
+                          value={doc.title}
+                          onChange={(e) => {
+                            const newDocs = [...formData.documents];
+                            newDocs[index].title = e.target.value;
+                            setFormData({...formData, documents: newDocs});
+                          }}
+                          className="w-full h-11 px-4 bg-white border border-slate-200 rounded-xl font-bold text-xs outline-none focus:border-brand-500"
+                        />
+                      </div>
+                    </div>
+                    <label className="block">
+                      <input 
+                        type="file" 
+                        className="hidden" 
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const newDocs = [...formData.documents];
+                            newDocs[index].file = file;
+                            if (!newDocs[index].title) newDocs[index].title = file.name;
+                            setFormData({...formData, documents: newDocs});
+                          }
+                        }}
+                      />
+                      <div className={cn(
+                        "border-2 border-dashed rounded-xl p-4 flex flex-col items-center justify-center gap-2 bg-white transition-all cursor-pointer group/upload",
+                        doc.file ? "border-success-dark/30 bg-success-light/10" : "border-slate-200 hover:border-brand-400"
+                      )}>
+                         {doc.file ? (
+                           <CheckCircle2 size={16} className="text-success-dark" />
+                         ) : (
+                           <FileUp size={16} className="text-slate-400 group-hover/upload:text-brand-500 transition-colors" />
+                         )}
+                         <p className="text-[10px] font-bold text-slate-500">
+                           {doc.file ? doc.file.name : `Pick file for ${doc.category}`}
+                         </p>
+                      </div>
+                    </label>
+                  </div>
+                ))}
+              </div>
             </div>
-            <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Verification Status</label>
+
+            <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Global Verification Status</label>
                 <select 
-                  value={formData.status}
-                  onChange={(e) => setFormData({...formData, status: e.target.value})}
-                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans"
+                  value={globalStatus}
+                  onChange={(e) => setGlobalStatus(e.target.value)}
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-xs outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans"
                 >
                   <option>Pending Verification</option>
                   <option>Verified & Active</option>
                   <option>Expired / Needs Renewal</option>
                 </select>
             </div>
-            <div className="md:col-span-2">
-               <div className="border-2 border-dashed border-slate-200 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 bg-slate-50/50 hover:bg-white hover:border-brand-500 transition-all cursor-pointer group">
-                  <div className="w-12 h-12 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-400 group-hover:text-brand-600 group-hover:border-brand-100">
-                    <FileUp size={24} />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-bold text-gray-900 leading-none">Click to upload file</p>
-                    <p className="text-[10px] font-medium text-slate-400 mt-2">Maximum file size: 10MB (PDF, JPG, PNG)</p>
-                  </div>
-               </div>
-            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6 font-bold text-[10px] uppercase tracking-widest">Discard</Button>
+            <Button variant="outline" type="button" onClick={closeModal} className="rounded-xl h-12 px-6 font-bold text-[10px] uppercase tracking-widest">Discard</Button>
             <Button type="submit" disabled={isSubmitting} className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white hover:bg-brand-600 flex items-center gap-2 font-bold text-[10px] uppercase tracking-widest">
-               {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : <FileUp size={18} />} Archive Document
+               {isSubmitting ? <Loader2 size={18} className="animate-spin" /> : (isEditMode ? <Edit3 size={18} /> : <FileUp size={18} />)} {isEditMode ? 'Update' : 'Archive'} {formData.documents.length} Documents
             </Button>
           </div>
         </form>

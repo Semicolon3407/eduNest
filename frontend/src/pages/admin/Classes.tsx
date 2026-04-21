@@ -99,7 +99,7 @@ const ClassManagement: React.FC = () => {
               <GraduationCap size={20} />
             </div>
             <div>
-              <p className="text-sm font-bold text-brand-900 leading-tight">Academic Integrity</p>
+              <p className="text-sm font-bold text-brand-700 leading-tight">Academic Integrity</p>
               <p className="text-xs text-brand-700 mt-1 leading-relaxed">This section will be automatically linked to the current active session's timetable and grading schema.</p>
             </div>
           </div>

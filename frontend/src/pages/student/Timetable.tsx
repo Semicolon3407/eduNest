@@ -155,7 +155,7 @@ const StudentTimetable: React.FC = () => {
              <Coffee size={32} />
            </div>
            <div className="flex-1 text-center md:text-left">
-              <h3 className="text-2xl font-medium text-brand-900 tracking-tight leading-none mb-3 uppercase">Break Interval</h3>
+              <h3 className="text-2xl font-medium text-brand-700 tracking-tight leading-none mb-3 uppercase">Break Interval</h3>
               <p className="text-brand-700 text-sm font-medium leading-relaxed italic">"Daily break from 1:55 PM to 2:30 PM. Use this time for lunch and recreation."</p>
            </div>
         </div>

@@ -39,6 +39,7 @@ import StaffManagement from './pages/hr/Staff';
 import Payroll from './pages/hr/Payroll';
 import HRAttendance from './pages/hr/Attendance';
 import DocumentManagement from './pages/hr/Documents';
+import StaffDocuments from './pages/hr/StaffDocuments';
 import HRProfile from './pages/hr/Profile';
 import AdminProfile from './pages/admin/Profile';
 import Login from './pages/Login';
@@ -102,6 +103,7 @@ function App() {
           <Route path="staff" element={<StaffManagement />} />
           <Route path="attendance" element={<HRAttendance />} />
           <Route path="documents" element={<DocumentManagement />} />
+          <Route path="documents/staff/:staffId" element={<StaffDocuments />} />
           <Route path="profile" element={<HRProfile />} />
         </Route>
 
