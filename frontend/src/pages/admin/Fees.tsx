@@ -1,15 +1,11 @@
 import React from 'react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
-import { CreditCard, DollarSign, Users, AlertCircle, Download, Plus, FileText, CheckCircle2, MoreHorizontal } from 'lucide-react';
+import { CreditCard, DollarSign, Users, AlertCircle, Download, Plus, FileText, CheckCircle2 } from 'lucide-react';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
-
-const feeStructures = [
-  { id: 1, name: 'Annual Tuition', amount: '$4,500', frequency: 'Annual', category: 'Academic' },
-  { id: 2, name: 'Library Membership', amount: '$50', frequency: 'Termly', category: 'Library' },
-  { id: 3, name: 'Laboratory Fee', amount: '$200', frequency: 'Annual', category: 'Lab' },
-];
+import { adminService } from '../../services/adminService';
+import toast from 'react-hot-toast';
 
 const defaulters = [
   { name: 'John Doe', class: 'Grade 10-A', amount: '$1,200', overdue: '14 Days' },
@@ -18,6 +14,61 @@ const defaulters = [
 
 const Fees: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [fees, setFees] = React.useState<any[]>([]);
+  const [, setLoading] = React.useState(true);
+  const [formData, setFormData] = React.useState({
+    name: '',
+    amount: '',
+    frequency: 'Annual',
+    category: 'Academic',
+    description: ''
+  });
+
+  React.useEffect(() => {
+    fetchFees();
+  }, []);
+
+  const fetchFees = async () => {
+    try {
+      const response = await adminService.getFees();
+      if (response.success) {
+        setFees(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch fees:', error);
+      toast.error('Failed to load fee structures');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await adminService.createFee(formData);
+      if (response.success) {
+        toast.success('Fee structure created');
+        setIsModalOpen(false);
+        setFormData({ name: '', amount: '', frequency: 'Annual', category: 'Academic', description: '' });
+        fetchFees();
+      }
+    } catch (error) {
+      toast.error('Failed to create fee structure');
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this fee structure?')) return;
+    try {
+      const response = await adminService.deleteFee(id);
+      if (response.success) {
+        toast.success('Fee structure removed');
+        fetchFees();
+      }
+    } catch (error) {
+      toast.error('Failed to delete fee');
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -33,34 +84,34 @@ const Fees: React.FC = () => {
          <div className="bg-surface p-6 rounded-3xl border border-surface-200 shadow-soft">
             <div className="flex items-center gap-3 text-brand-600 mb-4">
                <DollarSign size={20} />
-               <span className="text-[10px] font-medium   leading-none">Total Collected</span>
+               <span className="text-[10px] font-medium   leading-none">Total Value</span>
             </div>
-            <h3 className="text-2xl font-medium  ">$142k</h3>
-            <p className="text-xs text-gray-400 mt-1 font-medium">Current academic year</p>
+            <h3 className="text-2xl font-medium  ">${fees.reduce((acc, f) => acc + (Number(f.amount) || 0), 0).toLocaleString()}</h3>
+            <p className="text-xs text-gray-400 mt-1 font-medium">Sum of all structures</p>
          </div>
          <div className="bg-surface p-6 rounded-3xl border border-surface-200 shadow-soft">
             <div className="flex items-center gap-3 text-danger mb-4">
                <AlertCircle size={20} />
-               <span className="text-[10px] font-medium   leading-none">Unpaid Dues</span>
+               <span className="text-[10px] font-medium   leading-none">Structures</span>
             </div>
-            <h3 className="text-2xl font-medium  ">$24.5k</h3>
-            <p className="text-xs text-gray-400 mt-1 font-medium">Impacts 42 students</p>
+            <h3 className="text-2xl font-medium  ">{fees.length}</h3>
+            <p className="text-xs text-gray-400 mt-1 font-medium">Distinct categories</p>
          </div>
          <div className="bg-surface p-6 rounded-3xl border border-surface-200 shadow-soft">
             <div className="flex items-center gap-3 text-success mb-4">
                <CreditCard size={20} />
-               <span className="text-[10px] font-medium   leading-none">Online Payments</span>
+               <span className="text-[10px] font-medium   leading-none">Annual Billing</span>
             </div>
-            <h3 className="text-2xl font-medium  ">84%</h3>
-            <p className="text-xs text-gray-400 mt-1 font-medium">via Stripe/PayPal</p>
+            <h3 className="text-2xl font-medium  ">{fees.filter(f => f.frequency === 'Annual').length}</h3>
+            <p className="text-xs text-gray-400 mt-1 font-medium">Fixed cycle fees</p>
          </div>
          <div className="bg-surface p-6 rounded-3xl border border-surface-200 shadow-soft">
             <div className="flex items-center gap-3 text-warning mb-4">
                <Users size={20} />
-               <span className="text-[10px] font-medium   leading-none">Defaulters</span>
+               <span className="text-[10px] font-medium   leading-none">Categories</span>
             </div>
-            <h3 className="text-2xl font-medium  ">3.2%</h3>
-            <p className="text-xs text-gray-400 mt-1 font-medium">Student population</p>
+            <h3 className="text-2xl font-medium  ">{new Set(fees.map(f => f.category)).size}</h3>
+            <p className="text-xs text-gray-400 mt-1 font-medium">Academic & Ops</p>
          </div>
       </div>
 
@@ -79,8 +130,8 @@ const Fees: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-surface-100">
-                  {feeStructures.map(fee => (
-                    <tr key={fee.id} className="group hover:bg-brand-50/20 transition-all cursor-pointer">
+                  {fees.map(fee => (
+                    <tr key={fee._id} className="group hover:bg-brand-50/20 transition-all cursor-pointer">
                       <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
                           <div className="w-10 h-10 rounded-2xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-xs shadow-sm border border-brand-100 group-hover:bg-white group-hover:scale-110 transition-all">
@@ -93,14 +144,17 @@ const Fees: React.FC = () => {
                         </div>
                       </td>
                       <td className="px-6 py-5">
-                        <span className="text-sm font-bold text-gray-900">{fee.amount}</span>
+                        <span className="text-sm font-bold text-gray-900">${(Number(fee.amount) || 0).toLocaleString()}</span>
                       </td>
                       <td className="px-6 py-5">
                         <Badge variant="brand">{fee.frequency}</Badge>
                       </td>
                       <td className="px-8 py-5 text-right">
-                        <button className="p-2 text-gray-400 hover:bg-white hover:text-brand-600 rounded-xl transition-all shadow-sm border border-transparent hover:border-brand-100">
-                          <MoreHorizontal size={18} />
+                        <button 
+                          onClick={() => handleDelete(fee._id)}
+                          className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-all"
+                        >
+                          <CreditCard size={18} />
                         </button>
                       </td>
                     </tr>
@@ -146,25 +200,52 @@ const Fees: React.FC = () => {
         description="Define a new academic or operational fee for students."
         maxWidth="xl"
       >
-        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
-          <Input label="Fee Name" placeholder="e.g. Transportation Fee" icon={FileText} required />
+        <form className="space-y-6" onSubmit={handleSubmit}>
+          <Input 
+            label="Fee Name" 
+            placeholder="e.g. Transportation Fee" 
+            icon={FileText} 
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            required 
+          />
           <div className="grid grid-cols-2 gap-4">
-            <Input label="Amount ($)" placeholder="200" type="number" required />
+            <Input 
+              label="Amount ($)" 
+              placeholder="200" 
+              type="number" 
+              value={formData.amount}
+              onChange={(e) => setFormData({...formData, amount: e.target.value})}
+              required 
+            />
             <div className="space-y-1.5 focus-within:z-10 group">
               <label className="text-xs font-bold text-gray-400 px-1 uppercase tracking-tight">Billing Frequency</label>
-              <select className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer">
-                <option value="annual">Annual</option>
-                <option value="termly">Termly</option>
-                <option value="monthly">Monthly</option>
-                <option value="one-time">One-time</option>
+              <select 
+                value={formData.frequency}
+                onChange={(e) => setFormData({...formData, frequency: e.target.value})}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer"
+              >
+                <option value="Annual">Annual</option>
+                <option value="Termly">Termly</option>
+                <option value="Monthly">Monthly</option>
+                <option value="One-time">One-time</option>
               </select>
             </div>
           </div>
+          <Input 
+            label="Category" 
+            placeholder="e.g. Academic, Lab, Transportation" 
+            value={formData.category}
+            onChange={(e) => setFormData({...formData, category: e.target.value})}
+            required 
+          />
           <div className="space-y-2">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Description / Notes</label>
             <textarea 
               className="w-full h-24 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all resize-none"
               placeholder="Provide details about what this fee covers..."
+              value={formData.description}
+              onChange={(e) => setFormData({...formData, description: e.target.value})}
             ></textarea>
           </div>
           <div className="flex items-center gap-3 p-4 bg-success-light/30 rounded-2xl border border-success-light">

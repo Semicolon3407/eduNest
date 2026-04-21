@@ -14,9 +14,9 @@ import { onboardStaff, updateStaff, deleteStaff } from '../controllers/tenantCon
 
 const router = express.Router();
 
-// All HR routes are protected and require HR or ORGANIZATION role
+// All HR routes are protected and require HR, ORGANIZATION or ADMIN role
 router.use(protect as any);
-router.use(authorize('HR', 'ORGANIZATION') as any);
+router.use(authorize('HR', 'ORGANIZATION', 'ADMIN') as any);
 
 router.get('/stats', getHRDashboardStats);
 router.post('/attendance', markAttendance);

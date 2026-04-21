@@ -1,15 +1,33 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import StatCard from '../../components/dashboard/StatCard';
+import Badge from '../../components/ui/Badge';
 import { UserPlus, BookOpen, CreditCard, Package, ArrowUpRight, ArrowDownRight, MoreHorizontal, ArrowRight } from 'lucide-react';
-import { cn } from '../../utils/cn';
-
-const admissions = [
-  { id: 1, name: 'John Doe', grade: 'Grade 10', section: 'A', date: '2023-10-15', status: 'Approved' },
-  { id: 2, name: 'Jane Smith', grade: 'Grade 12', section: 'B', date: '2023-10-16', status: 'Pending' },
-  { id: 3, name: 'Sam Wilson', grade: 'Grade 10', section: 'A', date: '2023-10-16', status: 'Rejected' },
-];
+import { adminService } from '../../services/adminService';
 
 const AdminDashboard: React.FC = () => {
+  const [stats, setStats] = useState<any>(null);
+  const [admissions, setAdmissions] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const [statsRes, studentsRes] = await Promise.all([
+          adminService.getDashboardStats(),
+          adminService.getStudents()
+        ]);
+        if (statsRes.success) {
+          setStats(statsRes.data);
+        }
+        if (studentsRes.success) {
+          setAdmissions(studentsRes.data.slice(0, 5)); // Show latest 5
+        }
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+      }
+    };
+    fetchStats();
+  }, []);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
@@ -18,10 +36,10 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="New Admissions" value="128" icon={UserPlus} trend={{ value: '+14%', isUp: true }} color="brand" />
-        <StatCard title="Active Classes" value="42" icon={BookOpen} color="success" />
-        <StatCard title="Pending Fees" value="$24.5k" icon={CreditCard} trend={{ value: '+4.2%', isUp: false }} color="danger" />
-        <StatCard title="Inventory Items" value="1,402" icon={Package} color="warning" />
+        <StatCard title="New Admissions" value={stats?.studentCount?.toString() || "0"} icon={UserPlus} trend={{ value: '+14%', isUp: true }} color="brand" />
+        <StatCard title="Active Classes" value={stats?.activeClasses?.toString() || "0"} icon={BookOpen} color="success" />
+        <StatCard title="Pending Fees" value={stats?.fees?.find((f: any) => f._id === 'Pending')?.total?.toLocaleString() || "0"} icon={CreditCard} trend={{ value: '+4.2%', isUp: false }} color="danger" />
+        <StatCard title="Inventory Items" value={stats?.inventoryCount?.toLocaleString() || "0"} icon={Package} color="warning" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:p-8">
@@ -31,8 +49,8 @@ const AdminDashboard: React.FC = () => {
             <h2 className="text-xl font-medium text-gray-900">Admission Pipeline</h2>
             <button className="text-brand-600 font-medium text-sm  ">Process All</button>
           </div>
-          <div className="p-4 overflow-x-auto">
-             <div className="overflow-x-auto"><table className="w-full text-left">
+          <div className="p-4">
+             <table className="w-full text-left">
               <thead>
                 <tr className="text-gray-400 text-[10px] font-medium  ">
                   <th className="px-4 py-3">Student</th>
@@ -43,21 +61,24 @@ const AdminDashboard: React.FC = () => {
               </thead>
               <tbody className="divide-y divide-surface-100">
                 {admissions.map((student) => (
-                  <tr key={student.id} className="group hover:bg-surface-50">
+                  <tr key={student._id} className="group hover:bg-surface-50">
                     <td className="px-4 py-4">
-                      <p className="font-medium text-sm text-gray-900">{student.name}</p>
-                      <p className="text-xs text-gray-400">{student.date}</p>
+                      <p className="font-medium text-sm text-gray-900 group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-none mb-1">{student.firstName} {student.lastName}</p>
+                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{student.admissionNumber}</p>
                     </td>
-                    <td className="px-4 py-4 text-sm font-medium text-gray-600">{student.grade}-{student.section}</td>
+                    <td className="px-4 py-4 text-sm font-medium text-gray-600">
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-sm font-medium text-gray-900 leading-none mb-1">{student.class?.name}</p>
+                        <p className="text-[10px] text-brand-500 font-bold uppercase tracking-widest leading-none">SEC {student.class?.section}</p>
+                      </div>
+                    </td>
                     <td className="px-4 py-4">
-                      <span className={cn(
-                        "px-2 py-1 rounded-md text-[10px] font-medium  ",
-                        student.status === 'Approved' ? 'bg-success-light text-success-dark' :
-                        student.status === 'Pending' ? 'bg-warning-light text-warning-dark' :
-                        'bg-danger-light text-danger-dark'
-                      )}>
+                      <Badge variant={
+                        student.status === 'Active' ? 'success' :
+                        student.status === 'Pending' ? 'warning' : 'danger'
+                      }>
                         {student.status}
-                      </span>
+                      </Badge>
                     </td>
                     <td className="px-4 py-4 text-right">
                       <button className="p-2 text-gray-400 hover:text-brand-600 transition-colors">
@@ -67,7 +88,7 @@ const AdminDashboard: React.FC = () => {
                   </tr>
                 ))}
               </tbody>
-            </table></div>
+            </table>
           </div>
         </div>
 

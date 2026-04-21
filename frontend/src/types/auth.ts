@@ -2,9 +2,11 @@ export type UserRole = 'SUPER_ADMIN' | 'ORGANIZATION' | 'HR' | 'ADMIN' | 'TUTOR'
 
 export interface User {
   id: string;
+  _id?: string;
   name: string;
   email: string;
   role: UserRole;
+  createdAt?: string;
 }
 
 export interface LoginCredentials {

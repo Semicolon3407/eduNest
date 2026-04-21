@@ -8,9 +8,9 @@ import { protect, authorize } from '../middlewares/auth';
 
 const router = express.Router();
 
-// All routes are protected and require ORGANIZATION role
+// All routes are protected and require ORGANIZATION or ADMIN role
 router.use(protect);
-router.use(authorize('ORGANIZATION'));
+router.use(authorize('ORGANIZATION', 'ADMIN'));
 
 // Branch Routes
 router.route('/branches')

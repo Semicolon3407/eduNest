@@ -2,13 +2,18 @@ import React from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { 
-  UserRound, Mail, Phone, Building, 
-  MapPin, Shield, Calendar, 
+  UserRound, Mail, Building, 
+  Shield, Calendar, 
   Camera, Edit2, GraduationCap, Trophy,
-  CreditCard, Activity
+  Activity
 } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 const AdminProfile: React.FC = () => {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <div className="flex items-center justify-center h-full text-slate-400 font-medium animate-pulse uppercase tracking-[0.2em] text-[10px]">Encrypting Channel...</div>;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500 pb-20">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -29,19 +34,19 @@ const AdminProfile: React.FC = () => {
             <div className="relative pt-4">
               <div className="relative inline-block">
                 <div className="w-32 h-32 bg-slate-100 rounded-[48px] border-4 border-white shadow-soft flex items-center justify-center text-brand-600 text-4xl font-display font-medium transition-transform group-hover:scale-105">
-                  MB
+                  {user?.name?.charAt(0)}
                 </div>
                 <button className="absolute -bottom-2 -right-2 w-10 h-10 bg-brand-500 text-white rounded-2xl border-4 border-white flex items-center justify-center shadow-premium hover:bg-brand-600 transition-all active:scale-90">
                   <Camera size={18} />
                 </button>
               </div>
-              <h3 className="mt-6 text-xl font-bold text-slate-800 tracking-tight uppercase">Michael Brown</h3>
-              <p className="text-sm font-medium text-slate-400 mt-1">Institutional Administrator</p>
+              <h3 className="mt-6 text-xl font-bold text-slate-800 tracking-tight uppercase">{user?.name}</h3>
+              <p className="text-sm font-medium text-slate-400 mt-1">{user?.role}</p>
               
               <div className="mt-8 pt-8 border-t border-slate-100 space-y-4">
                  <div className="flex items-center gap-3 text-left p-3 rounded-2xl bg-slate-50 border border-slate-100">
                     <Mail className="text-brand-500 shrink-0" size={16} />
-                    <p className="text-xs font-bold text-slate-600 truncate uppercase tracking-tighter">michael.b@school.com</p>
+                    <p className="text-xs font-bold text-slate-600 truncate uppercase tracking-tighter">{user?.email}</p>
                  </div>
                  <div className="flex items-center gap-3 text-left p-3 rounded-2xl bg-slate-50 border border-slate-100">
                     <Building className="text-brand-500 shrink-0" size={16} />
@@ -51,7 +56,6 @@ const AdminProfile: React.FC = () => {
             </div>
           </div>
 
-          {/* Institutional Control Stats */}
           <div className="bg-slate-900 rounded-[40px] shadow-premium p-8 text-white">
             <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-6">Administrative Audit</h4>
             <div className="space-y-6">
@@ -60,23 +64,23 @@ const AdminProfile: React.FC = () => {
                   <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-brand-400">
                     <GraduationCap size={18} />
                   </div>
-                  <span className="text-xs font-medium text-white/80">Active Admissions</span>
+                  <span className="text-xs font-medium text-white/80">System Access</span>
                 </div>
-                <span className="text-lg font-bold">342</span>
+                <span className="text-lg font-bold">Lvl 4</span>
               </div>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-warning">
-                    <CreditCard size={18} />
+                    <Shield size={18} />
                   </div>
-                  <span className="text-xs font-medium text-white/80">Fee Compliance</span>
+                  <span className="text-xs font-medium text-white/80">Security Protocol</span>
                 </div>
-                <span className="text-lg font-bold">92.4%</span>
+                <span className="text-lg font-bold">AES-256</span>
               </div>
               <div className="pt-4 border-t border-white/10">
                  <div className="flex items-center gap-3 text-brand-400">
                     <Activity size={14} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">System Health: Optimal</span>
+                    <span className="text-[10px] font-bold uppercase tracking-widest">Session: Active</span>
                  </div>
               </div>
             </div>
@@ -88,19 +92,16 @@ const AdminProfile: React.FC = () => {
           <div className="bg-white rounded-[40px] shadow-premium border border-slate-200 overflow-hidden">
             <div className="p-8 border-b border-slate-100">
               <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-3 uppercase">
-                <Building className="text-brand-500" size={20} /> Institutional Profile
+                <Building className="text-brand-500" size={20} /> Identity Profile
               </h3>
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input label="Full Name" defaultValue="Michael Brown" icon={UserRound} />
-              <Input label="Administrator ID" defaultValue="ADM-9901" icon={Shield} />
-              <Input label="Official Email" defaultValue="michael.b@school.com" icon={Mail} />
-              <Input label="Direct Line" defaultValue="+1 (555) 333-4444" icon={Phone} />
+              <Input label="Full Name" value={user?.name || ''} readOnly icon={UserRound} />
+              <Input label="Administrator ID" value={`ADM-${(user?._id || user?.id || '').slice(-4).toUpperCase()}`} readOnly icon={Shield} />
+              <Input label="Official Email" value={user?.email || ''} readOnly icon={Mail} />
+              <Input label="Role" value={user?.role || ''} readOnly icon={Shield} />
               <Input label="Responsible Wing" defaultValue="Main Campus Administration" icon={Building} />
-              <Input label="Appointment Date" defaultValue="Nov 20, 2023" icon={Calendar} />
-              <div className="md:col-span-2">
-                <Input label="Reporting Office" defaultValue="Executive Block, Room 101" icon={MapPin} />
-              </div>
+              <Input label="Joined Date" value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'} readOnly icon={Calendar} />
             </div>
           </div>
 
@@ -112,25 +113,14 @@ const AdminProfile: React.FC = () => {
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
                <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-3">Admission Cycle 2024</p>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-3">Admission Cycle</p>
                   <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2 underline decoration-brand-500 decoration-2">Status: Automated</p>
                   <p className="text-xs text-slate-500 font-medium">95% of initial onboarding completed successfully.</p>
                </div>
                <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-3">Financial Audit</p>
-                  <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2 underline decoration-success decoration-2">Status: Cleared</p>
-                  <p className="text-xs text-slate-500 font-medium">Q1 Institutional financial statements verified and locked.</p>
-               </div>
-            </div>
-            <div className="px-8 pb-8">
-               <div className="p-6 bg-brand-50/50 rounded-[32px] border border-brand-100 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-brand-600 shadow-sm border border-brand-200">
-                    <Shield size={22} />
-                  </div>
-                  <div>
-                    <h5 className="text-sm font-bold text-brand-600 uppercase tracking-tight leading-none mb-1">Administrative Perimeter Security</h5>
-                    <p className="text-[10px] font-medium text-brand-700 opacity-70">Your profile is shielded by end-to-end institutional encryption protocols.</p>
-                  </div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-3">Security Audit</p>
+                  <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2 underline decoration-success decoration-2">Status: Passed</p>
+                  <p className="text-xs text-slate-500 font-medium">Administrative credential verification completed.</p>
                </div>
             </div>
           </div>

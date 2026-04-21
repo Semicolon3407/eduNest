@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { 
@@ -6,20 +6,94 @@ import {
 } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
-
-const tutors = [
-  { id: 1, name: 'Prof. Stephen Hawking', dept: 'Physics', email: 'hawking@edunest.com', status: 'Available' },
-  { id: 2, name: 'Dr. Marie Curie', dept: 'Chemistry', email: 'curie@edunest.com', status: 'In Class' },
-  { id: 3, name: 'Prof. Albert Einstein', dept: 'Mathematics', email: 'einstein@edunest.com', status: 'Available' },
-];
+import { adminService } from '../../services/adminService';
+import { hrService } from '../../services/hrService';
+import toast from 'react-hot-toast';
 
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 const timeSlots = ['08:00 AM', '09:00 AM', '10:00 AM', '11:00 AM', '12:00 PM', '01:00 PM'];
 
 const TutorSchedules: React.FC = () => {
-  const [selectedTutor, setSelectedTutor] = useState(tutors[0]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedSlot, setSelectedSlot] = useState<any>(null);
+  const [tutors, setTutors] = React.useState<any[]>([]);
+  const [selectedTutor, setSelectedTutor] = React.useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [selectedSlot, setSelectedSlot] = React.useState<any>(null);
+  const [schedules, setSchedules] = React.useState<any[]>([]);
+  const [classes, setClasses] = React.useState<any[]>([]);
+  const [formData, setFormData] = React.useState({
+    classId: '',
+    subject: '',
+    room: 'B102'
+  });
+
+  React.useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  React.useEffect(() => {
+    if (selectedTutor) {
+      fetchSchedules();
+    }
+  }, [selectedTutor]);
+
+  const fetchInitialData = async () => {
+    try {
+      const [staffRes, classesRes] = await Promise.all([
+        hrService.getStaff(),
+        adminService.getClasses()
+      ]);
+      if (staffRes.success) {
+        const availableTutors = staffRes.data.filter((s: any) => s.user?.role === 'TUTOR' || s.designation?.toUpperCase().includes('TUTOR'));
+        setTutors(availableTutors);
+        if (availableTutors.length > 0) setSelectedTutor(availableTutors[0]);
+      }
+      if (classesRes.success) {
+        setClasses(classesRes.data);
+      }
+    } catch (error) {
+      toast.error('Failed to load faculty directory');
+    }
+  };
+
+  const fetchSchedules = async () => {
+    try {
+      const response = await adminService.getSchedules({ type: 'Tutor', staffId: selectedTutor._id });
+      if (response.success) {
+        setSchedules(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch schedules:', error);
+    }
+  };
+
+  const handleAssignLoad = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const data = {
+        type: 'Tutor',
+        staff: selectedTutor._id,
+        class: formData.classId,
+        day: selectedSlot.day,
+        startTime: selectedSlot.time,
+        endTime: selectedSlot.time, 
+        subject: formData.subject,
+        room: formData.room
+      };
+      const response = await adminService.createSchedule(data);
+      if (response.success) {
+        toast.success('Faculty load assigned');
+        setIsModalOpen(false);
+        fetchSchedules();
+        setFormData({ classId: '', subject: '', room: 'B102' });
+      }
+    } catch (error) {
+      toast.error('Conflict detected or assignment failed');
+    }
+  };
+
+  const getSlotContent = (day: string, time: string) => {
+    return schedules.find(s => s.day === day && s.startTime === time);
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-12">
@@ -43,25 +117,25 @@ const TutorSchedules: React.FC = () => {
            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
               {tutors.map(tutor => (
                 <div 
-                  key={tutor.id} 
+                  key={tutor._id} 
                   onClick={() => setSelectedTutor(tutor)}
                   className={`p-5 rounded-[32px] border transition-all cursor-pointer group ${
-                    selectedTutor.id === tutor.id 
+                    selectedTutor?._id === tutor._id 
                     ? 'bg-slate-900 border-slate-900 text-white shadow-premium ring-4 ring-slate-900/10' 
                     : 'bg-white border-slate-100 hover:border-brand-300'
                   }`}
                 >
                   <div className="flex items-center gap-4">
                     <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-bold text-lg ${
-                      selectedTutor.id === tutor.id ? 'bg-brand-500 text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-600'
+                      selectedTutor?._id === tutor._id ? 'bg-brand-500 text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-brand-50 group-hover:text-brand-600'
                     }`}>
-                      {tutor.name.split(' ').pop()?.charAt(0)}
+                      {(tutor.firstName || 'T').charAt(0)}
                     </div>
                     <div>
-                      <h4 className="font-medium text-sm leading-tight">{tutor.name}</h4>
+                      <h4 className="font-medium text-sm leading-tight">{tutor.firstName} {tutor.lastName}</h4>
                       <div className="flex items-center gap-2 mt-1">
-                        <Badge variant={tutor.status === 'Available' ? 'success' : 'warning'} className="text-[8px] px-1.5 py-0">
-                          {tutor.status}
+                        <Badge variant={tutor.status === 'Active' ? 'success' : 'warning'} className="text-[8px] px-1.5 py-0">
+                          {tutor.status === 'Active' ? 'Available' : 'Unavailable'}
                         </Badge>
                       </div>
                     </div>
@@ -80,8 +154,8 @@ const TutorSchedules: React.FC = () => {
                     <Users size={28} />
                   </div>
                   <div>
-                    <h3 className="text-2xl font-medium text-gray-900 leading-none  ">{selectedTutor.name}</h3>
-                    <p className="text-slate-400 text-sm font-medium mt-2">{selectedTutor.dept} Department • {selectedTutor.email}</p>
+                    <h3 className="text-2xl font-medium text-gray-900 leading-none  ">{selectedTutor?.firstName} {selectedTutor?.lastName}</h3>
+                    <p className="text-slate-400 text-sm font-medium mt-2">{selectedTutor?.designation} • {selectedTutor?.user?.email || selectedTutor?.email}</p>
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -108,7 +182,7 @@ const TutorSchedules: React.FC = () => {
                           <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">{time}</span>
                         </td>
                         {days.map(day => (
-                          <td 
+                            <td 
                             key={day} 
                             className="p-2 border-b border-r border-slate-100 relative group cursor-pointer"
                             onClick={() => {
@@ -116,18 +190,26 @@ const TutorSchedules: React.FC = () => {
                               setIsModalOpen(true);
                             }}
                           >
-                             {/* Mock logic for allocated slots */}
-                             {(time === '09:00 AM' && day === 'Monday') || (time === '11:00 AM' && day === 'Wednesday') ? (
+                             {getSlotContent(day, time) ? (
                                <div className="p-3 bg-brand-50 border border-brand-100 rounded-2xl text-left shadow-sm group-hover:border-brand-300 transition-all">
-                                  <p className="text-[9px] font-bold text-brand-600 uppercase tracking-widest mb-1">Grade {time === '09:00 AM' ? '10-A' : '11-B'}</p>
-                                  <h5 className="font-bold text-[11px] text-slate-900 leading-none">{time === '09:00 AM' ? 'Physics' : 'Advanced Chem'}</h5>
+                                  <p className="text-[9px] font-bold text-brand-600 uppercase tracking-widest mb-1">{getSlotContent(day, time).class?.name}</p>
+                                  <h5 className="font-bold text-[11px] text-slate-900 leading-none">{getSlotContent(day, time).subject}</h5>
+                                  <div className="mt-2 flex items-center justify-between">
+                                    <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">RM {getSlotContent(day, time).room}</span>
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); adminService.deleteSchedule(getSlotContent(day, time)._id).then(fetchSchedules); }}
+                                      className="text-danger opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <Plus size={10} className="rotate-45" />
+                                    </button>
+                                  </div>
                                </div>
                              ) : (
                                <div className="w-full h-12 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                   <div className="w-8 h-8 rounded-xl bg-slate-50 flex items-center justify-center text-slate-300 hover:bg-brand-500 hover:text-white transition-all shadow-sm">
                                     <Plus size={14} />
                                   </div>
-                               </div>
+                                </div>
                              )}
                           </td>
                         ))}
@@ -155,40 +237,56 @@ const TutorSchedules: React.FC = () => {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title="Assign Faculty Load"
-        description={`Assigning academic session to ${selectedTutor.name} on ${selectedSlot?.day} at ${selectedSlot?.time}`}
+        description={`Assigning academic session to ${selectedTutor?.firstName || 'Tutor'} on ${selectedSlot?.day} at ${selectedSlot?.time}`}
         maxWidth="xl"
       >
-        <form className="space-y-6" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+        <form className="space-y-6" onSubmit={handleAssignLoad}>
           <div className="space-y-1.5 focus-within:z-10 group">
             <label className="text-xs font-bold text-gray-500 uppercase tracking-widest px-1">Target Class / Section</label>
             <div className="relative">
-              <select className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-10 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer" required>
+              <select 
+                value={formData.classId}
+                onChange={(e) => setFormData({...formData, classId: e.target.value})}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-10 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer" 
+                required
+              >
                 <option value="">Select Grade & Section</option>
-                <option value="10A">Grade 10 - Section A</option>
-                <option value="10B">Grade 10 - Section B</option>
-                <option value="11Sci">Grade 11 - Science</option>
+                {classes.map(cls => (
+                  <option key={cls._id} value={cls._id}>{cls.name} - SEC {cls.section}</option>
+                ))}
               </select>
               <GraduationCap size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
             </div>
           </div>
 
-          <Input label="Subject Name" placeholder="e.g. Theoretical Physics" icon={BookOpen} required />
+          <Input 
+            label="Subject Name" 
+            placeholder="e.g. Theoretical Physics" 
+            icon={BookOpen} 
+            value={formData.subject}
+            onChange={(e) => setFormData({...formData, subject: e.target.value})}
+            required 
+          />
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-gray-400 px-1">Room Assignment</label>
-              <select className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer">
+              <select 
+                value={formData.room}
+                onChange={(e) => setFormData({...formData, room: e.target.value})}
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer"
+              >
                 <option value="B102">Room B-102</option>
                 <option value="L4">Lab 4</option>
                 <option value="HallA">Hall A</option>
+                <option value="Auditorium">Auditorium</option>
               </select>
             </div>
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-gray-400 px-1">Intensity</label>
-              <div className="flex gap-2">
-                 <Badge variant="brand" className="h-12 grow justify-center cursor-pointer border-2 border-brand-500">Regular</Badge>
-                 <Badge variant="neutral" className="h-12 grow justify-center cursor-pointer border border-slate-200">Extra</Badge>
-              </div>
+            <div className="flex items-end">
+               <div className="p-4 bg-brand-50 border border-brand-100 rounded-2xl w-full">
+                  <p className="text-[10px] font-bold text-brand-600 uppercase tracking-widest leading-none mb-1">Status</p>
+                  <p className="text-xs font-medium text-slate-900">Conflict-free check active</p>
+               </div>
             </div>
           </div>
 

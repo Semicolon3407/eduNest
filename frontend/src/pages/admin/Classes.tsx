@@ -1,18 +1,82 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import Input from '../../components/ui/Input';
 import { Users, Layout, Plus, MoreHorizontal, GraduationCap, DoorOpen, UserCheck, Shield } from 'lucide-react';
-
-const classes = [
-  { id: 1, name: 'Grade 10', section: 'A', room: 'B-102', strength: 42, tutor: 'Dr. Sarah Wilson' },
-  { id: 2, name: 'Grade 10', section: 'B', room: 'B-103', strength: 38, tutor: 'Prof. Michael Brown' },
-  { id: 3, name: 'Grade 12', section: 'Science', room: 'Lab-4', strength: 25, tutor: 'Ar. Kevin Spacey' },
-];
+import { adminService } from '../../services/adminService';
+import { tenantService } from '../../services/tenantService';
+import { hrService } from '../../services/hrService';
+import toast from 'react-hot-toast';
 
 const ClassManagement: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [staff, setStaff] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [formData, setFormData] = useState({
+    name: '',
+    section: '',
+    room: '',
+    tutor: '',
+    capacity: 45,
+    branchId: ''
+  });
+
+  const fetchData = async () => {
+    try {
+      const [classesRes, branchesRes, staffRes] = await Promise.all([
+        adminService.getClasses(),
+        tenantService.getBranches(),
+        hrService.getStaff()
+      ]);
+      setClasses(classesRes.data);
+      setBranches(branchesRes.data);
+      setStaff(staffRes.data || []);
+    } catch (error) {
+      console.error('Fetch error:', error);
+      toast.error('Failed to load data');
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateClass = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const response = await adminService.createClass({
+        ...formData,
+        branch: formData.branchId
+      });
+      if (response.success) {
+        toast.success('Section initialized successfully');
+        setIsModalOpen(false);
+        fetchData();
+        setFormData({
+          name: '',
+          section: '',
+          room: '',
+          tutor: '',
+          capacity: 45,
+          branchId: ''
+        });
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to create section');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 font-sans">
@@ -28,10 +92,10 @@ const ClassManagement: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {classes.map(cls => (
-          <div key={cls.id} className="bg-white p-4 sm:p-8 rounded-[32px] sm:rounded-[48px] shadow-soft border border-slate-200 group hover:border-brand-500 transition-all">
+          <div key={cls._id} className="bg-white p-4 sm:p-8 rounded-[32px] sm:rounded-[48px] shadow-soft border border-slate-200 group hover:border-brand-500 transition-all">
             <div className="flex justify-between items-start mb-6">
               <div className="w-14 h-14 bg-brand-50 text-brand-600 rounded-[20px] flex items-center justify-center font-bold text-xl group-hover:bg-brand-500 group-hover:text-white transition-all shadow-sm border border-brand-100">
-                {cls.name.split(' ')[1]}
+                {cls.name.split(' ')[1] || cls.name}
               </div>
               <Badge variant="neutral" className="text-[10px] font-bold uppercase tracking-widest">Room {cls.room}</Badge>
             </div>
@@ -53,7 +117,7 @@ const ClassManagement: React.FC = () => {
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Capacity</p>
                 <div className="flex items-center gap-2">
                   <Layout size={16} className="text-slate-400" />
-                  <span className="font-bold text-gray-900 text-sm">45</span>
+                  <span className="font-bold text-gray-900 text-sm">{cls.capacity}</span>
                 </div>
               </div>
             </div>
@@ -73,25 +137,62 @@ const ClassManagement: React.FC = () => {
         description="Establish a new student cohort and assign faculty leadership."
         maxWidth="2xl"
       >
-        <form className="space-y-8" onSubmit={(e) => { e.preventDefault(); setIsModalOpen(false); }}>
+        <form className="space-y-8" onSubmit={handleCreateClass}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="md:col-span-1">
+              <Input 
+                label="Grade Level" 
+                name="name" 
+                value={formData.name} 
+                onChange={handleInputChange} 
+                placeholder="e.g. Grade 10" 
+                required 
+              />
+            </div>
+            <Input label="Section Name / ID" name="section" value={formData.section} onChange={handleInputChange} placeholder="e.g. Science-A" icon={Layout} required />
+            <div className="md:col-span-2">
               <div className="space-y-2">
-                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Grade Level</label>
-                <select className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans">
-                  <option>Grade 9</option>
-                  <option>Grade 10</option>
-                  <option>Grade 11</option>
-                  <option>Grade 12</option>
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Assigned Class Tutor</label>
+                <select 
+                  name="tutor" 
+                  value={formData.tutor} 
+                  onChange={handleInputChange}
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans"
+                  required
+                >
+                  <option value="">Select Tutor</option>
+                  {staff
+                    .filter(s => (s.user?.role === 'TUTOR') || 
+                                 (s.designation?.toLowerCase().includes('tutor')) || 
+                                 (s.designation?.toLowerCase().includes('teacher')) ||
+                                 (s.designation?.toLowerCase().includes('professor')))
+                    .map(s => (
+                      <option key={s._id} value={`${s.firstName} ${s.lastName}`}>{s.firstName} {s.lastName} ({s.designation})</option>
+                    ))
+                  }
                 </select>
               </div>
             </div>
-            <Input label="Section Name / ID" placeholder="e.g. Science-A" icon={Layout} required />
+            <Input label="Assigned Classroom" name="room" value={formData.room} onChange={handleInputChange} placeholder="e.g. B-102" icon={DoorOpen} required />
+            <Input label="Student Capacity" name="capacity" value={formData.capacity} onChange={handleInputChange} placeholder="45" icon={Shield} required type="number" />
+            
             <div className="md:col-span-2">
-              <Input label="Assigned Class Tutor" placeholder="Search faculty member..." icon={Users} required />
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Target Branch</label>
+                <select 
+                  name="branchId" 
+                  value={formData.branchId} 
+                  onChange={handleInputChange}
+                  className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer font-sans"
+                  required
+                >
+                  <option value="">Select Branch</option>
+                  {branches.map(b => (
+                    <option key={b._id} value={b._id}>{b.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <Input label="Assigned Classroom" placeholder="e.g. B-102" icon={DoorOpen} required />
-            <Input label="Student Capacity" placeholder="45" icon={Shield} required type="number" />
           </div>
 
           <div className="bg-brand-50 p-6 rounded-3xl border border-brand-100 flex items-start gap-4">
@@ -106,7 +207,9 @@ const ClassManagement: React.FC = () => {
 
           <div className="flex justify-end gap-3 pt-4">
             <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-12 px-6">Cancel</Button>
-            <Button type="submit" className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white hover:bg-brand-600 transition-all active:scale-95">Initialize Section</Button>
+            <Button type="submit" disabled={isSubmitting} className="rounded-xl h-12 px-8 shadow-premium bg-brand-500 text-white hover:bg-brand-600 transition-all active:scale-95">
+              {isSubmitting ? 'Initializing...' : 'Initialize Section'}
+            </Button>
           </div>
         </form>
       </Modal>
