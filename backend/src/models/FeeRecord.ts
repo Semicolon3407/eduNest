@@ -8,6 +8,7 @@ export interface IFeeRecord extends Document {
   status: 'Paid' | 'Pending' | 'Overdue';
   method: string;
   transactionId?: string;
+  transactionUuid?: string;
   organization: mongoose.Types.ObjectId;
   branch: mongoose.Types.ObjectId;
 }
@@ -20,6 +21,7 @@ const feeRecordSchema = new Schema<IFeeRecord>({
   status: { type: String, enum: ['Paid', 'Pending', 'Overdue'], default: 'Pending' },
   method: { type: String, default: '-' },
   transactionId: { type: String },
+  transactionUuid: { type: String },
   organization: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
   branch: { type: Schema.Types.ObjectId, ref: 'Branch', required: true }
 }, { timestamps: true });

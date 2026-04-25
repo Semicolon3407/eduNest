@@ -42,7 +42,9 @@ import DocumentManagement from './pages/hr/Documents';
 import StaffDocuments from './pages/hr/StaffDocuments';
 import HRProfile from './pages/hr/Profile';
 import AdminProfile from './pages/admin/Profile';
+import FeeCollection from './pages/admin/FeeCollection';
 import Login from './pages/Login';
+import { PaymentSuccess, PaymentFailure } from './pages/student/PaymentStatus';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import { Toaster } from 'react-hot-toast';
@@ -116,6 +118,7 @@ function App() {
           <Route index element={<AdminDashboard />} />
           <Route path="admissions" element={<Admissions />} />
           <Route path="fees" element={<Fees />} />
+          <Route path="fee-collection" element={<FeeCollection />} />
           <Route path="classes" element={<Classes />} />
           <Route path="student-schedules" element={<StudentSchedules />} />
           <Route path="tutor-schedules" element={<TutorSchedules />} />
@@ -156,6 +159,8 @@ function App() {
           <Route path="profile" element={<StudentProfile />} />
         </Route>
 
+        <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/payment-failure" element={<PaymentFailure />} />
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

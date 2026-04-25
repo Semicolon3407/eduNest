@@ -6,6 +6,7 @@ import Fee from '../models/Fee';
 import Inventory from '../models/Inventory';
 import Schedule from '../models/Schedule';
 import User from '../models/User';
+import FeeRecord from '../models/FeeRecord';
 import sendEmail from '../utils/sendEmail';
 
 export const adminController = {
@@ -218,6 +219,105 @@ export const adminController = {
       res.status(200).json({ success: true, message: 'Fee removed' });
     } catch (error: any) {
       res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  getFeeRecords: async (req: AuthRequest, res: Response) => {
+    try {
+      const { status, studentId, branchId, classId } = req.query;
+      const query: any = { organization: req.user.organization };
+      
+      if (status) query.status = status;
+      if (studentId) query.student = studentId;
+      
+      // If branchId or classId is provided, we need to filter students
+      if (branchId || classId) {
+        const studentQuery: any = { organization: req.user.organization };
+        if (branchId) studentQuery.branch = branchId;
+        if (classId) studentQuery.class = classId;
+        
+        const students = await Student.find(studentQuery).select('_id');
+        const studentIds = students.map(s => s._id);
+        query.student = { $in: studentIds };
+      }
+
+      const records = await FeeRecord.find(query)
+        .populate({
+          path: 'student',
+          populate: { path: 'class branch' }
+        })
+        .sort({ createdAt: -1 });
+
+      res.status(200).json({ success: true, data: records });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  updateFeeRecordStatus: async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const { status, transactionId, method } = req.body;
+      
+      const record = await FeeRecord.findOneAndUpdate(
+        { _id: id, organization: req.user.organization },
+        { status, transactionId, method, date: new Date() },
+        { new: true }
+      );
+      
+      if (!record) return res.status(404).json({ success: false, message: 'Record not found' });
+      
+      res.status(200).json({ success: true, data: record });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  sendFeeReminder: async (req: AuthRequest, res: Response) => {
+    try {
+      const { id } = req.params;
+      const record = await FeeRecord.findOne({ _id: id, organization: req.user.organization })
+        .populate('student');
+      
+      if (!record || !record.student) {
+        return res.status(404).json({ success: false, message: 'Fee record or student not found' });
+      }
+
+      const student: any = record.student;
+      const email = student.personalEmail || student.studentEmail;
+
+      if (!email) {
+        return res.status(400).json({ success: false, message: 'Student has no email address' });
+      }
+
+      const message = `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 20px; color: #1e293b;">
+          <h2 style="color: #6366f1; text-align: center;">Fee Payment Reminder</h2>
+          <p>Dear <b>${student.firstName} ${student.lastName}</b>,</p>
+          <p>This is a friendly reminder regarding your pending fee payment for <b>${record.description}</b>.</p>
+          
+          <div style="background-color: #f8fafc; padding: 20px; border-radius: 16px; margin: 25px 0; border: 1px solid #f1f5f9;">
+            <p style="margin: 8px 0;"><b>Amount Due:</b> Rs. ${record.amount.toLocaleString()}</p>
+            <p style="margin: 8px 0;"><b>Status:</b> ${record.status}</p>
+          </div>
+          
+          <p>Please log in to the student portal to complete your payment using eSewa or other available methods.</p>
+          
+          <p style="border-top: 1px solid #f1f5f9; padding-top: 20px; text-align: center; font-size: 11px; color: #94a3b8;">
+            EduNest Institutional Fee Management System
+          </p>
+        </div>
+      `;
+
+      await sendEmail({
+        email,
+        subject: `Payment Reminder: ${record.description}`,
+        message
+      });
+
+      res.status(200).json({ success: true, message: 'Reminder sent successfully' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
     }
   },
 

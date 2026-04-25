@@ -207,7 +207,7 @@ const Subscriptions: React.FC = () => {
                       </td>
                       <td className="px-6 py-5">
                         <div className="flex flex-col gap-1">
-                          <span className="text-sm font-bold text-gray-900">${sub.price} USD</span>
+                          <span className="text-sm font-bold text-gray-900">Rs {sub.price} USD</span>
                           <span className="text-[10px] font-medium text-brand-500 flex items-center gap-1 uppercase tracking-wider"><Calendar size={10} /> {sub.duration}</span>
                         </div>
                       </td>

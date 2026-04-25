@@ -19,6 +19,7 @@ import adminRoutes from './routes/adminRoutes';
 import tutorRoutes from './routes/tutorRoutes';
 import studentRoutes from './routes/studentRoutes';
 import chatRoutes from './routes/chatRoutes';
+import paymentRoutes from './routes/paymentRoutes';
 
 // Load env vars
 dotenv.config();
@@ -63,6 +64,7 @@ app.use('/api/v1/admin', adminRoutes);
 app.use('/api/v1/tutor', tutorRoutes);
 app.use('/api/v1/student', studentRoutes);
 app.use('/api/v1/chat', chatRoutes);
+app.use('/api/v1/payment', paymentRoutes);
 
 // Error handler
 app.use(errorHandler);

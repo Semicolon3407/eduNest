@@ -74,3 +74,18 @@ export const getTimetable = async () => {
   const response = await api.get('/student/timetable');
   return response.data;
 };
+
+export const initiateEsewaPayment = async (amount: number, feeRecordId?: string) => {
+  const response = await api.post('/payment/esewa/initiate', { amount, feeRecordId });
+  return response.data;
+};
+
+export const verifyEsewaPayment = async (data: string) => {
+  const response = await api.get('/payment/esewa/verify', { params: { data } });
+  return response.data;
+};
+
+export const checkEsewaStatus = async (transaction_uuid: string, total_amount: string) => {
+  const response = await api.get('/payment/esewa/status', { params: { transaction_uuid, total_amount } });
+  return response.data;
+};

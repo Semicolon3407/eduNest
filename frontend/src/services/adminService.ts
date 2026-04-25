@@ -49,6 +49,21 @@ export const adminService = {
     return response.data;
   },
 
+  getFeeRecords: async (params?: any) => {
+    const response = await api.get('/admin/fees/records', { params });
+    return response.data;
+  },
+
+  updateFeeRecordStatus: async (id: string, data: any) => {
+    const response = await api.put(`/admin/fees/records/${id}/status`, data);
+    return response.data;
+  },
+
+  sendFeeReminder: async (id: string) => {
+    const response = await api.post(`/admin/fees/records/${id}/remind`);
+    return response.data;
+  },
+
   // Schedules
   getSchedules: async (params: any) => {
     const response = await api.get('/admin/schedules', { params });

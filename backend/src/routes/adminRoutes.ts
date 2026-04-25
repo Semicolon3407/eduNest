@@ -27,6 +27,9 @@ router.post('/fees', adminController.createFee);
 router.get('/fees', adminController.getFees);
 router.put('/fees/:id', adminController.updateFee);
 router.delete('/fees/:id', adminController.deleteFee);
+router.get('/fees/records', adminController.getFeeRecords);
+router.put('/fees/records/:id/status', adminController.updateFeeRecordStatus);
+router.post('/fees/records/:id/remind', adminController.sendFeeReminder);
 
 // Inventory
 router.get('/inventory', adminController.getInventory);
