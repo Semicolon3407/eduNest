@@ -3,7 +3,7 @@ import Button from '../../components/ui/Button';
 import Modal from '../../components/ui/Modal';
 import Badge from '../../components/ui/Badge';
 import { Filter, Save, Users, CheckCircle, XCircle, Plus, Search, ChevronDown, Clock, MoreVertical, Loader2, Calendar, ShieldCheck } from 'lucide-react';
-import { getTutorClasses, getStudentsByClass, markAttendance, addBehaviorLog } from '../../services/tutorService';
+import { tutorService } from '../../services/tutorService';
 
 const Attendance: React.FC = () => {
    const [isModalOpen, setIsModalOpen] = useState(false);
@@ -18,7 +18,7 @@ const Attendance: React.FC = () => {
    useEffect(() => {
       const fetchClasses = async () => {
          try {
-            const res = await getTutorClasses();
+            const res = await tutorService.getTutorClasses();
             setClasses(res.data);
             if (res.data.length > 0) {
                setSelectedClassId(res.data[0]._id);
@@ -36,7 +36,7 @@ const Attendance: React.FC = () => {
       if (selectedClassId) {
          const fetchStudents = async () => {
             try {
-               const res = await getStudentsByClass(selectedClassId);
+               const res = await tutorService.getStudentsByClass(selectedClassId);
                setStudents(res.data.map((s: any) => ({ ...s, status: 'Present' })));
             } catch (error) {
                console.error('Error fetching students:', error);
@@ -64,7 +64,7 @@ const Attendance: React.FC = () => {
                class: selectedClassId // Passing the class ID for backend validation
             }))
          };
-         await markAttendance(attendanceData);
+         await tutorService.markAttendance(attendanceData);
          alert('Attendance records synchronized successfully!');
       } catch (error: any) {
          console.error('Error marking attendance:', error);
@@ -78,7 +78,7 @@ const Attendance: React.FC = () => {
       e.preventDefault();
       const formData = new FormData(e.currentTarget);
       try {
-         await addBehaviorLog({
+         await tutorService.addBehaviorLog({
             student: formData.get('studentId'),
             engagementMetric: formData.get('engagement'),
             observation: formData.get('observation')

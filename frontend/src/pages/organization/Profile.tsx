@@ -95,9 +95,9 @@ const OrganizationProfile: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
-                <p className="text-sm font-bold text-success-dark flex items-center gap-2 uppercase tracking-tight">
+                <div className="text-sm font-bold text-success-dark flex items-center gap-2 uppercase tracking-tight">
                   <div className="w-2 h-2 rounded-full bg-success"></div> Verified
-                </p>
+                </div>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Official Node</p>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import StatCard from '../../components/dashboard/StatCard';
 import { ClipboardList, Trophy, MessageSquare, Bell, ArrowRight, User, Loader2 } from 'lucide-react';
-import { getDashboardStats, getSchedule } from '../../services/tutorService';
+import { tutorService } from '../../services/tutorService';
 
 const TutorDashboard: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
@@ -12,8 +12,8 @@ const TutorDashboard: React.FC = () => {
     const fetchData = async () => {
       try {
         const [statsRes, scheduleRes] = await Promise.all([
-          getDashboardStats(),
-          getSchedule()
+          tutorService.getDashboardStats(),
+          tutorService.getSchedule()
         ]);
         setStats(statsRes.data);
         setSchedule(scheduleRes.data);

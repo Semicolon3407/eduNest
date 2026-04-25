@@ -8,7 +8,7 @@ import {
   MoreVertical, Download, CheckCircle2, Clock, 
   ArrowRight, BookOpen, AlertCircle, Loader2
 } from 'lucide-react';
-import { getAssignments, getSubmissions, createAssignment, getTutorClasses } from '../../services/tutorService';
+import { tutorService } from '../../services/tutorService';
 
 const TutorAssignments: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -31,9 +31,9 @@ const TutorAssignments: React.FC = () => {
   const fetchData = async () => {
     try {
       const [assignRes, subRes, classRes] = await Promise.all([
-        getAssignments(),
-        getSubmissions(),
-        getTutorClasses()
+        tutorService.getAssignments(),
+        tutorService.getSubmissions(),
+        tutorService.getTutorClasses()
       ]);
       setActiveAssignments(assignRes.data);
       setSubmissions(subRes.data);
@@ -48,7 +48,7 @@ const TutorAssignments: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createAssignment({
+      await tutorService.createAssignment({
         title: formData.title,
         class: formData.classId,
         dueDate: formData.dueDate,

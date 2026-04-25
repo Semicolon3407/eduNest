@@ -100,15 +100,15 @@ const StudentProfile: React.FC = () => {
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Attendance</p>
-                <p className="text-sm font-bold text-success-dark flex items-center gap-2">
+                <div className="text-sm font-bold text-success-dark flex items-center gap-2">
                   <CheckCircle2 size={16} /> {attendancePercentage}%
-                </p>
+                </div>
               </div>
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
-                <p className="text-sm font-bold text-brand-600 flex items-center gap-2">
+                <div className="text-sm font-bold text-brand-600 flex items-center gap-2">
                   <Shield size={16} /> {student?.status}
-                </p>
+                </div>
               </div>
             </div>
           </div>
