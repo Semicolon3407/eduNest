@@ -44,6 +44,8 @@ import HRProfile from './pages/hr/Profile';
 import AdminProfile from './pages/admin/Profile';
 import FeeCollection from './pages/admin/FeeCollection';
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import { PaymentSuccess, PaymentFailure } from './pages/student/PaymentStatus';
 
 import ProtectedRoute from './components/ProtectedRoute';
@@ -66,6 +68,8 @@ function App() {
       <Router>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/resetpassword/:token" element={<ResetPassword />} />
 
         {/* Super Admin Routes */}
         <Route path="/super-admin" element={

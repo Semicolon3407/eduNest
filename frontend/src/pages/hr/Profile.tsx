@@ -3,8 +3,8 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import { 
   UserRound, Mail, Phone, Briefcase, 
-  MapPin, Shield, Calendar, Users, 
-  Camera, Edit2, FileText, PieChart, Loader2
+  MapPin, Shield, Calendar, 
+  Camera, Edit2, PieChart, Loader2
 } from 'lucide-react';
 import { hrService } from '../../services/hrService';
 import toast from 'react-hot-toast';
@@ -80,34 +80,6 @@ const HRProfile: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Operational Metrics */}
-          <div className="bg-slate-900 rounded-[40px] shadow-premium p-8 text-white">
-            <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-6">HR Operational Audit</h4>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-brand-400">
-                    <Users size={18} />
-                  </div>
-                  <span className="text-xs font-medium text-white/80">Staff Oversight</span>
-                </div>
-                <span className="text-lg font-bold">Active</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-success">
-                    <PieChart size={18} />
-                  </div>
-                  <span className="text-xs font-medium text-white/80 uppercase">Status</span>
-                </div>
-                <span className="text-lg font-bold uppercase">{profile?.status}</span>
-              </div>
-              <div className="pt-4 border-t border-white/10 text-center">
-                 <p className="text-[9px] font-bold text-white/30 uppercase tracking-widest">Verified Multi-Tenant Node</p>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Detailed Info */}
@@ -119,15 +91,15 @@ const HRProfile: React.FC = () => {
               </h3>
             </div>
             <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Input label="First Name" value={profile?.firstName} icon={UserRound} />
-              <Input label="Last Name" value={profile?.lastName} icon={UserRound} />
-              <Input label="Staff ID" value={profile?.employeeId} icon={Shield} />
-              <Input label="Official Email" value={profile?.personalEmail} icon={Mail} />
-              <Input label="Contact Number" value={profile?.phone || 'N/A'} icon={Phone} />
-              <Input label="Department" value={profile?.department} icon={Briefcase} />
-              <Input label="Designation" value={profile?.designation} icon={Calendar} />
+              <Input label="First Name" value={profile?.firstName} icon={UserRound} readOnly />
+              <Input label="Last Name" value={profile?.lastName} icon={UserRound} readOnly />
+              <Input label="Staff ID" value={profile?.employeeId} icon={Shield} readOnly />
+              <Input label="Official Email" value={profile?.personalEmail} icon={Mail} readOnly />
+              <Input label="Contact Number" value={profile?.phone || 'N/A'} icon={Phone} readOnly />
+              <Input label="Department" value={profile?.department} icon={Briefcase} readOnly />
+              <Input label="Designation" value={profile?.designation} icon={Calendar} readOnly />
               <div className="md:col-span-2">
-                <Input label="Branch" value={profile?.branch?.name || 'Main Campus'} icon={MapPin} />
+                <Input label="Branch" value={profile?.branch?.name || 'Main Campus'} icon={MapPin} readOnly />
               </div>
             </div>
           </div>
@@ -135,44 +107,32 @@ const HRProfile: React.FC = () => {
           <div className="bg-white rounded-[40px] shadow-premium border border-slate-200 overflow-hidden">
             <div className="p-8 border-b border-slate-100 flex items-center justify-between">
               <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-3 uppercase">
-                <FileText className="text-brand-500" size={20} /> Access & Documents
+                <Shield className="text-brand-500" size={20} /> Security & Status
               </h3>
             </div>
             <div className="p-8">
                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-5 bg-slate-50 rounded-[32px] border border-slate-100 flex items-center justify-between group cursor-pointer hover:bg-brand-50 hover:border-brand-100 transition-all">
+                  <div className="p-5 bg-slate-50 rounded-[32px] border border-slate-100 flex items-center justify-between">
                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-brand-600 shadow-sm border border-slate-100">
-                           <FileText size={18} />
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-brand-600 shadow-sm border border-slate-100">
+                           <PieChart size={18} />
                         </div>
                         <div>
-                           <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Employment Contract</p>
-                           <p className="text-[10px] text-slate-400 font-medium">Verified Oct 2023</p>
+                           <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Employment Status</p>
+                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">{profile?.status}</p>
                         </div>
                      </div>
                   </div>
-                  <div className="p-5 bg-slate-50 rounded-[32px] border border-slate-100 flex items-center justify-between group cursor-pointer hover:bg-brand-50 hover:border-brand-100 transition-all">
+                  <div className="p-5 bg-slate-50 rounded-[32px] border border-slate-100 flex items-center justify-between">
                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-slate-400 group-hover:text-brand-600 shadow-sm border border-slate-100">
+                        <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-brand-600 shadow-sm border border-slate-100">
                            <Shield size={18} />
                         </div>
                         <div>
-                           <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Access Credentials</p>
-                           <p className="text-[10px] text-slate-400 font-medium">Level 4 Clearance</p>
+                           <p className="text-xs font-bold text-slate-700 uppercase tracking-tight">Identity Verified</p>
+                           <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Active Multi-Tenant Node</p>
                         </div>
                      </div>
-                  </div>
-               </div>
-               
-               <div className="mt-8 p-6 bg-brand-50/50 rounded-[32px] border border-brand-100 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-brand-600 shadow-sm border border-brand-200">
-                      <Shield size={22} />
-                    </div>
-                    <div>
-                      <h5 className="text-sm font-bold text-brand-600 uppercase tracking-tight leading-none mb-1">Secure HR Access</h5>
-                      <p className="text-[10px] font-medium text-brand-700 opacity-70">Your employee data is protected by institutional-grade encryption.</p>
-                    </div>
                   </div>
                </div>
             </div>

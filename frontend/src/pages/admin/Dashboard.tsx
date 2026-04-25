@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StatCard from '../../components/dashboard/StatCard';
 import Badge from '../../components/ui/Badge';
-import { UserPlus, BookOpen, CreditCard, Package, ArrowUpRight, ArrowDownRight, MoreHorizontal, ArrowRight } from 'lucide-react';
+import { UserPlus, BookOpen, CreditCard, ArrowUpRight, ArrowDownRight, MoreHorizontal, ArrowRight } from 'lucide-react';
 import { adminService } from '../../services/adminService';
 
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<any>(null);
   const [admissions, setAdmissions] = useState<any[]>([]);
 
@@ -39,7 +41,7 @@ const AdminDashboard: React.FC = () => {
         <StatCard title="New Admissions" value={stats?.studentCount?.toString() || "0"} icon={UserPlus} trend={{ value: '+14%', isUp: true }} color="brand" />
         <StatCard title="Active Classes" value={stats?.activeClasses?.toString() || "0"} icon={BookOpen} color="success" />
         <StatCard title="Pending Fees" value={stats?.fees?.find((f: any) => f._id === 'Pending')?.total?.toLocaleString() || "0"} icon={CreditCard} trend={{ value: '+4.2%', isUp: false }} color="danger" />
-        <StatCard title="Inventory Items" value={stats?.inventoryCount?.toLocaleString() || "0"} icon={Package} color="warning" />
+        <StatCard title="Cleared Fees" value={stats?.fees?.find((f: any) => f._id === 'Paid')?.total?.toLocaleString() || "0"} icon={CreditCard} color="success" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:p-8">
@@ -121,10 +123,10 @@ const AdminDashboard: React.FC = () => {
                 </div>
                 <ArrowRight size={16} className="text-gray-300 group-hover:text-brand-600 transition-all group-hover:translate-x-1" />
              </div>
-             <div className="flex justify-between items-center p-3 hover:bg-surface-50 rounded-xl transition-colors cursor-pointer group">
+             <div className="flex justify-between items-center p-3 hover:bg-surface-50 rounded-xl transition-colors cursor-pointer group" onClick={() => navigate('/admin/fee-collection')}>
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-warning-light flex items-center justify-center text-warning-dark"><Package size={14}/></div>
-                  <span className="text-sm font-medium text-gray-700">Inventory Stock Alert</span>
+                  <div className="w-8 h-8 rounded-lg bg-success-light flex items-center justify-center text-success-dark"><CreditCard size={14}/></div>
+                  <span className="text-sm font-medium text-gray-700">View Transaction History</span>
                 </div>
                 <ArrowRight size={16} className="text-gray-300 group-hover:text-brand-600 transition-all group-hover:translate-x-1" />
              </div>

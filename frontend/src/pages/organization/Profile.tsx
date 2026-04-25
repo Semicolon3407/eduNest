@@ -1,49 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
-import Badge from '../../components/ui/Badge';
 import { 
   Building2, Mail, Phone, MapPin, 
-  Globe, Shield, CreditCard, Users, 
-  GitBranch, Camera, Edit2, Check,
-  Zap, Star, Rocket, Loader2
+  Globe, Shield, 
+  Camera, Edit2, Loader2
 } from 'lucide-react';
 import { tenantService } from '../../services/tenantService';
 import toast from 'react-hot-toast';
 
-const plans = [
-  {
-    name: 'Basic Institutional',
-    price: 'Rs. 199',
-    period: '/month',
-    icon: Zap,
-    color: 'text-brand-500',
-    bg: 'bg-brand-50',
-    features: ['Up to 2 Branches', '500 Students', 'Basic Academic ERP', 'Email Support']
-  },
-  {
-    name: 'Premium Network',
-    price: 'Rs. 499',
-    period: '/month',
-    icon: Star,
-    color: 'text-warning-dark',
-    bg: 'bg-warning-light/30',
-    features: ['Up to 10 Branches', '5,000 Students', 'Advanced HR & Payroll', '24/7 Priority Support']
-  },
-  {
-    name: 'Cloud Enterprise',
-    price: 'Custom',
-    period: '',
-    icon: Rocket,
-    color: 'text-success-dark',
-    bg: 'bg-success-light/30',
-    features: ['Unlimited Branches', 'Unlimited Students', 'Full White-labeling', 'Dedicated Account Manager'],
-    active: true
-  }
-];
-
 const OrganizationProfile: React.FC = () => {
-  const [currentPlan, _setCurrentPlan] = useState('Cloud Enterprise');
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
   const [profile, setProfile] = useState({
@@ -146,36 +112,6 @@ const OrganizationProfile: React.FC = () => {
               </div>
             </div>
           </div>
-
-          {/* Institutional Stats */}
-          <div className="bg-slate-900 rounded-[40px] shadow-premium p-8 text-white group">
-            <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-6">Network Statistics</h4>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-brand-400">
-                    <GitBranch size={18} />
-                  </div>
-                  <span className="text-xs font-medium text-white/80">Active Branches</span>
-                </div>
-                <span className="text-lg font-bold">--</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-success">
-                    <Users size={18} />
-                  </div>
-                  <span className="text-xs font-medium text-white/80">Total Students</span>
-                </div>
-                <span className="text-lg font-bold">--</span>
-              </div>
-              <div className="pt-4 border-t border-white/10">
-                 <button className="w-full h-12 bg-white/10 hover:bg-white/20 text-white rounded-2xl text-[10px] font-bold uppercase tracking-widest transition-all">
-                    System Audit Logs
-                 </button>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Detailed Info */}
@@ -211,6 +147,18 @@ const OrganizationProfile: React.FC = () => {
                 onChange={(e) => setProfile({...profile, phone: e.target.value})}
                 icon={Phone} 
               />
+              <Input 
+                label="Organization Type" 
+                value={(profile as any).type} 
+                readOnly
+                icon={Shield} 
+              />
+              <Input 
+                label="Website" 
+                value={profile.website} 
+                onChange={(e) => setProfile({...profile, website: e.target.value})}
+                icon={Globe} 
+              />
               <div className="md:col-span-2">
                 <Input 
                   label="Headquarters Address" 
@@ -222,60 +170,13 @@ const OrganizationProfile: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-[40px] shadow-premium border border-slate-200 overflow-hidden">
-            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-3 uppercase">
-                <CreditCard className="text-brand-500" size={20} /> Super Admin Subscriptions
-              </h3>
-              <Badge variant="success" className="font-black h-7 px-4 uppercase tracking-tighter">Current: {currentPlan}</Badge>
+          <div className="bg-brand-50 p-8 rounded-[32px] border border-brand-100 flex items-center gap-4">
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-brand-600 shadow-sm border border-brand-200">
+              <Shield size={22} />
             </div>
-            <div className="p-8">
-               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {plans.map((plan) => (
-                    <div 
-                      key={plan.name}
-                      className={`relative p-6 rounded-[32px] border transition-all hover:scale-[1.02] ${plan.active ? 'border-brand-500 bg-brand-50/10 shadow-soft' : 'border-slate-100 bg-slate-50/50 grayscale hover:grayscale-0'}`}
-                    >
-                      {plan.active && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-brand-500 text-white rounded-full text-[9px] font-black uppercase tracking-widest shadow-premium">
-                          Active Plan
-                        </div>
-                      )}
-                      <div className={`w-12 h-12 ${plan.bg} ${plan.color} rounded-2xl flex items-center justify-center mb-4`}>
-                        <plan.icon size={24} />
-                      </div>
-                      <h4 className="text-sm font-bold text-slate-800 mb-1">{plan.name}</h4>
-                      <div className="flex items-baseline gap-1 mb-6">
-                        <span className="text-2xl font-display font-medium text-slate-900">{plan.price}</span>
-                        <span className="text-xs text-slate-400 font-medium">{plan.period}</span>
-                      </div>
-                      <ul className="space-y-3 mb-8">
-                        {plan.features.map(f => (
-                          <li key={f} className="flex items-start gap-2 text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-                            <Check size={14} className="text-success-dark shrink-0 mt-0.5" />
-                            {f}
-                          </li>
-                        ))}
-                      </ul>
-                      <button 
-                        className={`w-full h-11 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${plan.active ? 'bg-brand-500 text-white shadow-premium' : 'bg-white border border-slate-200 text-slate-600 hover:border-brand-500 hover:text-brand-500 shadow-sm'}`}
-                        disabled={plan.active}
-                      >
-                        {plan.active ? 'Managed by Admin' : 'Switch Plan'}
-                      </button>
-                    </div>
-                  ))}
-               </div>
-               
-               <div className="mt-8 p-6 bg-slate-900 rounded-[32px] border border-slate-800 flex items-center justify-between">
-                  <div>
-                    <h5 className="text-sm font-bold text-white uppercase tracking-tight">Institutional Billing Cycle</h5>
-                    <p className="text-xs text-white/50 mt-1">Your next automatic renewal is scheduled for <span className="text-brand-400 font-bold">Dec 15, 2024</span>.</p>
-                  </div>
-                  <button className="h-10 px-6 bg-white/10 hover:bg-white text-white hover:text-slate-900 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all">
-                     View Invoices
-                  </button>
-               </div>
+            <div>
+              <h5 className="text-sm font-bold text-brand-600 uppercase tracking-tight leading-none mb-1">Institutional Node Status</h5>
+              <p className="text-[10px] font-medium text-brand-700 opacity-70">This organization is currently verified and active within the EduNest network.</p>
             </div>
           </div>
         </div>

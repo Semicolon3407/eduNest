@@ -4,8 +4,8 @@ import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import { 
-  User, Mail, Phone, Calendar, MapPin, Shield, 
-  CheckCircle2, XCircle, Clock, Plus, ChevronRight,
+  User, Mail, Phone, Calendar, Shield, 
+  CheckCircle2, XCircle, Clock, Plus,
   BookOpen, Hash, GraduationCap, FileText, Briefcase, Loader2
 } from 'lucide-react';
 import { getTutorProfile, applyLeave } from '../../services/tutorService';
@@ -142,10 +142,10 @@ const TutorProfile: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
                   <InfoItem icon={Mail} label="Official Email" value={tutor.user?.email} />
                   <InfoItem icon={Phone} label="Contact Phone" value={tutor.phone} />
-                  <InfoItem icon={Calendar} label="Date of Birth" value={'---'} />
-                  <InfoItem icon={MapPin} label="Residential Address" value={'---'} fullWidth />
                   <InfoItem icon={User} label="Personal Email" value={tutor.personalEmail} />
                   <InfoItem icon={Briefcase} label="Department" value={tutor.department} />
+                  <InfoItem icon={Hash} label="Employee ID" value={tutor.employeeId} />
+                  <InfoItem icon={Shield} label="Account Status" value={tutor.status} />
                 </div>
               </div>
 
@@ -155,34 +155,36 @@ const TutorProfile: React.FC = () => {
                     <BookOpen size={28} />
                   </div>
                   <div>
-                    <h4 className="text-xl font-medium text-brand-700 leading-none  ">Professional Profile</h4>
-                    <p className="text-brand-600 text-sm mt-2 font-medium">Employee ID: {tutor.employeeId}</p>
+                    <h4 className="text-xl font-medium text-brand-700 leading-none  ">Professional Record</h4>
+                    <p className="text-brand-600 text-sm mt-2 font-medium">Verified Faculty Member</p>
                   </div>
                 </div>
-                <Button variant="outline" className="h-12 rounded-xl bg-white border-brand-200 text-brand-600 font-bold text-[10px] uppercase tracking-widest">
-                  View Experience <ChevronRight size={16} />
-                </Button>
               </div>
             </div>
 
             {/* Quick Stats Sidebar */}
             <div className="space-y-6">
               <div className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-6 uppercase tracking-tight  ">Faculty Metrics</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-6 uppercase tracking-tight  ">Security Context</h3>
                 <div className="space-y-6">
-                  <StatProgress label="Syllabus Progress" percentage={85} color="brand" />
-                  <StatProgress label="Punctuality Score" percentage={98} color="success" />
-                  <StatProgress label="Student Feedback" percentage={92} color="warning" />
+                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Authorization</p>
+                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2">Faculty Access Lvl 2</p>
+                   </div>
+                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Identity Node</p>
+                      <p className="text-sm font-bold text-success uppercase tracking-tight leading-none mb-2">Authenticated</p>
+                   </div>
                 </div>
               </div>
               
               <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-premium relative overflow-hidden group">
                 <div className="absolute bottom-0 right-0 w-32 h-32 bg-brand-500 rounded-full -mb-16 -mr-16 opacity-20 blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
-                <h3 className="text-lg font-medium mb-2 relative z-10  ">Faculty ID Card</h3>
-                <p className="text-slate-400 text-xs mb-8 relative z-10">Digital identification for staff access and benefits.</p>
-                <div className="bg-white/10 h-1 rounded-full mb-8 relative z-10"><div className="bg-brand-500 h-full w-[95%] rounded-full"></div></div>
+                <h3 className="text-lg font-medium mb-2 relative z-10  ">Digital Staff ID</h3>
+                <p className="text-slate-400 text-xs mb-8 relative z-10">Institutional identifier for campus and resource access.</p>
+                <div className="bg-white/10 h-1 rounded-full mb-8 relative z-10"><div className="bg-brand-500 h-full w-full rounded-full"></div></div>
                 <Button className="w-full h-12 rounded-xl bg-white text-slate-900 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all relative z-10">
-                  Generate QR
+                   {tutor.employeeId}
                 </Button>
               </div>
             </div>
@@ -313,21 +315,6 @@ const InfoItem: React.FC<{ icon: any, label: string, value: string, fullWidth?: 
         <Icon size={16} />
       </div>
       <p className="text-sm font-bold text-gray-800 tracking-tight">{value || '---'}</p>
-    </div>
-  </div>
-);
-
-const StatProgress: React.FC<{ label: string, percentage: number, color: 'brand' | 'success' | 'warning' }> = ({ label, percentage, color }) => (
-  <div>
-    <div className="flex justify-between items-center mb-2">
-      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{label}</p>
-      <p className={`text-xs font-bold text-${color}${color === 'brand' ? '-500' : '-dark'}`}>{percentage}%</p>
-    </div>
-    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-      <div 
-        className={`h-full bg-${color}${color === 'brand' ? '-500' : '-dark'} transition-all duration-1000`} 
-        style={{ width: `${percentage}%` }}
-      ></div>
     </div>
   </div>
 );

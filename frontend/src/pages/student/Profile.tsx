@@ -4,8 +4,8 @@ import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import { 
-  User, Mail, Phone, Calendar, MapPin, Shield, 
-  CheckCircle2, XCircle, Clock, Plus, ChevronRight,
+  Mail, Phone, Calendar, Shield, 
+  CheckCircle2, XCircle, Clock, Plus,
   BookOpen, Hash, GraduationCap, FileText, Loader2
 } from 'lucide-react';
 import { getStudentProfile, applyLeave, getLeaveHistory } from '../../services/studentService';
@@ -104,9 +104,9 @@ const StudentProfile: React.FC = () => {
                 </p>
               </div>
               <div>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Blood Group</p>
-                <p className="text-sm font-bold text-danger flex items-center gap-2">
-                  <Shield size={16} /> {student?.bloodGroup || 'O+'}
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                <p className="text-sm font-bold text-brand-600 flex items-center gap-2">
+                  <Shield size={16} /> {student?.status}
                 </p>
               </div>
             </div>
@@ -143,12 +143,12 @@ const StudentProfile: React.FC = () => {
               <div className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200">
                 <h3 className="text-xl font-medium text-gray-900 mb-8 border-b border-slate-100 pb-4  ">Personal Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-8 gap-x-12">
-                  <InfoItem icon={Mail} label="Official Email" value={student?.email || 'N/A'} />
-                  <InfoItem icon={Phone} label="Primary Phone" value={student?.phone || 'N/A'} />
+                  <InfoItem icon={Mail} label="Student Email" value={student?.studentEmail || 'N/A'} />
+                  <InfoItem icon={Mail} label="Personal Email" value={student?.personalEmail || 'N/A'} />
                   <InfoItem icon={Calendar} label="Date of Birth" value={student?.dob ? new Date(student.dob).toLocaleDateString() : 'N/A'} />
-                  <InfoItem icon={MapPin} label="Home Address" value={student?.address || 'N/A'} fullWidth />
-                  <InfoItem icon={User} label="Parent / Guardian" value={student?.parentName || 'N/A'} />
-                  <InfoItem icon={Phone} label="Guardian Contact" value={student?.parentPhone || 'N/A'} />
+                  <InfoItem icon={Shield} label="Admission Number" value={student?.admissionNumber || 'N/A'} />
+                  <InfoItem icon={Phone} label="Emergency Contact" value={student?.emergencyContact || 'N/A'} />
+                  <InfoItem icon={Calendar} label="Enrolled Date" value={student?.enrolledDate ? new Date(student.enrolledDate).toLocaleDateString() : 'N/A'} />
                 </div>
               </div>
 
@@ -158,34 +158,36 @@ const StudentProfile: React.FC = () => {
                     <BookOpen size={28} />
                   </div>
                   <div>
-                    <h4 className="text-xl font-medium text-brand-700 leading-none  ">Academic Summary</h4>
-                    <p className="text-brand-600 text-sm mt-2 font-medium">Admission Date: {student?.admissionDate ? new Date(student.admissionDate).toLocaleDateString() : 'N/A'}</p>
+                    <h4 className="text-xl font-medium text-brand-700 leading-none  ">Academic Record</h4>
+                    <p className="text-brand-600 text-sm mt-2 font-medium">Academic Year: {student?.academicYear || 'N/A'}</p>
                   </div>
                 </div>
-                <Button variant="outline" className="h-12 rounded-xl bg-white border-brand-200 text-brand-600 font-bold text-[10px] uppercase tracking-widest">
-                  View Report Card <ChevronRight size={16} />
-                </Button>
               </div>
             </div>
 
             {/* Quick Stats Sidebar */}
             <div className="space-y-6">
               <div className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-6 uppercase tracking-tight  ">Session Progress</h3>
+                <h3 className="text-lg font-medium text-gray-900 mb-6 uppercase tracking-tight  ">Identity Context</h3>
                 <div className="space-y-6">
-                  <StatProgress label="Course Completion" percentage={75} color="brand" />
-                  <StatProgress label="Attendance Requirement" percentage={parseInt(attendancePercentage)} color="success" />
-                  <StatProgress label="Grade Average" percentage={82} color="warning" />
+                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Affiliated Branch</p>
+                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2">{student?.branch?.name || 'Main Campus'}</p>
+                   </div>
+                   <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Identity Status</p>
+                      <p className="text-sm font-bold text-success uppercase tracking-tight leading-none mb-2">Verified</p>
+                   </div>
                 </div>
               </div>
               
               <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-premium relative overflow-hidden group">
                 <div className="absolute bottom-0 right-0 w-32 h-32 bg-brand-500 rounded-full -mb-16 -mr-16 opacity-20 blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
                 <h3 className="text-lg font-medium mb-2 relative z-10  ">Digital ID Card</h3>
-                <p className="text-slate-400 text-xs mb-8 relative z-10">Use this for campus access and library services.</p>
-                <div className="bg-white/10 h-1 rounded-full mb-8 relative z-10"><div className="bg-brand-500 h-full w-2/3 rounded-full"></div></div>
+                <p className="text-slate-400 text-xs mb-8 relative z-10">Institutional identifier for campus and resource access.</p>
+                <div className="bg-white/10 h-1 rounded-full mb-8 relative z-10"><div className="bg-brand-500 h-full w-full rounded-full"></div></div>
                 <Button className="w-full h-12 rounded-xl bg-white text-slate-900 font-bold text-[10px] uppercase tracking-widest hover:bg-slate-100 transition-all relative z-10">
-                  Generate QR
+                   {student?.admissionNumber}
                 </Button>
               </div>
             </div>
@@ -320,21 +322,6 @@ const InfoItem: React.FC<{ icon: any, label: string, value: string, fullWidth?: 
         <Icon size={16} />
       </div>
       <p className="text-sm font-bold text-gray-800 tracking-tight">{value}</p>
-    </div>
-  </div>
-);
-
-const StatProgress: React.FC<{ label: string, percentage: number, color: 'brand' | 'success' | 'warning' }> = ({ label, percentage, color }) => (
-  <div>
-    <div className="flex justify-between items-center mb-2">
-      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{label}</p>
-      <p className={`text-xs font-bold text-${color}${color === 'brand' ? '-500' : '-dark'}`}>{percentage}%</p>
-    </div>
-    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-      <div 
-        className={`h-full bg-${color}${color === 'brand' ? '-500' : '-dark'} transition-all duration-1000`} 
-        style={{ width: `${percentage}%` }}
-      ></div>
     </div>
   </div>
 );

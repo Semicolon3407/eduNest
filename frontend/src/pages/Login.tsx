@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { GraduationCap, Mail, Lock, ArrowRight, ShieldCheck, Globe, Zap } from 'lucide-react';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
@@ -135,9 +135,9 @@ const Login: React.FC = () => {
                             onChange={(e) => setPassword(e.target.value)}
                         />
                         <div className="flex justify-end">
-                            <button type="button" className="text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors uppercase tracking-widest">
+                            <Link to="/forgot-password" title="Recover Password" className="text-xs font-bold text-brand-600 hover:text-brand-700 transition-colors uppercase tracking-widest">
                                 Forgot password?
-                            </button>
+                            </Link>
                         </div>
                     </div>
 

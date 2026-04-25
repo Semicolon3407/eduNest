@@ -4,8 +4,7 @@ import Input from '../../components/ui/Input';
 import { 
   UserRound, Mail, Building, 
   Shield, Calendar, 
-  Camera, Edit2, GraduationCap, Trophy,
-  Activity
+  Camera, Edit2
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
@@ -55,36 +54,6 @@ const AdminProfile: React.FC = () => {
               </div>
             </div>
           </div>
-
-          <div className="bg-slate-900 rounded-[40px] shadow-premium p-8 text-white">
-            <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-[0.2em] mb-6">Administrative Audit</h4>
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-brand-400">
-                    <GraduationCap size={18} />
-                  </div>
-                  <span className="text-xs font-medium text-white/80">System Access</span>
-                </div>
-                <span className="text-lg font-bold">Lvl 4</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-warning">
-                    <Shield size={18} />
-                  </div>
-                  <span className="text-xs font-medium text-white/80">Security Protocol</span>
-                </div>
-                <span className="text-lg font-bold">AES-256</span>
-              </div>
-              <div className="pt-4 border-t border-white/10">
-                 <div className="flex items-center gap-3 text-brand-400">
-                    <Activity size={14} />
-                    <span className="text-[10px] font-bold uppercase tracking-widest">Session: Active</span>
-                 </div>
-              </div>
-            </div>
-          </div>
         </div>
 
         {/* Detailed Info */}
@@ -100,28 +69,17 @@ const AdminProfile: React.FC = () => {
               <Input label="Administrator ID" value={`ADM-${(user?._id || user?.id || '').slice(-4).toUpperCase()}`} readOnly icon={Shield} />
               <Input label="Official Email" value={user?.email || ''} readOnly icon={Mail} />
               <Input label="Role" value={user?.role || ''} readOnly icon={Shield} />
-              <Input label="Responsible Wing" defaultValue="Main Campus Administration" icon={Building} />
               <Input label="Joined Date" value={user?.createdAt ? new Date(user.createdAt).toLocaleDateString() : 'N/A'} readOnly icon={Calendar} />
             </div>
           </div>
 
-          <div className="bg-white rounded-[40px] shadow-premium border border-slate-200 overflow-hidden">
-            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-800 tracking-tight flex items-center gap-3 uppercase">
-                <Trophy className="text-brand-500" size={20} /> Operational Milestones
-              </h3>
+          <div className="bg-brand-50 p-8 rounded-[32px] border border-brand-100 flex items-center gap-4">
+            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-brand-600 shadow-sm border border-brand-200">
+              <Shield size={22} />
             </div>
-            <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-3">Admission Cycle</p>
-                  <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2 underline decoration-brand-500 decoration-2">Status: Automated</p>
-                  <p className="text-xs text-slate-500 font-medium">95% of initial onboarding completed successfully.</p>
-               </div>
-               <div className="p-6 bg-slate-50 rounded-[32px] border border-slate-100">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-3">Security Audit</p>
-                  <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2 underline decoration-success decoration-2">Status: Passed</p>
-                  <p className="text-xs text-slate-500 font-medium">Administrative credential verification completed.</p>
-               </div>
+            <div>
+              <h5 className="text-sm font-bold text-brand-600 uppercase tracking-tight leading-none mb-1">Administrative Access</h5>
+              <p className="text-[10px] font-medium text-brand-700 opacity-70">Your account has full administrative oversight for the organization.</p>
             </div>
           </div>
         </div>

@@ -1,5 +1,5 @@
 import express from 'express';
-import { register, login, refresh, logout, getMe } from '../controllers/authController';
+import { register, login, refresh, logout, getMe, forgotPassword, resetPassword } from '../controllers/authController';
 import { protect } from '../middlewares/auth';
 
 const router = express.Router();
@@ -106,5 +106,8 @@ router.get('/logout', protect as any, logout);
  *         description: Current user data
  */
 router.get('/me', protect as any, getMe);
+
+router.post('/forgotpassword', forgotPassword);
+router.put('/resetpassword/:resettoken', resetPassword);
 
 export default router;
