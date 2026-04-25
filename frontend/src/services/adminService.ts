@@ -111,4 +111,14 @@ export const adminService = {
     const response = await api.post('/admin/inventory', assetData);
     return response.data;
   },
+
+  getProfile: async () => {
+    const response = await api.get('/admin/profile');
+    return response.data;
+  },
+
+  requestLeave: async (data: any) => {
+    const response = await api.post('/admin/leaves/request', data);
+    return response.data;
+  },
 };

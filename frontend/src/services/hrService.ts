@@ -60,6 +60,11 @@ export const hrService = {
     const response = await axios.put(`${API_URL}/hr/leaves/${id}`, { status }, getAuthHeaders());
     return response.data;
   },
+  
+  requestLeave: async (data: any) => {
+    const response = await axios.post(`${API_URL}/hr/leaves/request`, data, getAuthHeaders());
+    return response.data;
+  },
 
   // Payroll
   getPayroll: async (month?: string, year?: string) => {

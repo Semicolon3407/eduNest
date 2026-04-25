@@ -10,6 +10,8 @@ router.use(authorize('ADMIN', 'ORGANIZATION') as any);
 
 // Dashboard
 router.get('/stats', adminController.getDashboardStats);
+router.get('/profile', adminController.getMyProfile);
+router.post('/leaves/request', adminController.requestLeave);
 
 // Student Routes
 router.post('/students/enroll', adminController.enrollStudent);

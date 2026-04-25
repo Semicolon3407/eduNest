@@ -7,6 +7,9 @@ import Inventory from '../models/Inventory';
 import Schedule from '../models/Schedule';
 import User from '../models/User';
 import FeeRecord from '../models/FeeRecord';
+import Staff from '../models/Staff';
+import Attendance from '../models/Attendance';
+import Leave from '../models/Leave';
 import sendEmail from '../utils/sendEmail';
 
 export const adminController = {
@@ -407,6 +410,59 @@ export const adminController = {
       });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  getMyProfile: async (req: AuthRequest, res: Response) => {
+    try {
+      const staff = await Staff.findOne({ 
+        user: req.user._id,
+        organization: req.user.organization 
+      }).populate('branch', 'name');
+
+      if (!staff) {
+        return res.status(404).json({ success: false, message: 'Staff record not found' });
+      }
+
+      const attendance = await Attendance.find({ staff: staff._id }).sort({ date: -1 });
+      const leaves = await Leave.find({ staff: staff._id }).sort({ appliedDate: -1 });
+
+      const presentCount = attendance.filter(a => a.status === 'Present').length;
+      const attendanceRate = attendance.length > 0 ? ((presentCount / attendance.length) * 100).toFixed(1) : 100;
+
+      res.status(200).json({ 
+        success: true, 
+        data: { 
+          ...staff.toObject(), 
+          attendanceRecords: attendance,
+          leaveHistory: leaves,
+          attendanceStats: {
+            rate: attendanceRate,
+            total: attendance.length,
+            present: presentCount
+          }
+        } 
+      });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  requestLeave: async (req: AuthRequest, res: Response) => {
+    try {
+      const staff = await Staff.findOne({ user: req.user._id, organization: req.user.organization });
+      if (!staff) return res.status(404).json({ success: false, message: 'Staff record not found' });
+
+      const leave = await Leave.create({
+        ...req.body,
+        staff: staff._id,
+        organization: req.user.organization,
+        status: 'Pending'
+      });
+
+      res.status(201).json({ success: true, data: leave });
+    } catch (err: any) {
+      res.status(400).json({ success: false, message: err.message });
     }
   }
 };

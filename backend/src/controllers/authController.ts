@@ -242,3 +242,34 @@ export const resetPassword = async (req: Request, res: Response) => {
     res.status(400).json({ success: false, message: err.message });
   }
 };
+
+/**
+ * @desc    Update password
+ * @route   PUT /api/v1/auth/updatepassword
+ * @access  Private
+ */
+export const updatePassword = async (req: Request, res: Response) => {
+  try {
+    const user = await User.findById((req as any).user.id).select('+password');
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Check current password
+    if (!(await (user as any).matchPassword(req.body.currentPassword))) {
+      return res.status(401).json({ success: false, message: 'Password is incorrect' });
+    }
+
+    user.password = req.body.newPassword;
+    await user.save();
+
+    const { accessToken, refreshToken } = generateTokens(user._id.toString());
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    sendTokenResponse(user, 200, res, accessToken, refreshToken);
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};

@@ -32,4 +32,12 @@ export const authService = {
     }
     return response.data;
   },
+  
+  updatePassword: async (data: any): Promise<AuthResponse> => {
+    const response = await api.put('/auth/updatepassword', data);
+    if (response.data.accessToken) {
+      localStorage.setItem('accessToken', response.data.accessToken);
+    }
+    return response.data;
+  },
 };

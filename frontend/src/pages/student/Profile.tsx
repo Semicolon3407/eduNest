@@ -3,6 +3,7 @@ import Button from '../../components/ui/Button';
 import Input from '../../components/ui/Input';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
+import SecurityTab from '../../components/profile/SecurityTab';
 import { 
   Mail, Phone, Calendar, Shield, 
   CheckCircle2, XCircle, Clock, Plus,
@@ -12,7 +13,7 @@ import { getStudentProfile, applyLeave, getLeaveHistory } from '../../services/s
 
 const StudentProfile: React.FC = () => {
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'attendance' | 'leaves'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'attendance' | 'leaves' | 'security'>('overview');
   const [student, setStudent] = useState<any>(null);
   const [leaves, setLeaves] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +95,7 @@ const StudentProfile: React.FC = () => {
               <div>
                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Section</p>
                 <p className="text-sm font-bold text-gray-900 flex items-center gap-2">
-                  <Layout size={16} className="text-brand-500" /> {student?.class?.section}
+                  <CustomLayoutIcon size={16} className="text-brand-500" /> {student?.class?.section}
                 </p>
               </div>
               <div>
@@ -119,7 +120,7 @@ const StudentProfile: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex gap-2 p-1.5 bg-slate-100/50 w-fit rounded-2xl border border-slate-200 font-sans">
-        {(['overview', 'attendance', 'leaves'] as const).map((tab) => (
+        {(['overview', 'attendance', 'leaves', 'security'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -265,6 +266,8 @@ const StudentProfile: React.FC = () => {
             </div>
           </div>
         )}
+
+        {activeTab === 'security' && <SecurityTab />}
       </div>
 
       {/* Leave Application Modal */}
@@ -347,7 +350,7 @@ const AttendanceCard: React.FC<{ label: string, value: string, icon: any, color:
   );
 };
 
-const Layout: React.FC<{ size?: number, className?: string }> = ({ size = 24, className }) => (
+const CustomLayoutIcon: React.FC<{ size?: number, className?: string }> = ({ size = 24, className }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <rect width="18" height="18" x="3" y="3" rx="2" ry="2"/><line x1="3" x2="21" y1="9" y2="9"/><line x1="9" x2="9" y1="21" y2="9"/>
   </svg>

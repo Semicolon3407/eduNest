@@ -5,7 +5,7 @@ import {
   markAttendance, getAttendance,
   getPayrollRecords, processPayroll, setupPayrollRecord, disburseIndividualPayroll, disburseAllPayroll,
   getHRStaff,
-  getLeaveRequests, updateLeaveStatus,
+  getLeaveRequests, updateLeaveStatus, requestLeave,
   getMyProfile,
   getDocuments, uploadStaffDocument, deleteDocument, updateDocument,
   getBranches
@@ -31,6 +31,7 @@ router.post('/staff', onboardStaff);
 router.put('/staff/:id', updateStaff);
 router.delete('/staff/:id', deleteStaff);
 router.get('/leaves', getLeaveRequests);
+router.post('/leaves/request', requestLeave);
 router.put('/leaves/:id', updateLeaveStatus);
 router.get('/profile', getMyProfile);
 router.get('/documents', getDocuments);
