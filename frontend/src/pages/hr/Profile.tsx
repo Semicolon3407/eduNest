@@ -165,7 +165,7 @@ const HRProfile: React.FC = () => {
                    <InfoItem icon={Mail} label="Professional Email" value={profile?.personalEmail} />
                    <InfoItem icon={Phone} label="Contact Number" value={profile?.phone} />
                    <InfoItem icon={Briefcase} label="Current Designation" value={profile?.designation} />
-                   <InfoItem icon={Shield} label="Security Clearance" value="HR Privileged" />
+                   <InfoItem icon={Shield} label="Security Clearance" value={profile?.user?.role === 'HR' ? 'HR Privileged' : 'Administrative'} />
                    <InfoItem icon={Calendar} label="Last Promotion" value="N/A" />
                 </div>
               </div>
@@ -190,11 +190,11 @@ const HRProfile: React.FC = () => {
                 <div className="space-y-6">
                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">System Status</p>
-                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2">Authenticated</p>
+                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2">{profile?.status === 'Active' ? 'Verified' : 'Pending'}</p>
                    </div>
                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Network Permissions</p>
-                      <p className="text-sm font-bold text-brand-600 uppercase tracking-tight leading-none mb-2 font-display">Administrative</p>
+                      <p className="text-sm font-bold text-brand-600 uppercase tracking-tight leading-none mb-2 font-display">{profile?.user?.role?.replace('_', ' ')}</p>
                    </div>
                 </div>
               </div>

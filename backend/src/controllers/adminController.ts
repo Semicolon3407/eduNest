@@ -276,6 +276,19 @@ export const adminController = {
     }
   },
 
+  deleteFeeRecord: async (req: AuthRequest, res: Response) => {
+    try {
+      const record = await FeeRecord.findOneAndDelete({
+        _id: req.params.id,
+        organization: req.user.organization
+      });
+      if (!record) return res.status(404).json({ success: false, message: 'Record not found' });
+      res.status(200).json({ success: true, message: 'Record removed' });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
   sendFeeReminder: async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
@@ -386,12 +399,25 @@ export const adminController = {
   getDashboardStats: async (req: AuthRequest, res: Response) => {
     try {
       const orgId = req.user.organization;
-      const [studentCount, activeClasses, totalFees, inventoryItems] = await Promise.all([
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const [studentCount, activeClasses, feeStats, dailyCollection, inventoryItems] = await Promise.all([
         Student.countDocuments({ organization: orgId }),
         Class.countDocuments({ organization: orgId, status: 'Active' }),
-        Fee.aggregate([
+        FeeRecord.aggregate([
           { $match: { organization: orgId } },
-          { $group: { _id: '$status', total: { $sum: '$amount' } } }
+          { $group: { _id: '$status', total: { $sum: '$amount' }, count: { $sum: 1 } } }
+        ]),
+        FeeRecord.aggregate([
+          { 
+            $match: { 
+              organization: orgId, 
+              status: 'Paid',
+              date: { $gte: today }
+            } 
+          },
+          { $group: { _id: null, total: { $sum: '$amount' } } }
         ]),
         Inventory.aggregate([
           { $match: { organization: orgId } },
@@ -399,13 +425,33 @@ export const adminController = {
         ])
       ]);
 
+      const thisMonth = new Date();
+      thisMonth.setDate(1);
+      thisMonth.setHours(0,0,0,0);
+
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      lastMonth.setDate(1);
+      lastMonth.setHours(0,0,0,0);
+
+      const [thisMonthAdmissions, lastMonthAdmissions] = await Promise.all([
+        Student.countDocuments({ organization: orgId, createdAt: { $gte: thisMonth } }),
+        Student.countDocuments({ organization: orgId, createdAt: { $gte: lastMonth, $lt: thisMonth } })
+      ]);
+
+      const admissionTrend = lastMonthAdmissions > 0 
+        ? Math.round(((thisMonthAdmissions - lastMonthAdmissions) / lastMonthAdmissions) * 100)
+        : thisMonthAdmissions > 0 ? 100 : 0;
+
       res.status(200).json({
         success: true,
         data: {
           studentCount,
           activeClasses,
-          fees: totalFees,
-          inventoryCount: inventoryItems[0]?.total || 0
+          fees: feeStats,
+          collectedToday: dailyCollection[0]?.total || 0,
+          inventoryCount: inventoryItems[0]?.total || 0,
+          admissionTrend: admissionTrend >= 0 ? `+${admissionTrend}%` : `${admissionTrend}%`
         }
       });
     } catch (error: any) {
@@ -418,7 +464,7 @@ export const adminController = {
       const staff = await Staff.findOne({ 
         user: req.user._id,
         organization: req.user.organization 
-      }).populate('branch', 'name');
+      }).populate('branch', 'name').populate('user');
 
       if (!staff) {
         return res.status(404).json({ success: false, message: 'Staff record not found' });
@@ -428,6 +474,8 @@ export const adminController = {
       const leaves = await Leave.find({ staff: staff._id }).sort({ appliedDate: -1 });
 
       const presentCount = attendance.filter(a => a.status === 'Present').length;
+      const absentCount = attendance.filter(a => a.status === 'Absent').length;
+      const lateCount = attendance.filter(a => a.status === 'Late').length;
       const attendanceRate = attendance.length > 0 ? ((presentCount / attendance.length) * 100).toFixed(1) : 100;
 
       res.status(200).json({ 
@@ -439,7 +487,9 @@ export const adminController = {
           attendanceStats: {
             rate: attendanceRate,
             total: attendance.length,
-            present: presentCount
+            present: presentCount,
+            absent: absentCount,
+            late: lateCount
           }
         } 
       });

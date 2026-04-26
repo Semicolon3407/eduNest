@@ -7,7 +7,7 @@ import {
   AlertCircle, Download, FileArchive, Clock, 
   ChevronRight, Plus, Loader2
 } from 'lucide-react';
-import { getAssignments, submitAssignment } from '../../services/studentService';
+import { getAssignments, submitAssignment, uploadFile } from '../../services/studentService';
 
 const StudentAssignments: React.FC = () => {
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
@@ -15,6 +15,7 @@ const StudentAssignments: React.FC = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [assignments, setAssignments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -33,18 +34,30 @@ const StudentAssignments: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!selectedFile || !selectedTask) return;
+
+    setSubmitting(true);
     const formData = new FormData(e.currentTarget);
     try {
+      // 1. Upload file first
+      const uploadRes = await uploadFile(selectedFile);
+      const { fileUrl, fileName, fileSize } = uploadRes.data;
+
+      // 2. Submit assignment with real data
       await submitAssignment({
         assignment: selectedTask._id,
-        content: formData.get('remarks'),
-        fileUrl: '---' // In real app, upload file to storage first
+        remarks: formData.get('remarks'),
+        fileName,
+        fileSize,
+        fileUrl
       });
       setIsSubmitModalOpen(false);
       setSelectedFile(null);
       fetchData();
     } catch (error) {
       console.error('Error submitting assignment:', error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -68,19 +81,6 @@ const StudentAssignments: React.FC = () => {
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">My Assignments</h1>
           <p className="text-gray-500 mt-1 font-medium">Track tasks, submit work, and view performance</p>
-        </div>
-        <div className="flex gap-4">
-           <div className="flex -space-x-3">
-              {[1, 2, 3].map(i => (
-                 <div key={i} className="w-10 h-10 rounded-full bg-slate-100 border-4 border-white flex items-center justify-center overflow-hidden">
-                    <img src={`https://i.pravatar.cc/100?img=${i+10}`} alt="Study Group" className="w-full h-full object-cover" />
-                 </div>
-              ))}
-           </div>
-           <div className="text-right">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Active Study Group</p>
-              <p className="text-sm font-bold text-gray-800">12 Members Online</p>
-           </div>
         </div>
       </div>
 
@@ -240,9 +240,10 @@ const StudentAssignments: React.FC = () => {
            </div>
 
            <div className="flex justify-end gap-3 pt-2">
-              <Button type="button" variant="outline" onClick={() => setIsSubmitModalOpen(false)} className="rounded-xl h-12">Cancel</Button>
-              <Button type="submit" shadow-premium className="rounded-xl h-12 px-10" disabled={!selectedFile}>
-                 Finalize Submission
+              <Button type="button" variant="outline" onClick={() => setIsSubmitModalOpen(false)} className="rounded-xl h-12" disabled={submitting}>Cancel</Button>
+              <Button type="submit" shadow-premium className="rounded-xl h-12 px-10" disabled={!selectedFile || submitting}>
+                 {submitting ? <Loader2 className="animate-spin mr-2" size={18} /> : null}
+                 {submitting ? 'Submitting...' : 'Finalize Submission'}
               </Button>
            </div>
         </form>

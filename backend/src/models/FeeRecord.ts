@@ -23,7 +23,7 @@ const feeRecordSchema = new Schema<IFeeRecord>({
   transactionId: { type: String },
   transactionUuid: { type: String },
   organization: { type: Schema.Types.ObjectId, ref: 'Organization', required: true },
-  branch: { type: Schema.Types.ObjectId, ref: 'Branch', required: true }
+  branch: { type: Schema.Types.ObjectId, ref: 'Branch' }
 }, { timestamps: true });
 
 export default mongoose.model<IFeeRecord>('FeeRecord', feeRecordSchema);

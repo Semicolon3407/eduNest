@@ -18,7 +18,10 @@ import {
   getBehaviorLogs,
   getMaterials,
   uploadMaterial,
-  deleteMaterial
+  deleteMaterial,
+  getAttendanceByDate,
+  getStudentLeaves,
+  updateStudentLeaveStatus
 } from '../controllers/tutorController';
 import { protect, authorize } from '../middlewares/auth';
 
@@ -46,5 +49,8 @@ router.get('/behavior', getBehaviorLogs);
 router.get('/materials', getMaterials);
 router.post('/materials', uploadMaterial);
 router.delete('/materials/:id', deleteMaterial);
+router.get('/attendance/check', getAttendanceByDate);
+router.get('/student-leaves', getStudentLeaves);
+router.put('/student-leaves/:id', updateStudentLeaveStatus);
 
 export default router;

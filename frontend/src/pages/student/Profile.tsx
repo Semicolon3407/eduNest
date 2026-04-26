@@ -43,8 +43,8 @@ const StudentProfile: React.FC = () => {
     try {
       await applyLeave({
         type: formData.get('type'),
-        from: formData.get('from'),
-        to: formData.get('to'),
+        startDate: formData.get('startDate'),
+        endDate: formData.get('endDate'),
         reason: formData.get('reason')
       });
       setIsLeaveModalOpen(false);
@@ -253,7 +253,7 @@ const StudentProfile: React.FC = () => {
                     <Badge variant={leave.status === 'Approved' ? 'success' : leave.status === 'Rejected' ? 'danger' : 'warning'}>{leave.status}</Badge>
                   </div>
                   <h4 className="text-xl font-medium text-gray-900 group-hover:text-brand-600 transition-colors mb-1  ">{leave.type}</h4>
-                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{new Date(leave.from).toLocaleDateString()} - {new Date(leave.to).toLocaleDateString()}</p>
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">{new Date(leave.startDate).toLocaleDateString()} - {new Date(leave.endDate).toLocaleDateString()}</p>
                   
                   <div className="p-4 bg-slate-50 rounded-2xl">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Reason</p>
@@ -290,8 +290,8 @@ const StudentProfile: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            <Input name="from" label="From Date" type="date" required />
-            <Input name="to" label="To Date" type="date" required />
+            <Input name="startDate" label="From Date" type="date" required />
+            <Input name="endDate" label="To Date" type="date" required />
           </div>
 
           <div className="space-y-2">

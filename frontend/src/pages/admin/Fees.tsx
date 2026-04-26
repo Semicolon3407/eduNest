@@ -15,7 +15,8 @@ import toast from 'react-hot-toast';
 const Fees: React.FC = () => {
   const [isModalOpen, setIsModalOpen] = React.useState(false);
   const [fees, setFees] = React.useState<any[]>([]);
-  const [, setLoading] = React.useState(true);
+  const [stats, setStats] = React.useState<any>(null);
+  const [loading, setLoading] = React.useState(true);
   const [formData, setFormData] = React.useState({
     name: '',
     amount: '',
@@ -36,17 +37,18 @@ const Fees: React.FC = () => {
 
   const fetchFees = async () => {
     try {
-      const response = await adminService.getFees();
-      if (response.success) {
-        setFees(response.data);
-      }
-      const classesRes = await adminService.getClasses();
-      if (classesRes.success) {
-        setClasses(classesRes.data);
-      }
+      const [feesRes, classesRes, statsRes] = await Promise.all([
+        adminService.getFees(),
+        adminService.getClasses(),
+        adminService.getDashboardStats()
+      ]);
+      
+      if (feesRes.success) setFees(feesRes.data);
+      if (classesRes.success) setClasses(classesRes.data);
+      if (statsRes.success) setStats(statsRes.data);
     } catch (error) {
       console.error('Failed to fetch fees:', error);
-      toast.error('Failed to load fee structures');
+      toast.error('Failed to load fee management data');
     } finally {
       setLoading(false);
     }
@@ -125,34 +127,34 @@ const Fees: React.FC = () => {
          <div className="bg-surface p-6 rounded-3xl border border-surface-200 shadow-soft">
             <div className="flex items-center gap-3 text-brand-600 mb-4">
                <DollarSign size={20} />
-               <span className="text-[10px] font-medium   leading-none">Total Value</span>
+               <span className="text-[10px] font-medium   leading-none uppercase tracking-widest">Total Collected</span>
             </div>
-            <h3 className="text-2xl font-medium  ">Rs. {fees.reduce((acc, f) => acc + (Number(f.amount) || 0), 0).toLocaleString()}</h3>
-            <p className="text-xs text-gray-400 mt-1 font-medium">Sum of all structures</p>
+            <h3 className="text-2xl font-medium  ">Rs. {(stats?.fees?.find((f: any) => f._id === 'Paid')?.total || 0).toLocaleString()}</h3>
+            <p className="text-xs text-gray-400 mt-1 font-medium">Verified payments</p>
          </div>
          <div className="bg-surface p-6 rounded-3xl border border-surface-200 shadow-soft">
             <div className="flex items-center gap-3 text-danger mb-4">
                <AlertCircle size={20} />
-               <span className="text-[10px] font-medium   leading-none">Structures</span>
+               <span className="text-[10px] font-medium   leading-none uppercase tracking-widest">Pending Dues</span>
             </div>
-            <h3 className="text-2xl font-medium  ">{fees.length}</h3>
-            <p className="text-xs text-gray-400 mt-1 font-medium">Distinct categories</p>
+            <h3 className="text-2xl font-medium  ">Rs. {(stats?.fees?.filter((f: any) => f._id === 'Pending' || f._id === 'Overdue').reduce((acc: number, f: any) => acc + f.total, 0) || 0).toLocaleString()}</h3>
+            <p className="text-xs text-gray-400 mt-1 font-medium">Awaiting collection</p>
          </div>
          <div className="bg-surface p-6 rounded-3xl border border-surface-200 shadow-soft">
             <div className="flex items-center gap-3 text-success mb-4">
                <CreditCard size={20} />
-               <span className="text-[10px] font-medium   leading-none">Annual Billing</span>
+               <span className="text-[10px] font-medium   leading-none uppercase tracking-widest">Daily Revenue</span>
             </div>
-            <h3 className="text-2xl font-medium  ">{fees.filter(f => f.frequency === 'Annual').length}</h3>
-            <p className="text-xs text-gray-400 mt-1 font-medium">Fixed cycle fees</p>
+            <h3 className="text-2xl font-medium  ">Rs. {(stats?.collectedToday || 0).toLocaleString()}</h3>
+            <p className="text-xs text-gray-400 mt-1 font-medium">Collected today</p>
          </div>
          <div className="bg-surface p-6 rounded-3xl border border-surface-200 shadow-soft">
             <div className="flex items-center gap-3 text-warning mb-4">
                <Users size={20} />
-               <span className="text-[10px] font-medium   leading-none">Categories</span>
+               <span className="text-[10px] font-medium   leading-none uppercase tracking-widest">Active Structures</span>
             </div>
-            <h3 className="text-2xl font-medium  ">{new Set(fees.map(f => f.category)).size}</h3>
-            <p className="text-xs text-gray-400 mt-1 font-medium">Academic & Ops</p>
+            <h3 className="text-2xl font-medium  ">{fees.length}</h3>
+            <p className="text-xs text-gray-400 mt-1 font-medium">{new Set(fees.map(f => f.category)).size} Categories</p>
          </div>
       </div>
 
@@ -209,7 +211,13 @@ const Fees: React.FC = () => {
                </tr>
              </thead>
              <tbody className="divide-y divide-surface-100">
-               {filteredFees.map(fee => (
+               {loading ? (
+                 Array.from({ length: 3 }).map((_, i) => (
+                   <tr key={i} className="animate-pulse">
+                     <td colSpan={4} className="px-8 py-8 h-16 bg-slate-50/50"></td>
+                   </tr>
+                 ))
+               ) : filteredFees.map(fee => (
                  <tr key={fee._id} className="group hover:bg-brand-50/20 transition-all cursor-pointer">
                    <td className="px-8 py-5">
                      <div className="flex items-center gap-4">

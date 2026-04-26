@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Input from '../../components/ui/Input';
+import Modal from '../../components/ui/Modal';
 import { 
   Search, Filter, ChevronDown, Download, CheckCircle2, AlertCircle, 
   User, CreditCard, Calendar, ArrowUpRight, History, MoreVertical, X, Bell, Eye, Trash2
@@ -21,9 +22,13 @@ const FeeCollection: React.FC = () => {
   const [selectedGrade, setSelectedGrade] = useState('');
   const [selectedSection, setSelectedSection] = useState('');
   const [selectedBranch, setSelectedBranch] = useState('');
+  const [viewRecord, setViewRecord] = useState<any>(null);
 
   useEffect(() => {
     fetchData();
+    // Poll every 30 seconds so eSewa payments appear without manual refresh
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchData = async () => {
@@ -52,12 +57,15 @@ const FeeCollection: React.FC = () => {
       student.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       student.admissionNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      record.description?.toLowerCase().includes(searchTerm.toLowerCase());
+      record.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      record.transactionId?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = !statusFilter || record.status === statusFilter;
     const matchesGrade = !selectedGrade || student.class?.name === selectedGrade;
     const matchesSection = !selectedSection || student.class?.section === selectedSection;
-    const matchesBranch = !selectedBranch || student.branch?._id === selectedBranch;
+    // branch can be populated object or just an id string
+    const branchId = student.branch?._id || student.branch;
+    const matchesBranch = !selectedBranch || branchId === selectedBranch;
 
     return matchesSearch && matchesStatus && matchesGrade && matchesSection && matchesBranch;
   });
@@ -81,6 +89,21 @@ const FeeCollection: React.FC = () => {
     }
   };
 
+  const handleDeleteRecord = async (record: any) => {
+    if (!window.confirm(`Remove this fee record for ${record.student?.firstName} ${record.student?.lastName}? This cannot be undone.`)) return;
+    
+    const loadingToast = toast.loading('Removing record...');
+    try {
+      const res = await adminService.deleteFeeRecord(record._id);
+      if (res.success) {
+        toast.success('Record removed successfully', { id: loadingToast });
+        fetchData();
+      }
+    } catch (error: any) {
+      toast.error('Failed to remove record', { id: loadingToast });
+    }
+  };
+
   const handleSendReminder = async (recordId: string) => {
     const loadingToast = toast.loading('Sending reminder email...');
     try {
@@ -94,7 +117,7 @@ const FeeCollection: React.FC = () => {
   };
 
   const handleExport = () => {
-    const headers = ['Student', 'Admission #', 'Grade', 'Section', 'Description', 'Amount', 'Status', 'Date'];
+    const headers = ['Student', 'Admission #', 'Grade', 'Section', 'Description', 'Amount', 'Status', 'Method', 'Ref ID', 'Date'];
     const csvContent = [
       headers.join(','),
       ...filteredRecords.map(r => [
@@ -105,6 +128,8 @@ const FeeCollection: React.FC = () => {
         `"${r.description}"`,
         r.amount,
         `"${r.status}"`,
+        `"${r.method || '-'}"`,
+        `"${r.transactionId || '-'}"`,
         `"${new Date(r.date).toLocaleDateString()}"`
       ].join(','))
     ].join('\n');
@@ -233,7 +258,7 @@ const FeeCollection: React.FC = () => {
                    value={selectedGrade}
                    onChange={(e) => {
                       setSelectedGrade(e.target.value);
-                      setSelectedSection(''); // Reset section when grade changes
+                      setSelectedSection('');
                    }}
                    className="w-full h-12 bg-slate-50 border border-slate-200 rounded-2xl px-10 py-2 text-sm font-bold text-slate-600 outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer pr-10"
                  >
@@ -331,9 +356,16 @@ const FeeCollection: React.FC = () => {
                     </td>
                     <td className="px-6 py-5">
                       <p className="text-sm font-medium text-gray-700">{record.description}</p>
-                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                        Ref: {record.transactionId || '---'}
-                      </p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          Ref: {record.transactionId || '---'}
+                        </p>
+                        {record.method && record.method !== '-' && (
+                          <span className={`text-[9px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md ${record.method === 'eSewa' ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-100 text-slate-500'}`}>
+                            {record.method}
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-5">
                       <span className="text-sm font-bold text-gray-900">Rs. {record.amount.toLocaleString()}</span>
@@ -357,14 +389,14 @@ const FeeCollection: React.FC = () => {
                            </button>
                          }
                        >
-                         <DropdownItem icon={Eye}>View Details</DropdownItem>
+                         <DropdownItem icon={Eye} onClick={() => setViewRecord(record)}>View Details</DropdownItem>
                          {record.status !== 'Paid' && (
                            <>
                              <DropdownItem icon={Bell} onClick={() => handleSendReminder(record._id)}>Send Reminder</DropdownItem>
                              <DropdownItem icon={CheckCircle2} onClick={() => handleConfirmPayment(record)}>Confirm Payment</DropdownItem>
                            </>
                          )}
-                         <DropdownItem icon={Trash2} variant="danger">Remove Record</DropdownItem>
+                         <DropdownItem icon={Trash2} variant="danger" onClick={() => handleDeleteRecord(record)}>Remove Record</DropdownItem>
                        </Dropdown>
                     </td>
                   </tr>
@@ -385,6 +417,88 @@ const FeeCollection: React.FC = () => {
             </table>
          </div>
       </div>
+
+      {/* View Details Modal */}
+      {viewRecord && (
+        <Modal
+          isOpen={!!viewRecord}
+          onClose={() => setViewRecord(null)}
+          title="Transaction Details"
+          description="Full breakdown of the selected fee record."
+          maxWidth="lg"
+        >
+          <div className="space-y-5">
+            {/* Student info */}
+            <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-2xl">
+              <div className="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center">
+                <User size={24} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-gray-900">
+                  {viewRecord.student?.firstName} {viewRecord.student?.lastName}
+                </p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">
+                  {viewRecord.student?.admissionNumber} • {viewRecord.student?.class?.name} ({viewRecord.student?.class?.section})
+                </p>
+              </div>
+              <div className="ml-auto">
+                <Badge
+                  variant={viewRecord.status === 'Paid' ? 'success' : (viewRecord.status === 'Overdue' ? 'danger' : 'warning')}
+                  className="uppercase tracking-widest text-[9px] font-bold"
+                >
+                  {viewRecord.status === 'Paid' ? 'Cleared' : viewRecord.status}
+                </Badge>
+              </div>
+            </div>
+
+            {/* Fee details grid */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Description</p>
+                <p className="text-sm font-medium text-gray-800">{viewRecord.description}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Amount</p>
+                <p className="text-sm font-bold text-gray-900">Rs. {viewRecord.amount?.toLocaleString()}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payment Method</p>
+                <p className="text-sm font-medium text-gray-800">{viewRecord.method || '—'}</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Date</p>
+                <p className="text-sm font-medium text-gray-800">{new Date(viewRecord.date).toLocaleDateString()}</p>
+              </div>
+              <div className="col-span-2 space-y-1">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Transaction / Ref ID</p>
+                <p className="text-sm font-mono text-gray-700 bg-slate-50 px-3 py-2 rounded-xl border border-slate-100 break-all">
+                  {viewRecord.transactionId || '—'}
+                </p>
+              </div>
+              {viewRecord.student?.branch?.name && (
+                <div className="col-span-2 space-y-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Branch</p>
+                  <p className="text-sm font-medium text-gray-800">{viewRecord.student.branch.name}</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-2">
+              <Button variant="outline" onClick={() => setViewRecord(null)} className="rounded-xl h-11">
+                Close
+              </Button>
+              {viewRecord.status !== 'Paid' && (
+                <Button
+                  onClick={() => { setViewRecord(null); handleConfirmPayment(viewRecord); }}
+                  className="rounded-xl h-11 px-6"
+                >
+                  <CheckCircle2 size={16} className="mr-2" /> Confirm Payment
+                </Button>
+              )}
+            </div>
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };

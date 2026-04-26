@@ -1,9 +1,12 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
 export interface ILeave extends Document {
-  staff: mongoose.Types.ObjectId;
+  user: mongoose.Types.ObjectId;
+  staff?: mongoose.Types.ObjectId;
+  student?: mongoose.Types.ObjectId;
   organization: mongoose.Types.ObjectId;
-  type: 'Sick' | 'Annual' | 'Casual' | 'Maternity' | 'Paternity';
+  branch?: mongoose.Types.ObjectId;
+  type: string;
   startDate: Date;
   endDate: Date;
   reason: string;
@@ -13,19 +16,30 @@ export interface ILeave extends Document {
 }
 
 const leaveSchema = new Schema({
+  user: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
   staff: {
     type: Schema.Types.ObjectId,
-    ref: 'Staff',
-    required: true
+    ref: 'Staff'
+  },
+  student: {
+    type: Schema.Types.ObjectId,
+    ref: 'Student'
   },
   organization: {
     type: Schema.Types.ObjectId,
     ref: 'Organization',
     required: true
   },
+  branch: {
+    type: Schema.Types.ObjectId,
+    ref: 'Branch'
+  },
   type: {
     type: String,
-    enum: ['Sick', 'Annual', 'Casual', 'Maternity', 'Paternity'],
     required: true
   },
   startDate: {

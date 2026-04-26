@@ -14,18 +14,34 @@ export const getHRDashboardStats = async (req: AuthRequest, res: Response) => {
   try {
     const orgId = req.user.organization;
     
-    const [totalStaff, pendingLeaves, lastPayroll] = await Promise.all([
+    const [totalStaff, pendingLeaves, lastPayroll, totalDocs, verifiedDocs] = await Promise.all([
       Staff.countDocuments({ organization: orgId, status: 'Active' }),
       Leave.countDocuments({ organization: orgId, status: 'Pending' }),
-      Payroll.findOne({ organization: orgId }).sort({ createdAt: -1 })
+      Payroll.findOne({ organization: orgId }).sort({ createdAt: -1 }),
+      StaffDocument.countDocuments({ organization: orgId }),
+      StaffDocument.countDocuments({ organization: orgId, status: 'Approved' })
     ]);
+
+    const verifiedDocsPercentage = totalDocs > 0 ? Math.round((verifiedDocs / totalDocs) * 100) : 100;
 
     res.status(200).json({
       success: true,
       data: {
         totalStaff,
         pendingLeaves,
-        lastPayroll: lastPayroll?.netPay || 0
+        lastPayroll: lastPayroll?.netPay || 0,
+        verifiedDocsPercentage: `${verifiedDocsPercentage}%`,
+        payrollSummary: lastPayroll ? {
+          baseSalary: lastPayroll.baseSalary,
+          bonuses: lastPayroll.bonuses,
+          deductions: lastPayroll.deductions,
+          nextPayout: (() => {
+            const date = new Date();
+            date.setDate(28);
+            if (new Date().getDate() > 28) date.setMonth(date.getMonth() + 1);
+            return date.toLocaleDateString('default', { month: 'short', day: 'numeric', year: 'numeric' });
+          })()
+        } : null
       }
     });
   } catch (err: any) {
@@ -114,12 +130,23 @@ export const updateLeaveStatus = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
     const { status } = req.body;
-    const leave = await Leave.findOneAndUpdate(
-      { _id: id, organization: req.user.organization },
-      { status, approvedBy: req.user._id },
-      { new: true }
-    );
+    const leave = await Leave.findById(id);
     if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
+
+    // Find current user's staff record
+    const currentStaff = await Staff.findOne({ user: req.user._id });
+    
+    // Check if HR is trying to approve their own leave
+    if (leave.staff && currentStaff && leave.staff.toString() === currentStaff._id.toString()) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Security Protocol: You cannot authorize your own leave application. Request another HR administrator to verify.' 
+      });
+    }
+
+    leave.status = status;
+    leave.approvedBy = req.user._id;
+    await leave.save();
     res.status(200).json({ success: true, data: leave });
   } catch (err: any) {
     res.status(400).json({ success: false, message: err.message });
@@ -324,7 +351,7 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
     const staff = await Staff.findOne({ 
       user: req.user._id,
       organization: req.user.organization 
-    }).populate('branch', 'name');
+    }).populate('branch', 'name').populate('user');
 
     if (!staff) {
       return res.status(404).json({ success: false, message: 'Staff record not found' });
@@ -335,6 +362,8 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
 
     // Calculate stats
     const presentCount = attendance.filter(a => a.status === 'Present').length;
+    const absentCount = attendance.filter(a => a.status === 'Absent').length;
+    const lateCount = attendance.filter(a => a.status === 'Late').length;
     const attendanceRate = attendance.length > 0 ? ((presentCount / attendance.length) * 100).toFixed(1) : 100;
 
     res.status(200).json({ 
@@ -346,7 +375,9 @@ export const getMyProfile = async (req: AuthRequest, res: Response) => {
         attendanceStats: {
           rate: attendanceRate,
           total: attendance.length,
-          present: presentCount
+          present: presentCount,
+          absent: absentCount,
+          late: lateCount
         }
       } 
     });

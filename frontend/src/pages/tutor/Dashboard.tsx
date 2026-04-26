@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import StatCard from '../../components/dashboard/StatCard';
 import { ClipboardList, Trophy, MessageSquare, Bell, ArrowRight, User, Loader2 } from 'lucide-react';
 import { tutorService } from '../../services/tutorService';
+import { cn } from '../../utils/cn';
 
 const TutorDashboard: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
@@ -91,18 +92,26 @@ const TutorDashboard: React.FC = () => {
               <Bell size={18} className="text-danger animate-pulse" />
            </div>
            <div className="space-y-6">
-              <div className="relative pl-6 border-l-2 border-brand-200">
-                 <div className="absolute w-3 h-3 bg-brand-500 rounded-full -left-[7px] top-1"></div>
-                 <p className="text-[10px] font-medium text-brand-600  ">Oct 18, 2023</p>
-                 <h4 className="text-sm font-medium text-gray-900 mt-1  ">Grade Submission (12-A)</h4>
-                 <p className="text-xs text-gray-500 mt-1 font-medium">Mid-term results must be uploaded by 5 PM.</p>
-              </div>
-              <div className="relative pl-6 border-l-2 border-surface-200">
-                 <div className="absolute w-3 h-3 bg-surface-200 rounded-full -left-[7px] top-1"></div>
-                 <p className="text-[10px] font-medium text-gray-400  ">Oct 20, 2023</p>
-                 <h4 className="text-sm font-medium text-gray-900 mt-1  ">Lab Report Review</h4>
-                 <p className="text-xs text-gray-500 mt-1 font-medium">General Physics Lab Session Feedback.</p>
-              </div>
+              {stats?.upcomingDeadlines?.map((deadline: any, index: number) => (
+                <div key={deadline.id} className={cn(
+                  "relative pl-6 border-l-2",
+                  index === 0 ? "border-brand-200" : "border-surface-200"
+                )}>
+                   <div className={cn(
+                     "absolute w-3 h-3 rounded-full -left-[7px] top-1",
+                     index === 0 ? "bg-brand-500" : "bg-surface-200"
+                   )}></div>
+                   <p className={cn(
+                     "text-[10px] font-medium",
+                     index === 0 ? "text-brand-600" : "text-gray-400"
+                   )}>{new Date(deadline.dueDate).toLocaleDateString()}</p>
+                   <h4 className="text-sm font-medium text-gray-900 mt-1">{deadline.title}</h4>
+                   <p className="text-xs text-gray-500 mt-1 font-medium">{deadline.className} • Submission Tracking</p>
+                </div>
+              ))}
+              {(!stats?.upcomingDeadlines || stats.upcomingDeadlines.length === 0) && (
+                <p className="text-sm text-gray-400 text-center py-4">No upcoming deadlines.</p>
+              )}
            </div>
            
            <button className="w-full mt-10 flex items-center justify-center gap-2 text-sm font-medium text-brand-600 group">

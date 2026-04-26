@@ -36,7 +36,7 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
       organization: req.user.organization 
     });
 
-    const attendanceCount = await StudentAttendance.countDocuments({
+    const classesMarked = await StudentAttendance.distinct('class', {
       markedBy: staff._id,
       date: { $gte: today },
       organization: req.user.organization
@@ -44,16 +44,33 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
 
     const gradebooksCount = classes.length;
 
-    // Mock unread messages for now
-    const unreadMessages = 12;
+    // Get unread messages count
+    const unreadMessages = await mongoose.model('Message').countDocuments({
+      recipient: req.user._id,
+      read: false,
+      organization: req.user.organization
+    });
+
+    // Get upcoming deadlines (assignments)
+    const upcomingDeadlines = await Assignment.find({
+      tutor: staff._id,
+      dueDate: { $gte: today },
+      organization: req.user.organization
+    }).sort('dueDate').limit(2).populate('class');
 
     res.status(200).json({
       success: true,
       data: {
         totalStudents,
-        markedAttendance: `${attendanceCount}/${classes.length} Today`,
+        markedAttendance: `${classesMarked.length}/${classes.length} Classes`,
         gradebooks: gradebooksCount,
-        unreadMessages
+        unreadMessages,
+        upcomingDeadlines: upcomingDeadlines.map(d => ({
+          id: d._id,
+          title: d.title,
+          dueDate: d.dueDate,
+          className: (d.class as any)?.name
+        }))
       }
     });
   } catch (error: any) {
@@ -93,13 +110,14 @@ export const getSchedule = async (req: AuthRequest, res: Response) => {
       return res.status(404).json({ success: false, message: 'Staff record not found' });
     }
 
-    // Find schedules assigned to this tutor or their classes
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const currentDay = days[new Date().getDay()];
+
+    // Find schedules assigned to this tutor for today
     const schedules = await Schedule.find({
       organization: req.user.organization,
-      $or: [
-        { tutor: staff._id },
-        { staff: staff._id }
-      ]
+      day: currentDay,
+      staff: staff._id
     }).populate('class');
 
     res.status(200).json({ success: true, data: schedules });
@@ -117,9 +135,21 @@ export const getAssignments = async (req: AuthRequest, res: Response) => {
     const assignments = await Assignment.find({
       tutor: staff?._id,
       organization: req.user.organization
-    }).populate('class');
+    }).populate('class').lean();
 
-    res.status(200).json({ success: true, data: assignments });
+    const submissions = await Submission.find({ organization: req.user.organization });
+
+    const data = assignments.map(a => {
+      const count = submissions.filter(s => s.assignment.toString() === a._id.toString()).length;
+      const isOverdue = new Date(a.dueDate) < new Date();
+      return { 
+        ...a, 
+        submissionsCount: count,
+        status: isOverdue && a.status === 'Active' ? 'Expired' : a.status
+      };
+    });
+
+    res.status(200).json({ success: true, data });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
@@ -306,8 +336,14 @@ export const getTutorProfile = async (req: AuthRequest, res: Response) => {
     const staff = await Staff.findOne({ user: req.user._id }).populate('user').populate('branch');
     if (!staff) return res.status(404).json({ success: false, message: 'Staff record not found' });
 
-    const leaves = await Leave.find({ staff: staff._id }).sort('-createdAt');
     const attendance = await mongoose.model('Attendance').find({ staff: staff._id }).sort('-date');
+    const leaves = await Leave.find({ staff: staff._id }).sort('-createdAt');
+
+    const total = attendance.length;
+    const present = attendance.filter(a => a.status === 'Present').length;
+    const absent = attendance.filter(a => a.status === 'Absent').length;
+    const late = attendance.filter(a => a.status === 'Late').length;
+    const rate = total > 0 ? ((present / total) * 100).toFixed(1) : 100;
 
     res.status(200).json({
       success: true,
@@ -316,10 +352,11 @@ export const getTutorProfile = async (req: AuthRequest, res: Response) => {
         leaves,
         attendanceRecords: attendance,
         attendanceStats: {
-           rate: 98,
-           present: 180,
-           absent: 2,
-           late: 1
+           rate,
+           total,
+           present,
+           absent,
+           late
         }
       }
     });
@@ -472,6 +509,117 @@ export const deleteMaterial = async (req: AuthRequest, res: Response) => {
 
     await Material.findByIdAndDelete(req.params.id);
     res.status(200).json({ success: true, data: {} });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get attendance for a class on a specific date
+// @route   GET /api/v1/tutor/attendance/check
+// @access  Private/Tutor
+export const getAttendanceByDate = async (req: AuthRequest, res: Response) => {
+  try {
+    const { classId, date } = req.query;
+    if (!classId || !date) {
+      return res.status(400).json({ success: false, message: 'Class ID and date are required' });
+    }
+
+    const startOfDay = new Date(date as string);
+    startOfDay.setHours(0,0,0,0);
+    
+    const attendance = await StudentAttendance.find({
+      class: classId as string,
+      date: startOfDay,
+      organization: req.user.organization
+    });
+    
+    res.status(200).json({ success: true, data: attendance });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get student leave requests for assigned classes
+// @route   GET /api/v1/tutor/student-leaves
+// @access  Private/Tutor
+export const getStudentLeaves = async (req: AuthRequest, res: Response) => {
+  try {
+    const staff = await Staff.findOne({ user: req.user._id });
+    if (!staff) return res.status(404).json({ success: false, message: 'Staff record not found' });
+
+    const fullName = `${staff.firstName} ${staff.lastName}`;
+    const assignedClasses = await Class.find({ tutor: fullName, organization: req.user.organization }).select('_id');
+    const classIds = assignedClasses.map(c => c._id);
+
+    // Find students in these classes
+    const studentIds = await Student.find({ class: { $in: classIds } }).select('_id');
+
+    const leaves = await Leave.find({
+      student: { $in: studentIds.map(s => s._id) },
+      organization: req.user.organization
+    }).populate('student').sort('-appliedDate');
+
+    res.status(200).json({ success: true, data: leaves });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Update student leave status
+// @route   PUT /api/v1/tutor/student-leaves/:id
+// @access  Private/Tutor
+export const updateStudentLeaveStatus = async (req: AuthRequest, res: Response) => {
+  try {
+    const { status } = req.body;
+    const leave = await Leave.findOneAndUpdate(
+      { _id: req.params.id, organization: req.user.organization },
+      { status, approvedBy: req.user._id },
+      { new: true }
+    ).populate('student');
+
+    if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
+
+    // If approved, automatically mark as absent for those dates
+    if (status === 'Approved' && leave.student) {
+      const start = new Date(leave.startDate);
+      const end = new Date(leave.endDate);
+      const studentId = leave.student._id;
+      const classId = (leave.student as any).class;
+      const organizationId = leave.organization;
+      const branchId = leave.branch;
+      const staff = await Staff.findOne({ user: req.user._id });
+
+      const attendanceOps = [];
+      let currentDate = new Date(start);
+      while (currentDate <= end) {
+        attendanceOps.push({
+          updateOne: {
+            filter: { 
+              student: studentId, 
+              date: new Date(currentDate).setHours(0,0,0,0),
+              organization: organizationId 
+            },
+            update: {
+              $set: {
+                status: 'Absent' as 'Present' | 'Absent' | 'Late',
+                note: `Approved Leave: ${leave.reason}`,
+                markedBy: staff?._id as any,
+                class: classId,
+                branch: branchId as any
+              }
+            },
+            upsert: true
+          }
+        });
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      if (attendanceOps.length > 0) {
+        await StudentAttendance.bulkWrite(attendanceOps);
+      }
+    }
+
+    res.status(200).json({ success: true, data: leave });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

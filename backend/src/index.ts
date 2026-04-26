@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'path';
+import fs from 'fs';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
@@ -20,12 +22,19 @@ import tutorRoutes from './routes/tutorRoutes';
 import studentRoutes from './routes/studentRoutes';
 import chatRoutes from './routes/chatRoutes';
 import paymentRoutes from './routes/paymentRoutes';
+import uploadRoutes from './routes/uploadRoutes';
 
 // Load env vars
 dotenv.config();
 
 // Connect to database
 connectDB();
+
+// Ensure upload directories exist
+const uploadDir = path.join(process.cwd(), 'uploads/submissions');
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 const app = express();
 
@@ -65,6 +74,19 @@ app.use('/api/v1/tutor', tutorRoutes);
 app.use('/api/v1/student', studentRoutes);
 app.use('/api/v1/chat', chatRoutes);
 app.use('/api/v1/payment', paymentRoutes);
+app.use('/api/v1/upload', uploadRoutes);
+
+// Static folder
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Fallback for missing files in submissions (helps with legacy/demo data)
+app.use('/uploads/submissions', (req, res, next) => {
+  const filePath = path.join(process.cwd(), 'uploads/submissions', req.path);
+  if (!fs.existsSync(filePath)) {
+    return res.redirect('https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf');
+  }
+  next();
+});
 
 // Error handler
 app.use(errorHandler);

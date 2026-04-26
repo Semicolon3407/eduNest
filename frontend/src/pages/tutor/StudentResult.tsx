@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
@@ -23,26 +23,23 @@ interface MarkEntry {
 const StudentResult: React.FC = () => {
   const { studentId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const term = queryParams.get('term') || 'mid-term';
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingMark, setEditingMark] = useState<MarkEntry | null>(null);
   const [student, setStudent] = useState<any>(null);
   const [marks, setMarks] = useState<MarkEntry[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (studentId) {
-      fetchStudentData();
-    }
-  }, [studentId]);
-
   const fetchStudentData = async () => {
     try {
       const [studentRes, gradeRes] = await Promise.all([
         getStudentById(studentId!),
-        getGrades({ classId: '', term: '' }) // We'll filter on frontend or add student filter
+        getGrades({ classId: '', term: term }) 
       ]);
       setStudent(studentRes.data);
-      // Filter grades for this student only
       setMarks(gradeRes.data.filter((g: any) => g.student?._id === studentId));
     } catch (error) {
       console.error('Error fetching student results:', error);
@@ -50,6 +47,12 @@ const StudentResult: React.FC = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (studentId) {
+      fetchStudentData();
+    }
+  }, [studentId, term]);
 
   const handleSaveMark = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -59,11 +62,11 @@ const StudentResult: React.FC = () => {
 
     const payload = {
       student: studentId,
-      term: 'mid-term', // Should be dynamic
-      subject: formData.get('subject'),
+      term: term, 
+      subject: formData.get('subject') as string,
       theoryMarks,
       practicalMarks,
-      class: student.class?._id
+      class: student?.class?._id
     };
 
     try {
@@ -114,7 +117,7 @@ const StudentResult: React.FC = () => {
               <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">{student?.firstName} {student?.lastName}</h1>
               <Badge variant="brand" className="px-3 py-1 uppercase tracking-widest text-[9px] font-bold">{student?.admissionNumber}</Badge>
             </div>
-            <p className="text-gray-500 mt-1 font-medium">Class {student?.class?.name}-{student?.class?.section} • Midterm 2023</p>
+            <p className="text-gray-500 mt-1 font-medium">Class {student?.class?.name}-{student?.class?.section} • {term.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')} 2026</p>
           </div>
         </div>
         <div className="flex gap-3">
@@ -128,7 +131,6 @@ const StudentResult: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Statistics Pillar */}
         <div className="lg:col-span-1 space-y-6">
           <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-premium relative overflow-hidden">
              <div className="absolute top-0 right-0 w-32 h-32 bg-brand-500 rounded-full -mr-16 -mt-16 opacity-20 blur-2xl"></div>
@@ -167,7 +169,6 @@ const StudentResult: React.FC = () => {
           </div>
         </div>
 
-        {/* Subjects Table */}
         <div className="lg:col-span-3">
            <div className="bg-white rounded-[40px] shadow-premium border border-slate-200 overflow-hidden">
               <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
@@ -241,7 +242,6 @@ const StudentResult: React.FC = () => {
         </div>
       </div>
 
-      {/* Entry Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

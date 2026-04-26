@@ -196,7 +196,7 @@ const Grades: React.FC = () => {
                        {openMenu === student._id && (
                          <div className="absolute right-8 top-12 z-50 bg-white shadow-premium border border-slate-100 rounded-2xl p-2 w-48 animate-in slide-in-from-top-2 duration-200">
                            <button 
-                             onClick={() => navigate(`/tutor/grades/${student._id}`)}
+                             onClick={() => navigate(`/tutor/grades/${student._id}?term=${selectedExam}`)}
                              className="w-full flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-brand-50 hover:text-brand-600 rounded-xl transition-all"
                            >
                              <Eye size={18} /> View Results

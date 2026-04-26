@@ -14,6 +14,9 @@ const TutorAssignments: React.FC = () => {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [activeAssignments, setActiveAssignments] = useState<any[]>([]);
   const [submissions, setSubmissions] = useState<any[]>([]);
+  const [selectedAssignmentSubmissions, setSelectedAssignmentSubmissions] = useState<any[]>([]);
+  const [isSubmissionsModalOpen, setIsSubmissionsModalOpen] = useState(false);
+  const [selectedAssignmentTitle, setSelectedAssignmentTitle] = useState('');
   const [classes, setClasses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
@@ -128,7 +131,7 @@ const TutorAssignments: React.FC = () => {
                           </div>
                           <div className="bg-slate-50 p-3 rounded-2xl border border-slate-100">
                              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
-                             <Badge variant={task.status === 'Completed' ? 'success' : 'warning'} className="h-5 px-3">
+                             <Badge variant={task.status === 'Completed' ? 'success' : task.status === 'Expired' ? 'danger' : 'warning'} className="h-5 px-3">
                                 {task.status}
                              </Badge>
                           </div>
@@ -145,6 +148,12 @@ const TutorAssignments: React.FC = () => {
 
                        <div className="mt-6 pt-4 border-t border-dashed border-slate-100 flex justify-end">
                           <button 
+                             onClick={() => {
+                               const filtered = submissions.filter((s: any) => s.assignment?._id === task._id);
+                               setSelectedAssignmentSubmissions(filtered);
+                               setSelectedAssignmentTitle(task.title);
+                               setIsSubmissionsModalOpen(true);
+                             }}
                             className="flex items-center gap-2 text-xs font-bold text-brand-500 hover:text-brand-600 uppercase tracking-widest group/btn"
                           >
                              Review Submissions <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform" />
@@ -171,8 +180,14 @@ const TutorAssignments: React.FC = () => {
                        <p className="text-xs text-slate-500 font-medium mt-1 uppercase tracking-tight truncate max-w-full">
                           {sub.fileName}
                        </p>
-                       <button className="flex items-center gap-2 text-[10px] font-black text-brand-500 uppercase tracking-widest mt-3 hover:text-brand-600">
-                          <Download size={12} /> Download Submission ({sub.fileSize})
+                       <button 
+                         onClick={() => {
+                           const url = sub.fileUrl.startsWith('http') ? sub.fileUrl : `http://localhost:5001${sub.fileUrl}`;
+                           window.open(url, '_blank', 'noopener,noreferrer');
+                         }}
+                         className="flex items-center gap-2 text-[10px] font-black text-brand-500 uppercase tracking-widest mt-3 hover:text-brand-600"
+                       >
+                          <Download size={12} /> View Submission ({sub.fileSize})
                        </button>
                     </div>
                  )) : (
@@ -274,6 +289,57 @@ const TutorAssignments: React.FC = () => {
               <Button type="submit" shadow-premium className="rounded-xl h-12 px-10">Publish Assignment</Button>
            </div>
         </form>
+      </Modal>
+      {/* Submissions Modal */}
+      <Modal
+        isOpen={isSubmissionsModalOpen}
+        onClose={() => setIsSubmissionsModalOpen(false)}
+        title={`Submissions: ${selectedAssignmentTitle}`}
+        description="Review all student work for this specific task."
+        maxWidth="2xl"
+      >
+        <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+           {selectedAssignmentSubmissions.length > 0 ? selectedAssignmentSubmissions.map((sub) => (
+             <div key={sub._id} className="p-5 bg-slate-50 rounded-3xl border border-slate-100 hover:border-brand-200 transition-all group">
+                <div className="flex justify-between items-center">
+                   <div className="flex items-center gap-4">
+                      <div className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center overflow-hidden">
+                         <img src={`https://ui-avatars.com/api/?name=${sub.student?.firstName}+${sub.student?.lastName}&background=random`} alt="" />
+                      </div>
+                      <div>
+                         <h5 className="font-bold text-slate-800 text-sm">{sub.student?.firstName} {sub.student?.lastName}</h5>
+                         <p className="text-[10px] font-bold text-slate-400 uppercase">Submitted {new Date(sub.submittedAt).toLocaleString()}</p>
+                      </div>
+                   </div>
+                   <div className="flex gap-2">
+                      <Button 
+                        variant="outline" 
+                        className="h-9 px-4 rounded-xl text-[10px] uppercase font-black tracking-widest"
+                        onClick={() => {
+                          const url = sub.fileUrl.startsWith('http') ? sub.fileUrl : `http://localhost:5001${sub.fileUrl}`;
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        }}
+                      >
+                         View PDF
+                      </Button>
+                      <Button className="h-9 px-4 rounded-xl text-[10px] uppercase font-black tracking-widest">
+                         Grade
+                      </Button>
+                   </div>
+                </div>
+                {sub.remarks && (
+                   <div className="mt-4 p-4 bg-white rounded-2xl border border-slate-100 text-xs text-slate-500 font-medium italic">
+                      "{sub.remarks}"
+                   </div>
+                )}
+             </div>
+           )) : (
+             <div className="text-center py-10">
+                <FileText size={40} className="text-slate-200 mx-auto mb-4" />
+                <p className="text-slate-400 font-medium">No submissions found for this assignment.</p>
+             </div>
+           )}
+        </div>
       </Modal>
     </div>
   );

@@ -162,7 +162,7 @@ const AdminProfile: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-10 gap-x-12">
                    <InfoItem icon={User} label="Full Legal Name" value={`${profile?.firstName} ${profile?.lastName}`} />
                    <InfoItem icon={Mail} label="Professional Email" value={profile?.personalEmail} />
-                   <InfoItem icon={Shield} label="Security Clearance" value="Root Privileged" />
+                   <InfoItem icon={Shield} label="Security Clearance" value={profile?.user?.role === 'ADMIN' ? 'Root Privileged' : 'Administrative'} />
                    <InfoItem icon={Hash} label="System Access Key" value={profile?.employeeId} />
                    <InfoItem icon={Calendar} label="Last Audit" value="Active" />
                    <InfoItem icon={Building2} label="Branch Node" value={profile?.branch?.name} />
@@ -189,11 +189,11 @@ const AdminProfile: React.FC = () => {
                 <div className="space-y-6">
                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">System Status</p>
-                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2">Authenticated</p>
+                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2">{profile?.status === 'Active' ? 'Verified' : 'Pending'}</p>
                    </div>
                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Network Permissions</p>
-                      <p className="text-sm font-bold text-brand-600 uppercase tracking-tight leading-none mb-2 font-display">Super User</p>
+                      <p className="text-sm font-bold text-brand-600 uppercase tracking-tight leading-none mb-2 font-display">{profile?.user?.role?.replace('_', ' ')} Access</p>
                    </div>
                 </div>
               </div>

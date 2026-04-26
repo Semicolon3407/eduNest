@@ -24,14 +24,17 @@ router.post('/classes', adminController.createClass);
 router.get('/classes', adminController.getClasses);
 router.delete('/classes/:id', adminController.deleteClass);
 
-// Fee Routes
+// Fee Structure Routes
 router.post('/fees', adminController.createFee);
 router.get('/fees', adminController.getFees);
-router.put('/fees/:id', adminController.updateFee);
-router.delete('/fees/:id', adminController.deleteFee);
+// Records routes MUST come before /:id to avoid 'records' being treated as an id
 router.get('/fees/records', adminController.getFeeRecords);
 router.put('/fees/records/:id/status', adminController.updateFeeRecordStatus);
+router.delete('/fees/records/:id', adminController.deleteFeeRecord);
 router.post('/fees/records/:id/remind', adminController.sendFeeReminder);
+// Fee structure CRUD
+router.put('/fees/:id', adminController.updateFee);
+router.delete('/fees/:id', adminController.deleteFee);
 
 // Inventory
 router.get('/inventory', adminController.getInventory);

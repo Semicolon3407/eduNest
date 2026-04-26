@@ -317,7 +317,14 @@ export const getStudentProfile = async (req: AuthRequest, res: Response) => {
 export const applyLeave = async (req: AuthRequest, res: Response) => {
   try {
     const student = await Student.findOne({ user: req.user._id });
-    const leave = await Leave.create({ ...req.body, user: req.user._id, organization: req.user.organization, branch: student?.branch, status: 'Pending' });
+    const leave = await Leave.create({ 
+      ...req.body, 
+      user: req.user._id, 
+      student: student?._id,
+      organization: req.user.organization, 
+      branch: student?.branch, 
+      status: 'Pending' 
+    });
     res.status(201).json({ success: true, data: leave });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

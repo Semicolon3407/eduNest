@@ -95,8 +95,8 @@ const AttendanceLeave: React.FC = () => {
         toast.success(`Leave request ${status.toLowerCase()}`);
         fetchData();
       }
-    } catch (error) {
-      toast.error('Authorization failed');
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Authorization failed');
     }
   };
 

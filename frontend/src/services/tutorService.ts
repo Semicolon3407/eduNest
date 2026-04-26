@@ -97,6 +97,21 @@ export const deleteMaterial = async (id: string) => {
   return response.data;
 };
 
+export const checkAttendance = async (classId: string, date: string) => {
+  const response = await api.get('/tutor/attendance/check', { params: { classId, date } });
+  return response.data;
+};
+
+export const getStudentLeaves = async () => {
+  const response = await api.get('/tutor/student-leaves');
+  return response.data;
+};
+
+export const updateStudentLeaveStatus = async (id: string, status: string) => {
+  const response = await api.put(`/tutor/student-leaves/${id}`, { status });
+  return response.data;
+};
+
 export const tutorService = {
   getDashboardStats,
   getTutorClasses,
@@ -117,4 +132,7 @@ export const tutorService = {
   getMaterials,
   uploadMaterial,
   deleteMaterial,
+  checkAttendance,
+  getStudentLeaves,
+  updateStudentLeaveStatus,
 };

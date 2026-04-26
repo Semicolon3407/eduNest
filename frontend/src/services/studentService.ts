@@ -89,3 +89,14 @@ export const checkEsewaStatus = async (transaction_uuid: string, total_amount: s
   const response = await api.get('/payment/esewa/status', { params: { transaction_uuid, total_amount } });
   return response.data;
 };
+
+export const uploadFile = async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/upload/file', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  });
+  return response.data;
+};

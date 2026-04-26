@@ -48,7 +48,7 @@ const HRDashboard: React.FC = () => {
         <StatCard title="Total Staff" value={stats?.totalStaff || '0'} icon={Briefcase} color="brand" />
         <StatCard title="Active Payroll" value={`Rs. ${stats?.lastPayroll?.toLocaleString() || '0'}`} icon={CreditCard} color="success" />
         <StatCard title="Leave Requests" value={`${stats?.pendingLeaves || '0'} Pending`} icon={ClipboardList} color="warning" />
-        <StatCard title="Verified Docs" value="98%" icon={FileText} color="brand" />
+        <StatCard title="Verified Docs" value={stats?.verifiedDocsPercentage || '100%'} icon={FileText} color="brand" />
       </div>
 
       {/* Quick Actions */}
@@ -134,29 +134,29 @@ const HRDashboard: React.FC = () => {
         <div className="bg-surface rounded-2xl shadow-soft border border-surface-200 p-6 flex flex-col justify-between">
            <div>
               <h2 className="text-xl font-medium text-gray-900  underline mb-2 ">Payroll Insights</h2>
-              <p className="text-sm text-gray-500 mb-8 font-medium">Monthly distribution summary for Oct 2023</p>
+              <p className="text-sm text-gray-500 mb-8 font-medium">Monthly distribution summary for {new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
               
-              <div className="space-y-6">
+               <div className="space-y-6">
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                        <span className="w-3 h-3 bg-brand-500 rounded-full"></span>
                        <span className="text-sm font-medium text-gray-700">Base Salary</span>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">Rs. 38,200</span>
+                    <span className="text-sm font-medium text-gray-900">Rs. {stats?.payrollSummary?.baseSalary?.toLocaleString() || '0'}</span>
                  </div>
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                        <span className="w-3 h-3 bg-success rounded-full"></span>
                        <span className="text-sm font-medium text-gray-700">Bonuses</span>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">Rs. 2,450</span>
+                    <span className="text-sm font-medium text-gray-900">Rs. {stats?.payrollSummary?.bonuses?.toLocaleString() || '0'}</span>
                  </div>
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                        <span className="w-3 h-3 bg-danger rounded-full"></span>
                        <span className="text-sm font-medium text-gray-700">Tax Deductions</span>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">Rs. 1,850</span>
+                    <span className="text-sm font-medium text-gray-900">Rs. {stats?.payrollSummary?.deductions?.toLocaleString() || '0'}</span>
                  </div>
               </div>
            </div>
@@ -165,7 +165,7 @@ const HRDashboard: React.FC = () => {
               <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-brand-100">
                  <div>
                     <p className="text-[10px] font-medium text-gray-400  ">Next Payout Date</p>
-                    <p className="text-lg font-medium text-brand-600">Oct 28, 2023</p>
+                    <p className="text-lg font-medium text-brand-600">{stats?.payrollSummary?.nextPayout || 'TBD'}</p>
                  </div>
                  <button className="bg-brand-500 text-white px-6 py-2 rounded-xl text-sm font-medium hover:bg-brand-600 transition-all shadow-premium">
                     Run Payroll

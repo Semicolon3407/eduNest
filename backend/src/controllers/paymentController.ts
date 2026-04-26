@@ -117,9 +117,11 @@ export const verifyEsewaPayment = async (req: AuthRequest, res: Response) => {
           date: new Date()
         });
       } else {
+        // Populate student to get branch
+        const populatedStudent = await Student.findById(transaction.student).populate('branch');
         const description = transaction.metadata?.virtualFeeId 
-          ? `Monthly Fee: ${transaction.metadata.virtualFeeId.split('-')[1]}`
-          : `eSewa Payment - ${transaction_uuid}`;
+          ? `Monthly Fee (eSewa) - ${transaction.metadata.virtualFeeId}`
+          : `eSewa Payment - Ref: ${transaction_code}`;
 
         await FeeRecord.create({
           student: transaction.student,
@@ -129,7 +131,8 @@ export const verifyEsewaPayment = async (req: AuthRequest, res: Response) => {
           method: 'eSewa',
           transactionId: transaction_code,
           organization: transaction.organization,
-          branch: student?.branch
+          branch: populatedStudent?.branch,
+          date: new Date()
         });
       }
 
@@ -167,12 +170,29 @@ export const checkEsewaStatus = async (req: AuthRequest, res: Response) => {
         
         // Also update FeeRecord if applicable
         if (transaction.feeRecord) {
-           await FeeRecord.findByIdAndUpdate(transaction.feeRecord, {
+          await FeeRecord.findByIdAndUpdate(transaction.feeRecord, {
             status: 'Paid',
             method: 'eSewa',
             transactionId: data.ref_id,
             date: new Date()
           });
+        } else {
+          // Create a new FeeRecord if none existed (virtual fee payment via status check)
+          const populatedStudent = await Student.findById(transaction.student).populate('branch');
+          const existingRecord = await FeeRecord.findOne({ transactionId: data.ref_id });
+          if (!existingRecord) {
+            await FeeRecord.create({
+              student: transaction.student,
+              description: `eSewa Payment - Ref: ${data.ref_id}`,
+              amount: transaction.amount,
+              status: 'Paid',
+              method: 'eSewa',
+              transactionId: data.ref_id,
+              organization: transaction.organization,
+              branch: populatedStudent?.branch,
+              date: new Date()
+            });
+          }
         }
       }
     }

@@ -59,6 +59,11 @@ export const adminService = {
     return response.data;
   },
 
+  deleteFeeRecord: async (id: string) => {
+    const response = await api.delete(`/admin/fees/records/${id}`);
+    return response.data;
+  },
+
   sendFeeReminder: async (id: string) => {
     const response = await api.post(`/admin/fees/records/${id}/remind`);
     return response.data;

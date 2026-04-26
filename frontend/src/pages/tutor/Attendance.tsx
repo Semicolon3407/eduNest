@@ -1,362 +1,389 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
-import Modal from '../../components/ui/Modal';
 import Badge from '../../components/ui/Badge';
-import { Filter, Save, Users, CheckCircle, XCircle, Plus, Search, ChevronDown, Clock, MoreVertical, Loader2, Calendar, ShieldCheck } from 'lucide-react';
+import Input from '../../components/ui/Input';
+import { 
+  Clock, Calendar, CheckCircle2, XCircle, Search, Filter, 
+  UserCheck, UserX, 
+  Clock3, ChevronDown, GraduationCap, Loader2, ShieldCheck
+} from 'lucide-react';
 import { tutorService } from '../../services/tutorService';
+import toast from 'react-hot-toast';
 
-const Attendance: React.FC = () => {
-   const [isModalOpen, setIsModalOpen] = useState(false);
-   const [searchTerm, setSearchTerm] = useState('');
-   const [classes, setClasses] = useState<any[]>([]);
-   const [selectedClassId, setSelectedClassId] = useState('');
-   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-   const [students, setStudents] = useState<any[]>([]);
-   const [loading, setLoading] = useState(true);
-   const [submitting, setSubmitting] = useState(false);
+const TutorAttendance: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<'attendance' | 'leave'>('attendance');
+  const [markedStatus, setMarkedStatus] = useState<Record<string, string>>({});
+  
+  const [isLoading, setIsLoading] = useState(true);
+  const [students, setStudents] = useState<any[]>([]);
+  const [leaveRequests, setLeaveRequests] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState('');
+  
+  const [searchTerm, setSearchTerm] = useState('');
+  const [attendanceDate, setAttendanceDate] = useState(new Date().toISOString().split('T')[0]);
 
-   useEffect(() => {
-      const fetchClasses = async () => {
-         try {
-            const res = await tutorService.getTutorClasses();
-            setClasses(res.data);
-            if (res.data.length > 0) {
-               setSelectedClassId(res.data[0]._id);
-            }
-         } catch (error) {
-            console.error('Error fetching classes:', error);
-         } finally {
-            setLoading(false);
-         }
-      };
-      fetchClasses();
-   }, []);
+  useEffect(() => {
+    fetchClasses();
+  }, []);
 
-   useEffect(() => {
-      if (selectedClassId) {
-         const fetchStudents = async () => {
-            try {
-               const res = await tutorService.getStudentsByClass(selectedClassId);
-               setStudents(res.data.map((s: any) => ({ ...s, status: 'Present' })));
-            } catch (error) {
-               console.error('Error fetching students:', error);
-            }
-         };
-         fetchStudents();
-      } else {
-         setStudents([]);
+  const fetchClasses = async () => {
+    try {
+      const res = await tutorService.getTutorClasses();
+      setClasses(res.data);
+      if (res.data.length > 0) {
+        setSelectedClassId(res.data[0]._id);
       }
-   }, [selectedClassId, selectedDate]);
+    } catch (error) {
+      toast.error('Failed to fetch assigned classes');
+    }
+  };
 
-   const handleStatusChange = (studentId: string, status: 'Present' | 'Absent' | 'Late') => {
-      setStudents(students.map(s => s._id === studentId ? { ...s, status } : s));
-   };
+  const fetchData = async () => {
+    if (!selectedClassId) return;
+    try {
+      setIsLoading(true);
+      const [studentRes, attendanceRes, leaveRes] = await Promise.all([
+        tutorService.getStudentsByClass(selectedClassId),
+        tutorService.checkAttendance(selectedClassId, attendanceDate),
+        tutorService.getStudentLeaves()
+      ]);
 
-   const handleSubmit = async () => {
-      if (!selectedClassId) return;
-      setSubmitting(true);
-      try {
-         const attendanceData = {
-            date: selectedDate,
-            records: students.map(s => ({
-               student: s._id,
-               status: s.status,
-               class: selectedClassId // Passing the class ID for backend validation
-            }))
-         };
-         await tutorService.markAttendance(attendanceData);
-         alert('Attendance records synchronized successfully!');
-      } catch (error: any) {
-         console.error('Error marking attendance:', error);
-         alert(error.response?.data?.message || 'Unauthorized: Grade/Section mismatch detected.');
-      } finally {
-         setSubmitting(false);
+      setStudents(studentRes.data);
+      
+      const currentLeaves = leaveRes.data.filter((l: any) => l.student?.class === selectedClassId);
+      setLeaveRequests(currentLeaves);
+
+      const initialStatus: Record<string, string> = {};
+      studentRes.data.forEach((s: any) => {
+        const record = attendanceRes.data.find((a: any) => a.student === s._id);
+        initialStatus[s._id] = record ? record.status : 'Present';
+      });
+      setMarkedStatus(initialStatus);
+
+    } catch (error) {
+      toast.error('Failed to sync institutional records');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [selectedClassId, attendanceDate]);
+
+  const handleMark = async (studentId: string, status: string) => {
+    try {
+      setMarkedStatus(prev => ({ ...prev, [studentId]: status }));
+      const response = await tutorService.markAttendance({
+        date: attendanceDate,
+        records: [{
+          student: studentId,
+          status,
+          class: selectedClassId
+        }]
+      });
+      if (response.success) {
+        toast.success(`Record updated for ${students.find(s => s._id === studentId)?.firstName}`);
       }
-   };
+    } catch (error) {
+      toast.error('Critical sync failure');
+    }
+  };
 
-   const handleAddBehavior = async (e: React.FormEvent<HTMLFormElement>) => {
-      e.preventDefault();
-      const formData = new FormData(e.currentTarget);
-      try {
-         await tutorService.addBehaviorLog({
-            student: formData.get('studentId'),
-            engagementMetric: formData.get('engagement'),
-            observation: formData.get('observation')
-         });
-         setIsModalOpen(false);
-         alert('Behavioral observation recorded.');
-      } catch (error) {
-         console.error('Error adding behavior log:', error);
+  const updateLeave = async (id: string, status: string) => {
+    try {
+      const response = await tutorService.updateStudentLeaveStatus(id, status);
+      if (response.success) {
+        toast.success(`Leave request authorized: ${status}`);
+        fetchData();
       }
-   };
+    } catch (error) {
+      toast.error('Authorization rejected by system');
+    }
+  };
 
-   const filteredStudents = students.filter(s => 
-      s.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      s.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      s.admissionNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-   );
+  const filteredStudents = students.filter(student => {
+    const fullName = `${student.firstName} ${student.lastName}`;
+    return fullName.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           student.admissionNumber.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
-   const formatDisplayDate = (dateStr: string) => {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-   };
+  const getStats = () => {
+    const present = Object.values(markedStatus).filter(s => s === 'Present').length;
+    const absent = Object.values(markedStatus).filter(s => s === 'Absent').length;
+    const pendingLeave = leaveRequests.filter(l => l.status === 'Pending').length;
+    return { present, absent, pendingLeave };
+  };
 
-   if (loading) {
-      return (
-         <div className="h-full w-full flex items-center justify-center min-h-[400px]">
-            <Loader2 className="animate-spin text-brand-500" size={40} />
+  const stats = getStats();
+
+  if (isLoading && classes.length > 0) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
+        <Loader2 size={40} className="animate-spin text-brand-500" />
+        <p className="text-sm font-bold text-slate-400 uppercase tracking-widest">Accessing Secure Records...</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-20">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900  ">Digital Register</h1>
+          <p className="text-gray-500 mt-1 font-medium">Institutional attendance protocol for assigned classrooms</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+           <Badge variant="success" className="px-6 py-2 rounded-xl border border-success/20 flex items-center gap-2">
+              <ShieldCheck size={14} /> Authorized Personnel Only
+           </Badge>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+         <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-soft flex items-center gap-4 group hover:border-brand-200 transition-all">
+            <div className="w-12 h-12 bg-brand-50 text-brand-500 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all shadow-sm">
+               <Clock size={24} />
+            </div>
+             <div>
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Total Present</p>
+               <h4 className="text-xl font-medium text-gray-900  ">{stats.present} Students</h4>
+            </div>
          </div>
-      );
-   }
-
-   return (
-      <div className="space-y-8 animate-in fade-in duration-500 font-sans pb-12">
-         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+         <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-soft flex items-center gap-4 group hover:border-danger-200 transition-all">
+            <div className="w-12 h-12 bg-danger-light text-danger-dark rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all shadow-sm">
+               <XCircle size={24} />
+            </div>
             <div>
-               <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 tracking-tight">Digital Register</h1>
-               <p className="text-gray-500 mt-1 font-medium flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-success" />
-                  Only displaying Grade/Sections assigned to your profile by Administration
-               </p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-               <div className="flex gap-2">
-                  <div className="bg-success/5 border border-success/10 px-4 py-2.5 rounded-2xl flex flex-col justify-center shadow-sm">
-                     <p className="text-[9px] font-bold text-success-dark uppercase tracking-widest leading-none mb-1">Present</p>
-                     <p className="text-sm font-bold text-success-dark">{students.filter(s => s.status === 'Present').length} Students</p>
-                  </div>
-                  <div className="bg-danger/5 border border-danger/10 px-4 py-2.5 rounded-2xl flex flex-col justify-center shadow-sm">
-                     <p className="text-[9px] font-bold text-danger-dark uppercase tracking-widest leading-none mb-1">Absent</p>
-                     <p className="text-sm font-bold text-danger-dark">{students.filter(s => s.status === 'Absent').length} Students</p>
-                  </div>
-               </div>
-               <Button onClick={() => setIsModalOpen(true)} shadow-premium className="rounded-xl h-12 px-6">
-                  <Plus size={18} /> Quick Note
-               </Button>
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Total Absent</p>
+               <h4 className="text-xl font-medium text-gray-900  ">{stats.absent} Students</h4>
             </div>
          </div>
-
-         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-end">
-            <div className="lg:col-span-1 space-y-2">
-               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] px-1">Active Assignment</label>
-               <div className="relative group">
-                  <Users size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-500 z-10" />
-                  <select 
-                    value={selectedClassId}
-                    onChange={(e) => setSelectedClassId(e.target.value)}
-                    className="w-full h-14 bg-white border border-surface-200 rounded-2xl pl-12 pr-10 text-sm font-bold text-gray-800 appearance-none outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all cursor-pointer shadow-soft"
-                  >
-                      {classes.length > 0 ? (
-                        classes.map(cls => (
-                          <option key={cls._id} value={cls._id}>{cls.name} - {cls.section}</option>
-                        ))
-                      ) : (
-                        <option value="">No Assigned Classes</option>
-                      )}
-                  </select>
-                  <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-brand-500 transition-colors" />
-               </div>
+         <div className="bg-white p-6 rounded-[32px] border border-slate-200 shadow-soft flex items-center gap-4 group hover:border-warning-200 transition-all">
+            <div className="w-12 h-12 bg-warning-light text-warning-dark rounded-2xl flex items-center justify-center group-hover:scale-110 transition-all shadow-sm">
+               <Calendar size={24} />
             </div>
-
-            <div className="lg:col-span-1 space-y-2">
-               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] px-1">Attendance Date</label>
-               <div className="relative group">
-                  <Calendar size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-brand-500 z-10" />
-                  <input 
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="w-full h-14 bg-white border border-surface-200 rounded-2xl pl-12 pr-6 text-sm font-bold text-gray-800 outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all cursor-pointer shadow-soft"
-                  />
-               </div>
+            <div>
+               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none mb-1">Pending Leaves</p>
+               <h4 className="text-xl font-medium text-gray-900  ">{stats.pendingLeave} Requests</h4>
             </div>
+         </div>
+      </div>
 
-            <div className="lg:col-span-1 space-y-2">
-               <label className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em] px-1">Participant Search</label>
-               <div className="h-14 bg-surface p-1 rounded-2xl border border-surface-200 flex shadow-soft">
-                  <div className="flex-1 px-4 flex items-center gap-3">
-                     <Search size={18} className="text-gray-400" />
-                     <input
-                        type="text"
-                        placeholder="Search student..."
+      <div className="bg-surface rounded-[32px] sm:rounded-[48px] shadow-soft border border-surface-200 overflow-hidden">
+        <div className="flex border-b border-surface-100 p-2 gap-2 bg-surface-50/50">
+          <button 
+            onClick={() => setActiveTab('attendance')}
+            className={`flex-1 py-3.5 px-6 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'attendance' ? 'bg-white text-brand-500 shadow-sm border border-brand-100' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <UserCheck size={16} /> Mark Attendance
+          </button>
+          <button 
+            onClick={() => setActiveTab('leave')}
+            className={`flex-1 py-3.5 px-6 rounded-2xl font-bold text-[10px] uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${activeTab === 'leave' ? 'bg-white text-brand-500 shadow-sm border border-brand-100' : 'text-slate-400 hover:text-slate-600'}`}
+          >
+            <Calendar size={16} /> Leave Management
+          </button>
+        </div>
+
+        <div className="p-4 sm:p-8">
+          {activeTab === 'attendance' ? (
+            <div className="space-y-6">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                 <div className="shrink-0">
+                    <h2 className="text-xl font-medium text-gray-900 leading-none mb-2">Classroom Registry</h2>
+                    <p className="text-xs text-slate-400 font-medium">Grade/Sections assigned to your institutional profile</p>
+                 </div>
+                 
+                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-grow justify-end max-w-4xl">
+                    <div className="relative flex-grow max-w-md">
+                      <Input 
+                        placeholder="Search student identity..." 
+                        icon={Search} 
+                        className="h-11 rounded-xl"
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="bg-transparent outline-none font-medium text-sm text-gray-900 w-full"
-                     />
-                  </div>
-               </div>
-            </div>
+                      />
+                    </div>
 
-            <div className="lg:col-span-1">
-               <Button variant="outline" className="w-full h-14 rounded-2xl flex items-center justify-center gap-2 font-bold text-[10px] uppercase tracking-widest text-slate-400 border-slate-200 cursor-not-allowed">
-                  <Filter size={18} /> Global Filters
-               </Button>
-            </div>
-         </div>
+                    <div className="relative min-w-[150px]">
+                      <Input 
+                        type="date"
+                        icon={Calendar}
+                        className="h-11 rounded-xl font-bold uppercase tracking-widest text-[10px]"
+                        value={attendanceDate}
+                        onChange={(e) => setAttendanceDate(e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="relative min-w-[180px]">
+                        <select 
+                          value={selectedClassId}
+                          onChange={(e) => setSelectedClassId(e.target.value)}
+                          className="w-full h-11 pl-10 pr-10 bg-slate-50 border border-slate-200 rounded-xl text-[10px] font-bold uppercase tracking-tight outline-none focus:bg-white focus:border-brand-500 transition-all appearance-none cursor-pointer font-sans"
+                        >
+                          {classes.map(c => (
+                            <option key={c._id} value={c._id}>{c.name} - {c.section}</option>
+                          ))}
+                        </select>
+                        <GraduationCap size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500" />
+                        <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+                    </div>
 
-         <div className="bg-white rounded-[40px] shadow-premium border border-surface-200 overflow-hidden">
-            <div className="p-6 border-b border-surface-100 flex items-center justify-between bg-surface-50/50">
-               <div className="flex items-center gap-3">
-                  <span className="text-[10px] font-bold text-gray-400 tracking-[0.2em] uppercase">Session:</span>
-                  <Badge variant="brand" className="px-4 py-1.5 font-bold uppercase tracking-wider text-[10px]">
-                     {selectedDate === new Date().toISOString().split('T')[0] ? 'Today' : 'Historical'} • {formatDisplayDate(selectedDate)}
-                  </Badge>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase mx-2">—</span>
-                  <div className="flex items-center gap-2">
-                     <div className="w-1.5 h-1.5 rounded-full bg-success"></div>
-                     <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Authorized Zone</span>
-                  </div>
-               </div>
-               <div className="flex items-center gap-2 text-slate-400">
-                  <Clock size={14} />
-                  <p className="text-[10px] font-bold uppercase tracking-widest">Auto-saving Enabled</p>
-               </div>
-            </div>
+                    <Button variant="outline" className="rounded-xl h-11 w-11 p-0 shrink-0 border-slate-200">
+                      <Filter size={18} className="mx-auto" />
+                    </Button>
+                 </div>
+              </div>
 
-            <div className="overflow-x-auto">
-               <table className="w-full text-left">
+              <div className="overflow-visible">
+                <table className="w-full text-left border-collapse">
                   <thead>
-                     <tr className="bg-white text-gray-400 text-[10px] font-bold uppercase tracking-widest border-b border-surface-100">
-                        <th className="px-8 py-6">Roll No.</th>
-                        <th className="px-6 py-6 font-bold">Student Participant</th>
-                        <th className="px-6 py-6 text-center">Attendance Status</th>
-                        <th className="px-8 py-6 text-right">Actions</th>
-                     </tr>
+                    <tr className="bg-surface-50 text-gray-400 text-[10px] font-bold tracking-[0.2em]">
+                      <th className="px-6 py-4">Student Participant</th>
+                      <th className="px-6 py-4">Admission Details</th>
+                      <th className="px-6 py-4">Identity Status</th>
+                      <th className="px-6 py-4">Attendance Status</th>
+                      <th className="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                     {filteredStudents.map((student) => (
+                      <tr key={student._id} className="group hover:bg-brand-50/20 transition-all cursor-pointer">
+                        <td className="px-6 py-5">
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm transition-all group-hover:bg-white group-hover:scale-110 shadow-sm border border-transparent group-hover:border-brand-100">
+                              {student.firstName.charAt(0)}
+                            </div>
+                            <div>
+                              <p className="font-medium text-gray-900 text-sm group-hover:text-brand-600 transition-colors uppercase tracking-tight leading-none mb-1">
+                                {student.firstName} {student.lastName}
+                              </p>
+                              <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">{student.personalEmail}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-6 py-5">
+                           <div className="flex flex-col gap-0.5">
+                              <p className="text-sm font-bold text-slate-700 uppercase tracking-tighter">{student.admissionNumber}</p>
+                              <p className="text-[10px] text-brand-500 font-bold uppercase tracking-widest">Enrolled: {new Date(student.enrolledDate).toLocaleDateString()}</p>
+                           </div>
+                        </td>
+                        <td className="px-6 py-5">
+                           <Badge variant="success" className="h-6 px-3 text-[9px] font-black uppercase">Verified</Badge>
+                        </td>
+                        <td className="px-6 py-5">
+                           <Badge variant={
+                             (markedStatus[student._id] || 'Pending') === 'Present' ? 'success' :
+                             (markedStatus[student._id] || 'Pending') === 'Absent' ? 'danger' :
+                             (markedStatus[student._id] || 'Pending') === 'Late' ? 'warning' : 'neutral'
+                           }>
+                             {(markedStatus[student._id] || 'Pending').toUpperCase()}
+                           </Badge>
+                        </td>
+                        <td className="px-6 py-5 text-right">
+                          <div className="flex items-center justify-end gap-2">
+                            <button 
+                              onClick={() => handleMark(student._id, 'Present')}
+                              className={`p-2 rounded-xl transition-all shadow-sm ${markedStatus[student._id] === 'Present' ? 'bg-success text-white' : 'bg-success/10 text-success-dark hover:bg-success hover:text-white border border-success/20'}`}
+                              title="Mark Present"
+                            >
+                              <UserCheck size={18} />
+                            </button>
+                            <button 
+                              onClick={() => handleMark(student._id, 'Absent')}
+                              className={`p-2 rounded-xl transition-all shadow-sm ${markedStatus[student._id] === 'Absent' ? 'bg-danger text-white' : 'bg-danger/10 text-danger-dark hover:bg-danger hover:text-white border border-danger/20'}`}
+                              title="Mark Absent"
+                            >
+                              <UserX size={18} />
+                            </button>
+                            <button 
+                              onClick={() => handleMark(student._id, 'Late')}
+                              className={`p-2 rounded-xl transition-all shadow-sm ${markedStatus[student._id] === 'Late' ? 'bg-warning text-white' : 'bg-warning/10 text-warning-dark hover:bg-warning hover:text-white border border-warning/20'}`}
+                              title="Mark Late"
+                            >
+                              <Clock3 size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+                <div>
+                  <h2 className="text-xl font-medium text-gray-900 leading-none mb-2">Institutional Leave Management</h2>
+                  <p className="text-xs text-slate-400 font-medium">Authorize and monitor student absence requests</p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 justify-end">
+                   <Button size="sm" variant="outline" className="rounded-xl h-10 w-10"><Search size={16}/></Button>
+                   <Button size="sm" variant="outline" className="rounded-xl h-10 w-10"><Filter size={16}/></Button>
+                </div>
+              </div>
+
+              <div className="overflow-visible">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-surface-50 text-gray-400 text-[10px] font-bold tracking-[0.2em]">
+                       <th className="px-6 py-4">Student Identity</th>
+                       <th className="px-6 py-4">Leave Category</th>
+                       <th className="px-6 py-4">Period Duration</th>
+                       <th className="px-6 py-4">Strategic Reason</th>
+                       <th className="px-6 py-4 text-right">Decision Status</th>
+                    </tr>
                   </thead>
                   <tbody className="divide-y divide-surface-100">
-                     {classes.length === 0 ? (
-                        <tr>
-                           <td colSpan={4} className="px-8 py-20 text-center">
-                              <div className="flex flex-col items-center gap-4 opacity-40">
-                                 <ShieldCheck size={48} className="text-slate-300" />
-                                 <p className="text-slate-500 font-bold uppercase tracking-widest text-[10px]">No Assigned Class/Sections Found</p>
-                              </div>
-                           </td>
-                        </tr>
-                     ) : filteredStudents.length > 0 ? (
-                        filteredStudents.map((student) => (
-                           <tr key={student._id} className="group hover:bg-brand-50/10 transition-all">
-                              <td className="px-8 py-6">
-                                 <span className="font-mono font-bold text-brand-600 bg-brand-50/50 px-3 py-1 rounded-lg text-xs">
-                                    {student.admissionNumber}
-                                 </span>
-                              </td>
-                              <td className="px-6 py-6">
-                                 <p className="font-bold text-gray-800 group-hover:text-brand-600 transition-colors text-sm">{student.firstName} {student.lastName}</p>
-                                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-0.5">{student.personalEmail || 'Regular Enrollment'}</p>
-                              </td>
-                              <td className="px-6 py-6">
-                                 <div className="flex justify-center gap-2">
-                                    <button 
-                                      onClick={() => handleStatusChange(student._id, 'Present')}
-                                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${student.status === 'Present' ? 'bg-success text-white ring-4 ring-success/10' : 'bg-surface-50 text-gray-400 hover:bg-success/10 hover:text-success hover:ring-4 hover:ring-success/5'}`}
-                                    >
-                                       <CheckCircle size={16} /> Present
+                    {leaveRequests.map(req => (
+                       <tr key={req._id} className="group hover:bg-brand-50/20 transition-all cursor-pointer">
+                          <td className="px-6 py-5">
+                             <div className="flex items-center gap-4">
+                               <div className="w-12 h-12 rounded-2xl bg-brand-100 flex items-center justify-center text-brand-600 font-bold text-sm transition-all group-hover:bg-white group-hover:scale-110 shadow-sm border border-transparent group-hover:border-brand-100">
+                                 {req.student?.firstName?.charAt(0)}
+                               </div>
+                               <div>
+                                 <p className="font-medium text-gray-900 group-hover:text-brand-600 transition-colors uppercase tracking-tight text-sm leading-none mb-1">{req.student?.firstName} {req.student?.lastName}</p>
+                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{req.student?.admissionNumber}</p>
+                               </div>
+                             </div>
+                          </td>
+                          <td className="px-6 py-5 text-xs font-bold text-slate-600 uppercase tracking-widest italic">{req.type}</td>
+                          <td className="px-6 py-5 text-xs font-medium text-slate-400">
+                            {new Date(req.startDate).toLocaleDateString()} - {new Date(req.endDate).toLocaleDateString()}
+                          </td>
+                          <td className="px-6 py-5 text-xs font-medium text-slate-500 italic max-w-xs truncate">"{req.reason}"</td>
+                          <td className="px-6 py-5 text-right flex items-center justify-end gap-3">
+                             <Badge variant={req.status === 'Approved' ? 'success' : req.status === 'Rejected' ? 'danger' : 'warning'} className="font-black h-7 px-4 tracking-tighter">
+                                {req.status.toUpperCase()}
+                             </Badge>
+                             <div className="flex gap-1">
+                                {req.status === 'Pending' && (
+                                  <>
+                                    <button onClick={() => updateLeave(req._id, 'Approved')} className="p-2 text-success hover:bg-success/10 rounded-xl transition-all border border-transparent hover:border-success/20">
+                                      <CheckCircle2 size={18} />
                                     </button>
-                                    <button 
-                                      onClick={() => handleStatusChange(student._id, 'Absent')}
-                                      className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm ${student.status === 'Absent' ? 'bg-danger text-white ring-4 ring-danger/10' : 'bg-surface-50 text-gray-400 hover:bg-danger/10 hover:text-danger hover:ring-4 hover:ring-danger/5'}`}
-                                    >
-                                       <XCircle size={16} /> Absent
+                                    <button onClick={() => updateLeave(req._id, 'Rejected')} className="p-2 text-danger hover:bg-danger/10 rounded-xl transition-all border border-transparent hover:border-danger/20">
+                                      <XCircle size={18} />
                                     </button>
-                                 </div>
-                              </td>
-                              <td className="px-8 py-6 text-right">
-                                 <div className="flex items-center justify-end gap-3">
-                                    <button
-                                       onClick={() => setIsModalOpen(true)}
-                                       className="text-[10px] font-bold text-brand-500 uppercase tracking-widest hover:underline hover:text-brand-600 transition-all"
-                                    >
-                                       Add Note
-                                    </button>
-                                    <button className="p-2 text-slate-300 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all">
-                                       <MoreVertical size={18} />
-                                    </button>
-                                 </div>
-                              </td>
-                           </tr>
-                        ))
-                     ) : (
-                        <tr>
-                           <td colSpan={4} className="px-8 py-20 text-center text-slate-400 italic">No students found in this section.</td>
-                        </tr>
-                     )}
+                                  </>
+                                )}
+                             </div>
+                          </td>
+                       </tr>
+                    ))}
                   </tbody>
-               </table>
+                </table>
+              </div>
             </div>
-
-            <div className="p-10 bg-surface-50/50 border-t border-surface-100 flex flex-col sm:flex-row justify-between items-center gap-6">
-               <div className="flex flex-col gap-1">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Signatory Authority</p>
-                  <p className="text-sm font-bold text-slate-700">Authorized Zone — <span className="font-medium text-slate-400">{classes.find(c => c._id === selectedClassId)?.name || '---'} {classes.find(c => c._id === selectedClassId)?.section || ''}</span></p>
-               </div>
-               <Button 
-                 onClick={handleSubmit}
-                 disabled={submitting || classes.length === 0}
-                 className="h-14 px-12 shadow-premium bg-brand-500 text-white hover:bg-brand-600 rounded-2xl transform transition-all active:scale-95 disabled:bg-slate-300"
-               >
-                  {submitting ? <Loader2 className="animate-spin" /> : <><Save size={18} className="mr-2" /> Sync Records</>}
-               </Button>
-            </div>
-         </div>
-
-         <Modal
-            isOpen={isModalOpen}
-            onClose={() => setIsModalOpen(false)}
-            title="Behavioral Observation"
-            description="Log professional behavioral notes and engagement levels for students."
-            maxWidth="xl"
-         >
-            <form className="space-y-6" onSubmit={handleAddBehavior}>
-               <div className="space-y-6">
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Select Student</label>
-                     <select 
-                       name="studentId"
-                       required
-                       className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer"
-                     >
-                        {students.map(s => <option key={s._id} value={s._id}>{s.firstName} {s.lastName} ({s.admissionNumber})</option>)}
-                     </select>
-                  </div>
-
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Engagement Metric</label>
-                     <div className="relative group">
-                        <select 
-                          name="engagement"
-                          className="w-full h-12 px-4 bg-slate-50 border border-slate-200 rounded-xl font-bold text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 focus:bg-white transition-all appearance-none cursor-pointer pr-10"
-                        >
-                           <option>Exceptional Participation</option>
-                           <option>Active & Focused</option>
-                           <option>Moderate Attention</option>
-                           <option>Requires Encouragement</option>
-                           <option>Distracted / Off-task</option>
-                           <option>Unresponsive</option>
-                        </select>
-                        <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none group-hover:text-brand-500 transition-colors" />
-                     </div>
-                  </div>
-
-                  <div className="space-y-2">
-                     <label className="text-[10px] font-bold text-gray-500 uppercase tracking-widest px-1">Observation Details</label>
-                     <textarea
-                        name="observation"
-                        className="w-full h-32 p-4 bg-slate-50 border border-slate-200 rounded-2xl font-medium text-sm outline-none focus:ring-4 focus:ring-brand-500/10 focus:border-brand-500 transition-all resize-none"
-                        placeholder="Provide specific details about the behavior (e.g., Contributed original insights during the Algebra proofs section...)"
-                        required
-                     ></textarea>
-                  </div>
-               </div>
-
-               <div className="flex justify-end gap-3 pt-4">
-                  <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl h-11 px-6">Discard</Button>
-                  <Button type="submit" shadow-premium className="rounded-xl h-11 px-8">Save Observation</Button>
-               </div>
-            </form>
-         </Modal>
+          )}
+        </div>
       </div>
-   );
+    </div>
+  );
 };
 
-export default Attendance;
+export default TutorAttendance;

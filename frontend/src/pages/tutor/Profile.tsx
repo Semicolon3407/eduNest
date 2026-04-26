@@ -165,7 +165,7 @@ const TutorProfile: React.FC = () => {
                    <InfoItem icon={Mail} label="Institutional Email" value={profileData?.personalEmail} />
                    <InfoItem icon={Phone} label="Contact Number" value={profileData?.phone} />
                    <InfoItem icon={Briefcase} label="Designation" value={profileData?.designation} />
-                   <InfoItem icon={Shield} label="Security Clearance" value="Academic Staff" />
+                   <InfoItem icon={Shield} label="Security Clearance" value={profileData?.user?.role === 'TUTOR' ? 'Academic Faculty' : 'Staff'} />
                    <InfoItem icon={Calendar} label="Branch Node" value={profileData?.branch?.name} />
                 </div>
               </div>
@@ -190,11 +190,11 @@ const TutorProfile: React.FC = () => {
                 <div className="space-y-6">
                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">System Status</p>
-                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2">Authenticated</p>
+                      <p className="text-sm font-bold text-slate-800 uppercase tracking-tight leading-none mb-2">{profileData?.status === 'Active' ? 'Verified' : 'Pending'}</p>
                    </div>
                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Network Permissions</p>
-                      <p className="text-sm font-bold text-brand-600 uppercase tracking-tight leading-none mb-2 font-display">Faculty Access</p>
+                      <p className="text-sm font-bold text-brand-600 uppercase tracking-tight leading-none mb-2 font-display">{profileData?.user?.role?.replace('_', ' ')} Access</p>
                    </div>
                 </div>
               </div>

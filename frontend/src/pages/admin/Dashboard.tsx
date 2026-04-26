@@ -38,10 +38,10 @@ const AdminDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="New Admissions" value={stats?.studentCount?.toString() || "0"} icon={UserPlus} trend={{ value: '+14%', isUp: true }} color="brand" />
+        <StatCard title="New Admissions" value={stats?.studentCount?.toString() || "0"} icon={UserPlus} trend={{ value: stats?.admissionTrend || '0%', isUp: (parseInt(stats?.admissionTrend) || 0) >= 0 }} color="brand" />
         <StatCard title="Active Classes" value={stats?.activeClasses?.toString() || "0"} icon={BookOpen} color="success" />
-        <StatCard title="Pending Fees" value={stats?.fees?.find((f: any) => f._id === 'Pending')?.total?.toLocaleString() || "0"} icon={CreditCard} trend={{ value: '+4.2%', isUp: false }} color="danger" />
-        <StatCard title="Cleared Fees" value={stats?.fees?.find((f: any) => f._id === 'Paid')?.total?.toLocaleString() || "0"} icon={CreditCard} color="success" />
+        <StatCard title="Pending Fees" value={`Rs. ${(stats?.fees?.filter((f: any) => f._id === 'Pending' || f._id === 'Overdue').reduce((acc: number, f: any) => acc + f.total, 0) || 0).toLocaleString()}`} icon={CreditCard} color="danger" />
+        <StatCard title="Cleared Fees" value={`Rs. ${(stats?.fees?.find((f: any) => f._id === 'Paid')?.total || 0).toLocaleString()}`} icon={CreditCard} color="success" />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:p-8">
@@ -99,20 +99,18 @@ const AdminDashboard: React.FC = () => {
           <h2 className="text-xl font-medium text-gray-900 mb-6">Fee Collections</h2>
           <div className="flex-1 grid grid-cols-2 gap-4">
             <div className="p-6 rounded-2xl bg-gradient-to-br from-success/10 to-transparent border border-success/20">
-              <div className="flex justify-between items-start">
-                <div className="p-2 bg-success text-white rounded-lg"><ArrowUpRight size={20} /></div>
-                <span className="text-xs font-medium text-success-dark">+18.5%</span>
-              </div>
+               <div className="flex justify-between items-start">
+                 <div className="p-2 bg-success text-white rounded-lg"><ArrowUpRight size={20} /></div>
+               </div>
               <p className="mt-4 text-sm text-gray-500 font-medium  ">Collected Today</p>
-              <h4 className="text-2xl font-medium text-gray-900">Rs. 12,450</h4>
+              <h4 className="text-2xl font-medium text-gray-900">Rs. {(stats?.collectedToday || 0).toLocaleString()}</h4>
             </div>
             <div className="p-6 rounded-2xl bg-gradient-to-br from-danger/10 to-transparent border border-danger/20">
-              <div className="flex justify-between items-start">
-                <div className="p-2 bg-danger text-white rounded-lg"><ArrowDownRight size={20} /></div>
-                <span className="text-xs font-medium text-danger-dark">+2.1%</span>
-              </div>
+               <div className="flex justify-between items-start">
+                 <div className="p-2 bg-danger text-white rounded-lg"><ArrowDownRight size={20} /></div>
+               </div>
               <p className="mt-4 text-sm text-gray-500 font-medium  ">Pending Dues</p>
-              <h4 className="text-2xl font-medium text-gray-900">Rs. 8,200</h4>
+              <h4 className="text-2xl font-medium text-gray-900">Rs. {(stats?.fees?.filter((f: any) => f._id === 'Pending' || f._id === 'Overdue').reduce((acc: number, f: any) => acc + f.total, 0) || 0).toLocaleString()}</h4>
             </div>
           </div>
           <div className="mt-6 pt-6 border-t border-surface-100 space-y-3">

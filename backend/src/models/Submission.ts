@@ -12,6 +12,7 @@ export interface ISubmission extends Document {
   status: 'Submitted' | 'Graded' | 'Late';
   grade?: string;
   feedback?: string;
+  remarks?: string;
 }
 
 const submissionSchema = new Schema<ISubmission>({
@@ -25,7 +26,8 @@ const submissionSchema = new Schema<ISubmission>({
   submittedAt: { type: Date, default: Date.now },
   status: { type: String, enum: ['Submitted', 'Graded', 'Late'], default: 'Submitted' },
   grade: { type: String },
-  feedback: { type: String }
+  feedback: { type: String },
+  remarks: { type: String }
 }, { timestamps: true });
 
 export default mongoose.model<ISubmission>('Submission', submissionSchema);
