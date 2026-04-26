@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1/tenant';
+const API_URL_PAYMENT = (import.meta.env.VITE_API_URL || 'http://localhost:5001/api/v1') + '/payment';
 
 // Add interceptor to include token in requests
 const getAuthHeaders = () => {
@@ -73,6 +74,11 @@ export const tenantService = {
 
   buyPlan: async (subscriptionId: string) => {
     const response = await axios.post(`${API_URL}/buy-plan`, { subscriptionId }, getAuthHeaders());
+    return response.data;
+  },
+
+  createPaymentIntent: async (subscriptionId: string) => {
+    const response = await axios.post(`${API_URL_PAYMENT}/stripe/create-intent`, { subscriptionId }, getAuthHeaders());
     return response.data;
   }
 };

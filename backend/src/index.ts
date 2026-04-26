@@ -2,6 +2,10 @@ import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
+
+// Load env vars immediately
+dotenv.config();
+
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import morgan from 'morgan';
@@ -23,9 +27,7 @@ import studentRoutes from './routes/studentRoutes';
 import chatRoutes from './routes/chatRoutes';
 import paymentRoutes from './routes/paymentRoutes';
 import uploadRoutes from './routes/uploadRoutes';
-
-// Load env vars
-dotenv.config();
+import { handleStripeWebhook } from './controllers/stripeController';
 
 // Connect to database
 connectDB();
@@ -37,6 +39,9 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 const app = express();
+
+// Stripe Webhook (Must be before express.json() for raw body)
+app.post('/api/v1/payment/stripe/webhook', express.raw({ type: 'application/json' }), handleStripeWebhook);
 
 // Body parser
 app.use(express.json());

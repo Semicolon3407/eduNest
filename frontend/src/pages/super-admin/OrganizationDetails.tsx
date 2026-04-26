@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { 
   Building2, Users, UserRound, GraduationCap, Briefcase, ShieldCheck, 
-  ArrowLeft, MapPin, Calendar, Mail, Phone, Clock, Ban, CheckCircle2
+  ArrowLeft, MapPin, Calendar, Mail, Phone, Clock, Ban, CheckCircle2, CreditCard
 } from 'lucide-react';
 import StatCard from '../../components/dashboard/StatCard';
 import Button from '../../components/ui/Button';
@@ -200,6 +200,42 @@ const OrganizationDetails: React.FC = () => {
             </div>
           </div>
 
+          {/* Subscription Plan Card */}
+          <div className="bg-surface rounded-3xl p-8 shadow-soft border border-surface-200">
+            <h2 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+              <CreditCard size={20} className="text-brand-500" /> Subscription Plan
+            </h2>
+            {org.subscription ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-brand-50 rounded-2xl border border-brand-100">
+                  <div>
+                    <p className="text-xs font-bold text-brand-400 uppercase tracking-widest">Active Plan</p>
+                    <p className="text-xl font-bold text-brand-700 mt-1">{org.subscription.name}</p>
+                  </div>
+                  <span className="px-3 py-1 rounded-full bg-brand-100 text-brand-700 text-xs font-bold uppercase tracking-widest">Active</span>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-surface-50 rounded-xl">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Billing Cycle</p>
+                    <p className="text-sm font-bold text-gray-900 mt-1">{org.subscription.duration}</p>
+                  </div>
+                  <div className="p-4 bg-surface-50 rounded-xl">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Price</p>
+                    <p className="text-sm font-bold text-gray-900 mt-1">Rs {org.subscription.price?.toLocaleString()}</p>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="w-12 h-12 bg-surface-50 rounded-2xl flex items-center justify-center mb-4">
+                  <CreditCard size={24} className="text-gray-300" />
+                </div>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">No Plan Assigned</p>
+                <p className="text-xs text-gray-400 mt-1">This organization has not purchased a subscription plan yet.</p>
+              </div>
+            )}
+          </div>
+
           <div className="bg-surface rounded-3xl p-8 shadow-soft border border-surface-200">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Quick Statistics</h2>
             <p className="text-sm text-gray-500 mb-6">Detailed breakdown of institutional resources.</p>
@@ -207,6 +243,12 @@ const OrganizationDetails: React.FC = () => {
               <div className="flex items-center justify-between p-4 bg-surface-50 rounded-xl">
                  <span className="text-sm font-medium text-gray-600">Total Branches Created</span>
                  <span className="font-bold text-gray-900">{org.branchCount || 0}</span>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-surface-50 rounded-xl">
+                 <span className="text-sm font-medium text-gray-600">Subscription Status</span>
+                 <span className={`font-bold text-xs uppercase tracking-widest ${org.subscription ? 'text-success' : 'text-gray-400'}`}>
+                   {org.subscription ? org.subscription.name : 'No Plan'}
+                 </span>
               </div>
               <div className="flex items-center justify-between p-4 bg-surface-50 rounded-xl">
                  <span className="text-sm font-medium text-gray-600">Staff Capacity</span>

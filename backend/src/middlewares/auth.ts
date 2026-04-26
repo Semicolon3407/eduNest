@@ -20,6 +20,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
 
   // Make sure token exists
   if (!token) {
+    console.log('Auth Error: No token provided');
     return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
   }
 
@@ -30,6 +31,7 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     req.user = await User.findById(decoded.id);
 
     if (!req.user) {
+      console.log('Auth Error: User not found for ID', decoded.id);
       return res.status(401).json({ success: false, message: 'User not found' });
     }
 
@@ -43,7 +45,8 @@ export const protect = async (req: AuthRequest, res: Response, next: NextFunctio
     }
 
     next();
-  } catch (err) {
+  } catch (err: any) {
+    console.log('Auth Error: JWT Verification failed', err.message);
     return res.status(401).json({ success: false, message: 'Not authorized to access this route' });
   }
 };

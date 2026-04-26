@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
+import Modal from '../../components/ui/Modal';
 import SecurityTab from '../../components/profile/SecurityTab';
 import { 
   Building2, Globe, Shield, 
   Edit2, Loader2, CreditCard, CheckCircle2, DollarSign, Calendar
 } from 'lucide-react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements } from '@stripe/react-stripe-js';
+import StripePaymentForm from '../../components/profile/StripePaymentForm';
 import { tenantService } from '../../services/tenantService';
 import toast from 'react-hot-toast';
+
+const stripePromise = loadStripe('pk_test_51SwPjgHiNWGpwACsRbwV9NSNTvU2QRQqemUXNBeAb3dTfCeLYd3rM2Kzef5jxRTeY85fy2dbkpHxqCmkCrATNfy200j7edhMu4');
 
 const OrganizationProfile: React.FC = () => {
   const [loading, setLoading] = useState(true);
@@ -15,6 +21,8 @@ const OrganizationProfile: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'security' | 'buy_plan'>('overview');
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [isBuying, setIsBuying] = useState<string | null>(null);
+  const [paymentIntentData, setPaymentIntentData] = useState<any>(null);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -56,6 +64,18 @@ const OrganizationProfile: React.FC = () => {
   useEffect(() => {
     fetchData();
     fetchSubscriptions();
+
+    // Check for payment status in URL
+    const params = new URLSearchParams(window.location.search);
+    const paymentStatus = params.get('payment');
+    if (paymentStatus === 'success') {
+      toast.success('Subscription upgraded successfully! Your plan is being activated.');
+      // Clear params without refreshing
+      window.history.replaceState({}, '', window.location.pathname);
+    } else if (paymentStatus === 'cancel') {
+      toast.error('Payment cancelled. Your subscription was not changed.');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, []);
 
   const handleUpdate = async () => {
@@ -75,16 +95,32 @@ const OrganizationProfile: React.FC = () => {
   const handleBuyPlan = async (id: string) => {
     try {
       setIsBuying(id);
-      const response = await tenantService.buyPlan(id);
+      const response = await tenantService.createPaymentIntent(id);
       if (response.success) {
-        toast.success('Subscription plan purchased successfully!');
-        fetchData(); // Refresh profile to show new plan
+        // Store subscriptionId so we can update DB directly after payment
+        setPaymentIntentData({ ...response, subscriptionId: id });
+        setIsPaymentModalOpen(true);
       }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to purchase plan');
+      toast.error(error.response?.data?.message || 'Failed to initiate payment');
     } finally {
       setIsBuying(null);
     }
+  };
+
+  const handlePaymentSuccess = async () => {
+    // Directly update DB subscription (webhooks don't fire in local dev)
+    if (paymentIntentData?.subscriptionId) {
+      try {
+        await tenantService.buyPlan(paymentIntentData.subscriptionId);
+      } catch (err) {
+        console.error('Failed to update subscription after payment:', err);
+      }
+    }
+    setIsPaymentModalOpen(false);
+    setPaymentIntentData(null);
+    fetchData();
+    toast.success('Subscription activated successfully!');
   };
 
   if (loading) {
@@ -377,6 +413,41 @@ const OrganizationProfile: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Stripe Payment Modal */}
+      {paymentIntentData && (
+        <Modal
+          isOpen={isPaymentModalOpen}
+          onClose={() => setIsPaymentModalOpen(false)}
+          title="Complete Subscription"
+          description={`Securely finalize your upgrade to the ${paymentIntentData.subscriptionName} plan.`}
+          maxWidth="xl"
+        >
+          <Elements 
+            stripe={stripePromise} 
+            options={{ 
+              clientSecret: paymentIntentData.clientSecret,
+              appearance: {
+                theme: 'stripe',
+                variables: {
+                  colorPrimary: '#4f46e5',
+                  borderRadius: '12px'
+                }
+              }
+            }}
+          >
+            <StripePaymentForm 
+              subscriptionName={paymentIntentData.subscriptionName}
+              amount={paymentIntentData.amount}
+              onSuccess={handlePaymentSuccess}
+              onCancel={() => {
+                setIsPaymentModalOpen(false);
+                setPaymentIntentData(null);
+              }}
+            />
+          </Elements>
+        </Modal>
+      )}
     </div>
   );
 };
