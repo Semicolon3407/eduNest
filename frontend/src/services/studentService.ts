@@ -75,8 +75,8 @@ export const getTimetable = async () => {
   return response.data;
 };
 
-export const initiateEsewaPayment = async (amount: number, feeRecordId?: string) => {
-  const response = await api.post('/payment/esewa/initiate', { amount, feeRecordId });
+export const initiateEsewaPayment = async (amount: number, feeRecordId?: string, description?: string) => {
+  const response = await api.post('/payment/esewa/initiate', { amount, feeRecordId, description });
   return response.data;
 };
 

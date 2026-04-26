@@ -158,12 +158,12 @@ export const getFeeRecords = async (req: AuthRequest, res: Response) => {
 
     feeStructures.forEach(f => {
       if (f.frequency === 'Monthly') {
-        // Show all 12 months but mark past/present ones as due
+        // Show only current and past months as pending
         ACADEMIC_MONTHS.forEach((month, idx) => {
           const desc = `${f.name} - ${month}`;
           if (!paidDescriptions.includes(desc)) {
             const existingPending = records.find(r => r.description === desc);
-            if (!existingPending) {
+            if (!existingPending && idx <= currentIndex) {
               const date = new Date();
               const year = date.getFullYear();
               const virtualDate = new Date(year, 3 + idx, 15); 
@@ -173,7 +173,7 @@ export const getFeeRecords = async (req: AuthRequest, res: Response) => {
                 description: desc,
                 amount: f.amount,
                 date: virtualDate,
-                status: idx <= currentIndex ? 'Pending' : 'Upcoming',
+                status: 'Pending',
                 method: '-',
                 category: f.category,
                 frequency: 'Monthly'
@@ -209,7 +209,22 @@ export const getFeeRecords = async (req: AuthRequest, res: Response) => {
 
 export const getAnnouncements = async (req: AuthRequest, res: Response) => {
   try {
-    const announcements = await Announcement.find({ organization: req.user.organization, category: { $in: ['STUDENT', 'ALL'] } }).sort('-date');
+    const student = await Student.findOne({ user: req.user._id });
+    
+    const query: any = {
+      organization: req.user.organization,
+      category: { $in: ['STUDENT', 'ALL'] }
+    };
+    
+    if (student) {
+       query.$or = [
+         { class: student.class }, // Announcements specifically for this student's class
+         { class: { $exists: false } }, // Legacy announcements without a class field
+         { class: null, branch: student.branch } // Announcements for the whole branch
+       ];
+    }
+
+    const announcements = await Announcement.find(query).sort('-date');
     res.status(200).json({ success: true, data: announcements });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

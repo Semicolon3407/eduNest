@@ -24,7 +24,7 @@ const generateSignature = (message: string): string => {
 
 export const initiateEsewaPayment = async (req: AuthRequest, res: Response) => {
   try {
-    const { amount, feeRecordId } = req.body;
+    const { amount, feeRecordId, description } = req.body;
     const student = await Student.findOne({ user: req.user._id });
     if (!student) return res.status(404).json({ success: false, message: 'Student not found' });
 
@@ -48,7 +48,7 @@ export const initiateEsewaPayment = async (req: AuthRequest, res: Response) => {
       transactionUuid,
       signature,
       organization: req.user.organization,
-      metadata: !isRealRecord ? { virtualFeeId: feeRecordId } : undefined
+      metadata: !isRealRecord ? { virtualFeeId: feeRecordId, description } : undefined
     });
 
     if (isRealRecord) {
@@ -126,13 +126,12 @@ export const verifyEsewaPayment = async (req: AuthRequest, res: Response) => {
       } else {
         // Populate student to get branch
         const populatedStudent = await Student.findById(transaction.student).populate('branch').populate('class');
-        const description = transaction.metadata?.virtualFeeId 
-          ? `Monthly Fee (eSewa) - ${transaction.metadata.virtualFeeId}`
-          : `eSewa Payment - Ref: ${transaction_code}`;
+        const descriptionText = transaction.metadata?.description 
+          || (transaction.metadata?.virtualFeeId ? `Monthly Fee (eSewa) - ${transaction.metadata.virtualFeeId}` : `eSewa Payment - Ref: ${transaction_code}`);
 
         const record = await FeeRecord.create({
           student: transaction.student,
-          description,
+          description: descriptionText,
           amount: transaction.amount,
           status: 'Paid',
           method: 'eSewa',
@@ -198,9 +197,11 @@ export const checkEsewaStatus = async (req: AuthRequest, res: Response) => {
           const populatedStudent = await Student.findById(transaction.student).populate('branch').populate('class');
           const existingRecord = await FeeRecord.findOne({ transactionId: data.ref_id });
           if (!existingRecord) {
+            const descriptionText = transaction.metadata?.description 
+              || `eSewa Payment - Ref: ${data.ref_id}`;
             const record = await FeeRecord.create({
               student: transaction.student,
-              description: `eSewa Payment - Ref: ${data.ref_id}`,
+              description: descriptionText,
               amount: transaction.amount,
               status: 'Paid',
               method: 'eSewa',

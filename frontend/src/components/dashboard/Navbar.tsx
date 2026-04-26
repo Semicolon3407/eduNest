@@ -37,23 +37,40 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
   }).format(new Date());
 
   const fetchNotifications = useCallback(async () => {
-    if (!isSuperAdmin && !isOrgAdmin) return;
+    if (!isSuperAdmin && !isOrgAdmin && user?.role !== 'STUDENT') return;
     try {
       setIsLoading(true);
-      const res = isSuperAdmin 
-        ? await notificationService.getNotifications()
-        : await tenantService.getNotifications();
-        
-      if (res.success) {
-        setNotifications(res.data);
-        setUnreadCount(res.unreadCount);
+      if (user?.role === 'STUDENT') {
+        const { getAnnouncements } = await import('../../services/studentService');
+        const res = await getAnnouncements();
+        if (res.success) {
+          const mapped = res.data.map((a: any) => ({
+            _id: a._id,
+            title: a.title,
+            message: a.content,
+            type: 'GENERAL',
+            createdAt: a.date || a.createdAt,
+            isRead: false
+          }));
+          setNotifications(mapped);
+          setUnreadCount(mapped.length);
+        }
+      } else {
+        const res = isSuperAdmin 
+          ? await notificationService.getNotifications()
+          : await tenantService.getNotifications();
+          
+        if (res.success) {
+          setNotifications(res.data);
+          setUnreadCount(res.unreadCount);
+        }
       }
     } catch (err) {
       // Silent fail — don't block UI
     } finally {
       setIsLoading(false);
     }
-  }, [isSuperAdmin, isOrgAdmin]);
+  }, [isSuperAdmin, isOrgAdmin, user?.role]);
 
   useEffect(() => {
     fetchNotifications();
@@ -157,8 +174,8 @@ const Navbar: React.FC<NavbarProps> = ({ onMenuClick }) => {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-4">
-        {/* Notification Bell — only for SUPER_ADMIN or ORGANIZATION */}
-        {(isSuperAdmin || isOrgAdmin) ? (
+        {/* Notification Bell */}
+        {(isSuperAdmin || isOrgAdmin || user?.role === 'STUDENT') ? (
           <div className="relative" ref={dropdownRef}>
             <button
               id="notification-bell"

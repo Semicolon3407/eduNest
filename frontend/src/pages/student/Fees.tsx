@@ -32,6 +32,7 @@ const StudentFees: React.FC = () => {
   const handlePayNow = async (record?: any) => {
     const amount = record ? record.amount : totalOutstanding;
     const feeRecordId = record?._id;
+    const description = record ? record.description : 'Outstanding Dues';
 
     if (amount <= 0) {
       toast.error('No outstanding amount to pay.');
@@ -40,8 +41,12 @@ const StudentFees: React.FC = () => {
 
     if (paymentMethod === 'esewa') {
       try {
-        const res = await initiateEsewaPayment(amount, feeRecordId);
+        const res = await initiateEsewaPayment(amount, feeRecordId, description);
         if (res.success) {
+          // Store for rescuing buggy eSewa redirects
+          localStorage.setItem('pending_esewa_uuid', res.data.transaction_uuid);
+          localStorage.setItem('pending_esewa_amount', res.data.total_amount);
+
           // Create and submit eSewa form
           const form = document.createElement('form');
           form.setAttribute('method', 'POST');

@@ -17,6 +17,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import Admissions from './pages/admin/Admissions';
 import Fees from './pages/admin/Fees';
 import Classes from './pages/admin/Classes';
+import ExamRoutines from './pages/admin/ExamRoutines';
 import StudentSchedules from './pages/admin/StudentSchedules';
 import TutorSchedules from './pages/admin/TutorSchedules';
 import OrganizationDashboard from './pages/organization/Dashboard';
@@ -128,6 +129,7 @@ function App() {
           <Route path="fees" element={<Fees />} />
           <Route path="fee-collection" element={<FeeCollection />} />
           <Route path="classes" element={<Classes />} />
+          <Route path="exam-routines" element={<ExamRoutines />} />
           <Route path="student-schedules" element={<StudentSchedules />} />
           <Route path="tutor-schedules" element={<TutorSchedules />} />
           <Route path="profile" element={<AdminProfile />} />

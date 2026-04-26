@@ -3,7 +3,7 @@ import {
   getBranches, addBranch, updateBranch, deleteBranch,
   getStaff, onboardStaff, updateStaff, deleteStaff,
   getOrganizationProfile, updateOrganizationProfile,
-  buyPlan, recalculateDates
+  buyPlan, recalculateDates, getDashboardStats
 } from '../controllers/tenantController';
 import { getSubscriptions } from '../controllers/subscriptionController';
 import {
@@ -22,6 +22,9 @@ const router = express.Router();
 // All routes are protected and require ORGANIZATION or ADMIN role
 router.use(protect);
 router.use(authorize('ORGANIZATION', 'ADMIN'));
+
+// Dashboard Route
+router.get('/dashboard', getDashboardStats);
 
 // Branch Routes
 router.route('/branches')

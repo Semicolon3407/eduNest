@@ -372,40 +372,14 @@ const Admissions: React.FC = () => {
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5 focus-within:z-10 group">
-                <label className="text-xs font-medium text-gray-400 px-1 uppercase tracking-tight">Grade / Class</label>
-                <div className="relative">
-                  <select 
-                    name="classId" 
-                    value={formData.classId} 
-                    onChange={handleInputChange}
-                    className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-10 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer"
-                    required
-                  >
-                    <option value="">Select Class</option>
-                    {classes.map(c => (
-                      <option key={c._id} value={c._id}>{c.name} - {c.section}</option>
-                    ))}
-                  </select>
-                  <BookOpen size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                </div>
-              </div>
-              <Input label="Emergency Phone" name="emergencyContact" value={formData.emergencyContact} onChange={handleInputChange} icon={Phone} placeholder="+1 (555) 000-0000" required />
-           </div>
-
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input label="Personal Email" name="personalEmail" value={formData.personalEmail} onChange={handleInputChange} icon={Mail} placeholder="personal@email.com" type="email" />
-              <Input label="Date of Birth" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="YYYY-MM-DD" type="date" required />
-           </div>
-
-           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-1.5 focus-within:z-10 group">
                 <label className="text-xs font-medium text-gray-400 px-1 uppercase tracking-tight">Target Branch</label>
                 <div className="relative">
                   <select 
                     name="branchId" 
                     value={formData.branchId} 
-                    onChange={handleInputChange}
+                    onChange={(e) => {
+                      setFormData(prev => ({ ...prev, branchId: e.target.value, classId: '' }));
+                    }}
                     className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-10 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer"
                     required
                   >
@@ -418,6 +392,39 @@ const Admissions: React.FC = () => {
                   <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
                 </div>
               </div>
+
+              <div className="space-y-1.5 focus-within:z-10 group">
+                <label className="text-xs font-medium text-gray-400 px-1 uppercase tracking-tight">Grade / Class</label>
+                <div className="relative">
+                  <select 
+                    name="classId" 
+                    value={formData.classId} 
+                    onChange={handleInputChange}
+                    className="w-full bg-surface-50 border border-surface-200 rounded-2xl py-[13px] px-10 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500/50 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    required
+                    disabled={!formData.branchId}
+                  >
+                    <option value="">{formData.branchId ? "Select Class" : "Select Branch First"}</option>
+                    {classes
+                      .filter(c => c.branch === formData.branchId || c.branch?._id === formData.branchId)
+                      .map(c => (
+                        <option key={c._id} value={c._id}>{c.name} - {c.section}</option>
+                      ))
+                    }
+                  </select>
+                  <BookOpen size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <ChevronDown size={14} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input label="Emergency Phone" name="emergencyContact" value={formData.emergencyContact} onChange={handleInputChange} icon={Phone} placeholder="+1 (555) 000-0000" required />
+              <Input label="Personal Email" name="personalEmail" value={formData.personalEmail} onChange={handleInputChange} icon={Mail} placeholder="personal@email.com" type="email" />
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input label="Date of Birth" name="dob" value={formData.dob} onChange={handleInputChange} placeholder="YYYY-MM-DD" type="date" required />
               <Input 
                 label="Initial Password" 
                 name="password" 
@@ -425,7 +432,8 @@ const Admissions: React.FC = () => {
                 value={formData.password} 
                 onChange={handleInputChange} 
                 icon={Shield} 
-                placeholder="Leave blank to auto-generate" 
+                placeholder={editingStudentId ? "Leave blank to keep unchanged" : "Enter initial password"}
+                required={!editingStudentId}
               />
            </div>
 

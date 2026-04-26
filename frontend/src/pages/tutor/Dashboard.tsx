@@ -1,23 +1,45 @@
 import React, { useEffect, useState } from 'react';
 import StatCard from '../../components/dashboard/StatCard';
-import { ClipboardList, Trophy, MessageSquare, Bell, ArrowRight, User, Loader2 } from 'lucide-react';
+import { ClipboardList, Trophy, MessageSquare, Bell, ArrowRight, User, Loader2, Megaphone } from 'lucide-react';
 import { tutorService } from '../../services/tutorService';
+import { tenantService } from '../../services/tenantService';
 import { cn } from '../../utils/cn';
+import Button from '../../components/ui/Button';
+import Modal from '../../components/ui/Modal';
+import Input from '../../components/ui/Input';
+import toast from 'react-hot-toast';
 
 const TutorDashboard: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
   const [schedule, setSchedule] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Announcement State
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [classes, setClasses] = useState<any[]>([]);
+  const [branches, setBranches] = useState<any[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [announcementData, setAnnouncementData] = useState({
+    title: '',
+    content: '',
+    branchId: '',
+    classId: '',
+    type: 'Academic'
+  });
+
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [statsRes, scheduleRes] = await Promise.all([
+        const [statsRes, scheduleRes, classesRes, branchesRes] = await Promise.all([
           tutorService.getDashboardStats(),
-          tutorService.getSchedule()
+          tutorService.getSchedule(),
+          tutorService.getTutorClasses(),
+          tenantService.getBranches()
         ]);
         setStats(statsRes.data);
         setSchedule(scheduleRes.data);
+        setClasses(classesRes.data);
+        setBranches(branchesRes.data);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -26,6 +48,24 @@ const TutorDashboard: React.FC = () => {
     };
     fetchData();
   }, []);
+
+  const handlePostAnnouncement = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    const toastId = toast.loading('Posting announcement...');
+    try {
+      const response = await tutorService.createAnnouncement(announcementData);
+      if (response.success) {
+        toast.success('Announcement posted successfully!', { id: toastId });
+        setIsModalOpen(false);
+        setAnnouncementData({ title: '', content: '', branchId: '', classId: '', type: 'Academic' });
+      }
+    } catch (error) {
+      toast.error('Failed to post announcement', { id: toastId });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -37,11 +77,14 @@ const TutorDashboard: React.FC = () => {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900 ">Academic Central</h1>
           <p className="text-gray-500 mt-1">Managed your classes, mark attendance, and grade students</p>
         </div>
+        <Button onClick={() => setIsModalOpen(true)} className="rounded-2xl h-12 shadow-premium bg-brand-500 text-white hover:bg-brand-600 px-6">
+          <Megaphone size={18} className="mr-2" /> Post Announcement
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -65,7 +108,7 @@ const TutorDashboard: React.FC = () => {
                     </div>
                     <div>
                       <h4 className="font-medium text-gray-900  ">{item.subject}</h4>
-                      <p className="text-xs text-gray-500 font-medium">Grade {item.class?.name}-{item.class?.section} • {item.startTime}</p>
+                      <p className="text-xs text-gray-500 font-medium">{item.class?.name}-{item.class?.section} • {item.startTime}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-6">
@@ -119,6 +162,85 @@ const TutorDashboard: React.FC = () => {
            </button>
         </div>
       </div>
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Post Announcement"
+        description="Broadcast an announcement to your students."
+      >
+        <form onSubmit={handlePostAnnouncement} className="space-y-6">
+          <Input 
+            label="Announcement Title" 
+            value={announcementData.title}
+            onChange={(e) => setAnnouncementData({...announcementData, title: e.target.value})}
+            placeholder="e.g. Midterm Exam Prep"
+            required 
+          />
+          
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Type</label>
+            <select 
+              value={announcementData.type}
+              onChange={(e) => setAnnouncementData({...announcementData, type: e.target.value})}
+              className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-none text-sm font-bold text-slate-600 focus:ring-2 focus:ring-brand-500/20"
+            >
+              <option value="Academic">Academic</option>
+              <option value="Event">Event</option>
+              <option value="Administrative">Administrative</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Branch (Optional)</label>
+              <select 
+                value={announcementData.branchId}
+                onChange={(e) => setAnnouncementData({...announcementData, branchId: e.target.value})}
+                className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-none text-sm font-bold text-slate-600 focus:ring-2 focus:ring-brand-500/20"
+              >
+                <option value="">Select Branch</option>
+                {branches.map(b => (
+                  <option key={b._id} value={b._id}>{b.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Class (Optional)</label>
+              <select 
+                value={announcementData.classId}
+                onChange={(e) => setAnnouncementData({...announcementData, classId: e.target.value})}
+                className="w-full h-12 px-4 rounded-2xl bg-slate-50 border-none text-sm font-bold text-slate-600 focus:ring-2 focus:ring-brand-500/20"
+              >
+                <option value="">All My Classes</option>
+                {classes.filter(c => !announcementData.branchId || c.branch === announcementData.branchId).map(c => (
+                  <option key={c._id} value={c._id}>{c.name} - Sec {c.section}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Message Content</label>
+            <textarea 
+              value={announcementData.content}
+              onChange={(e) => setAnnouncementData({...announcementData, content: e.target.value})}
+              required
+              rows={4}
+              placeholder="Write your announcement details here..."
+              className="w-full p-4 rounded-2xl bg-slate-50 border-none text-sm font-medium text-slate-700 focus:ring-2 focus:ring-brand-500/20 resize-none"
+            ></textarea>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4">
+            <Button variant="outline" type="button" onClick={() => setIsModalOpen(false)} className="rounded-xl">Cancel</Button>
+            <Button type="submit" disabled={isSubmitting} className="rounded-xl shadow-premium bg-brand-500 text-white hover:bg-brand-600">
+              {isSubmitting ? 'Posting...' : 'Post Announcement'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 };

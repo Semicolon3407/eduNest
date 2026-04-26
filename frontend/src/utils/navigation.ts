@@ -52,6 +52,7 @@ export const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/admin', icon: LayoutDashboard, roles: ['ADMIN'] },
   { title: 'Admissions', href: '/admin/admissions', icon: UserRound, roles: ['ADMIN'] },
   { title: 'Class & Sections', href: '/admin/classes', icon: BookOpen, roles: ['ADMIN'] },
+  { title: 'Exam Routines', href: '/admin/exam-routines', icon: FileText, roles: ['ADMIN'] },
   { title: 'Fee Management', href: '/admin/fees', icon: CreditCard, roles: ['ADMIN'] },
   { title: 'Fee Collection', href: '/admin/fee-collection', icon: ClipboardList, roles: ['ADMIN'] },
   { title: 'Tutor Schedules', href: '/admin/tutor-schedules', icon: Users, roles: ['ADMIN'] },

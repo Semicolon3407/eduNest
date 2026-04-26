@@ -4,8 +4,93 @@ import User from '../models/User';
 import Organization from '../models/Organization';
 import Branch from '../models/Branch';
 import { AuthRequest } from '../middlewares/auth';
+import Student from '../models/Student';
 import mongoose from 'mongoose';
 import sendEmail from '../utils/sendEmail';
+
+// --- Dashboard ---
+export const getDashboardStats = async (req: AuthRequest, res: Response) => {
+  try {
+    const orgId = req.user.organization;
+
+    const totalBranches = await Branch.countDocuments({ organization: orgId, status: 'Active' });
+    const totalStudents = await Student.countDocuments({ organization: orgId, status: 'Active' });
+    const totalStaff = await Staff.countDocuments({ organization: orgId, status: 'Active' });
+
+    // Assuming session is current year for now
+    const currentYear = new Date().getFullYear();
+    const currentSession = `${currentYear} - ${currentYear + 1}`;
+
+    const branches = await Branch.find({ organization: orgId }).lean();
+    
+    // Get student/staff count per branch
+    const branchStats = await Promise.all(branches.map(async (branch) => {
+      const students = await Student.countDocuments({ branch: branch._id });
+      const staff = await Staff.countDocuments({ branch: branch._id });
+      return {
+        id: branch._id,
+        name: branch.name,
+        location: branch.location,
+        students: students.toString(),
+        staff: staff.toString(),
+        status: branch.status,
+      };
+    }));
+
+    const activeStaff = await Staff.find({ organization: orgId, status: 'Active' })
+      .populate('branch', 'name')
+      .populate('user', 'role')
+      .limit(5)
+      .lean();
+
+    const formattedStaff = activeStaff.map(s => ({
+      id: s.employeeId,
+      name: `${s.firstName} ${s.lastName}`,
+      role: (s.user as any)?.role || 'Staff',
+      branch: (s.branch as any)?.name || 'N/A',
+      status: s.status
+    }));
+
+    const recentStudents = await Student.find({ organization: orgId })
+      .populate('branch', 'name')
+      .populate('class', 'name section')
+      .sort({ createdAt: -1 })
+      .limit(5)
+      .lean();
+
+    const formattedStudents = recentStudents.map(s => {
+      const className = (s.class as any)?.name ? `${(s.class as any).name} - ${(s.class as any).section}` : s.academicYear;
+      return {
+        id: s.admissionNumber,
+        name: `${s.firstName} ${s.lastName}`,
+        grade: className,
+        branch: (s.branch as any)?.name || 'N/A',
+        status: s.status
+      };
+    });
+
+    const staffCount = await Staff.countDocuments({ organization: orgId });
+    const onboardingPercentage = Math.min(Math.round((staffCount / 10) * 100), 100);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalBranches,
+        totalStudents,
+        totalStaff,
+        currentSession,
+        branches: branchStats,
+        activeStaff: formattedStaff,
+        recentStudents: formattedStudents,
+        onboardingPercentage,
+        onboardingText: `${Math.min(staffCount, 10)} out of 10 staff roles configured`
+      }
+    });
+
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
 
 // --- Branch Management ---
 

@@ -78,7 +78,10 @@ const FeeCollection: React.FC = () => {
       const res = await adminService.updateFeeRecordStatus(record._id, {
         status: 'Paid',
         method: 'Manual/Cash',
-        transactionId: `MAN-${Date.now()}`
+        transactionId: `MAN-${Date.now()}`,
+        studentId: record.student?._id || record.student,
+        amount: record.amount,
+        description: record.description
       });
       if (res.success) {
         toast.success('Payment confirmed successfully', { id: loadingToast });

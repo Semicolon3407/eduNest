@@ -21,7 +21,9 @@ import {
   deleteMaterial,
   getAttendanceByDate,
   getStudentLeaves,
-  updateStudentLeaveStatus
+  updateStudentLeaveStatus,
+  createAnnouncement,
+  getAnnouncements
 } from '../controllers/tutorController';
 import { protect, authorize } from '../middlewares/auth';
 
@@ -52,5 +54,7 @@ router.delete('/materials/:id', deleteMaterial);
 router.get('/attendance/check', getAttendanceByDate);
 router.get('/student-leaves', getStudentLeaves);
 router.put('/student-leaves/:id', updateStudentLeaveStatus);
+router.get('/announcements', getAnnouncements);
+router.post('/announcements', createAnnouncement);
 
 export default router;

@@ -8,9 +8,17 @@ import Schedule from '../models/Schedule';
 import User from '../models/User';
 import FeeRecord from '../models/FeeRecord';
 import Staff from '../models/Staff';
+import ExamRoutine from '../models/ExamRoutine';
 import Attendance from '../models/Attendance';
 import Leave from '../models/Leave';
 import sendEmail from '../utils/sendEmail';
+import mongoose from 'mongoose';
+
+// Full list of academic months starting from April
+const ACADEMIC_MONTHS = [
+  'April', 'May', 'June', 'July', 'August', 'September', 
+  'October', 'November', 'December', 'January', 'February', 'March'
+];
 
 export const adminController = {
   // Students
@@ -27,7 +35,10 @@ export const adminController = {
       const currentAcademicYear = month >= 3 ? `${year}-${(year + 1).toString().slice(-2)}` : `${year - 1}-${year.toString().slice(-2)}`;
 
       // 1. Create User Account for Student
-      const password = req.body.password || `EduStudent@${Math.floor(1000 + Math.random() * 9000)}`;
+      const password = req.body.password;
+      if (!password) {
+        return res.status(400).json({ success: false, message: 'Initial password is required.' });
+      }
       const user = await User.create({
         name: `${req.body.firstName} ${req.body.lastName}`,
         email: req.body.studentEmail || `std${admissionNumber.toLowerCase().replace(/-/g, '')}@edunest.com`,
@@ -228,30 +239,91 @@ export const adminController = {
   getFeeRecords: async (req: AuthRequest, res: Response) => {
     try {
       const { status, studentId, branchId, classId } = req.query;
-      const query: any = { organization: req.user.organization };
+      const orgId = req.user.organization;
       
-      if (status) query.status = status;
-      if (studentId) query.student = studentId;
+      const studentQuery: any = { organization: orgId, status: 'Active' };
+      if (studentId) studentQuery._id = studentId;
+      if (branchId) studentQuery.branch = branchId;
+      if (classId) studentQuery.class = classId;
       
-      // If branchId or classId is provided, we need to filter students
-      if (branchId || classId) {
-        const studentQuery: any = { organization: req.user.organization };
-        if (branchId) studentQuery.branch = branchId;
-        if (classId) studentQuery.class = classId;
-        
-        const students = await Student.find(studentQuery).select('_id');
-        const studentIds = students.map(s => s._id);
-        query.student = { $in: studentIds };
-      }
+      const students = await Student.find(studentQuery).populate('class branch');
+      const studentIds = students.map(s => s._id);
 
-      const records = await FeeRecord.find(query)
+      const recordQuery: any = { organization: orgId, student: { $in: studentIds } };
+      if (status) recordQuery.status = status;
+      
+      const existingRecords = await FeeRecord.find(recordQuery)
         .populate({
           path: 'student',
           populate: { path: 'class branch' }
         })
         .sort({ createdAt: -1 });
 
-      res.status(200).json({ success: true, data: records });
+      const allFees = await Fee.find({ organization: orgId });
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentIndex = (currentMonth - 3 + 12) % 12;
+
+      let allVirtualRecords: any[] = [];
+
+      if (!status || status === 'Pending') {
+        const existingRecordsUnfiltered = await FeeRecord.find({ organization: orgId, student: { $in: studentIds } });
+
+        for (const student of students) {
+          const className = (student.class as any)?.name;
+          const studentFees = allFees.filter(f => !f.targetGrade || f.targetGrade === className);
+          const studentExistingRecords = existingRecordsUnfiltered.filter(r => r.student.toString() === student._id.toString());
+          const paidDescriptions = studentExistingRecords.filter(r => r.status === 'Paid').map(r => r.description);
+
+          studentFees.forEach(f => {
+            if (f.frequency === 'Monthly') {
+              ACADEMIC_MONTHS.forEach((month, idx) => {
+                const desc = `${f.name} - ${month}`;
+                if (!paidDescriptions.includes(desc)) {
+                  const existing = studentExistingRecords.find(r => r.description === desc);
+                  if (!existing && idx <= currentIndex) {
+                    if (!status || status === 'Pending') {
+                      allVirtualRecords.push({
+                        _id: `${f._id}-${month}-${student._id}`,
+                        description: desc,
+                        amount: f.amount,
+                        date: new Date(now.getFullYear(), 3 + idx, 15),
+                        status: 'Pending',
+                        method: '-',
+                        category: f.category,
+                        frequency: 'Monthly',
+                        student: student
+                      });
+                    }
+                  }
+                }
+              });
+            } else {
+              if (!paidDescriptions.includes(f.name) && !studentExistingRecords.some(r => r.description === f.name)) {
+                if (!status || status === 'Pending') {
+                  allVirtualRecords.push({
+                    _id: `${f._id}-${student._id}`,
+                    description: f.name,
+                    amount: f.amount,
+                    date: f.createdAt,
+                    status: 'Pending',
+                    method: '-',
+                    category: f.category,
+                    frequency: f.frequency,
+                    student: student
+                  });
+                }
+              }
+            }
+          });
+        }
+      }
+
+      const allRecords = [...existingRecords, ...allVirtualRecords].sort((a, b) => 
+        new Date((b as any).date).getTime() - new Date((a as any).date).getTime()
+      );
+
+      res.status(200).json({ success: true, data: allRecords });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
     }
@@ -260,14 +332,30 @@ export const adminController = {
   updateFeeRecordStatus: async (req: AuthRequest, res: Response) => {
     try {
       const { id } = req.params;
-      const { status, transactionId, method } = req.body;
+      const { status, transactionId, method, studentId, amount, description } = req.body;
       
-      const record = await FeeRecord.findOneAndUpdate(
-        { _id: id, organization: req.user.organization },
-        { status, transactionId, method, date: new Date() },
-        { new: true }
-      );
+      let record;
+      if (typeof id === 'string' && mongoose.Types.ObjectId.isValid(id)) {
+        record = await FeeRecord.findOneAndUpdate(
+          { _id: id, organization: req.user.organization },
+          { status, transactionId, method, date: new Date() },
+          { new: true }
+        );
+      }
       
+      if (!record && studentId) {
+        record = await FeeRecord.create({
+          student: studentId,
+          organization: req.user.organization,
+          amount,
+          description,
+          status,
+          method,
+          transactionId,
+          date: new Date()
+        });
+      }
+
       if (!record) return res.status(404).json({ success: false, message: 'Record not found' });
       
       res.status(200).json({ success: true, data: record });
@@ -513,6 +601,56 @@ export const adminController = {
       res.status(201).json({ success: true, data: leave });
     } catch (err: any) {
       res.status(400).json({ success: false, message: err.message });
+    }
+  },
+
+  // Exam Routines
+  createExamRoutine: async (req: AuthRequest, res: Response) => {
+    try {
+      const { subject, date, time, room, classId, branchId } = req.body;
+      const routine = await ExamRoutine.create({
+        subject,
+        date,
+        time,
+        room,
+        class: classId,
+        branch: branchId,
+        organization: req.user.organization
+      });
+      res.status(201).json({ success: true, data: routine });
+    } catch (error: any) {
+      res.status(400).json({ success: false, message: error.message });
+    }
+  },
+
+  getExamRoutines: async (req: AuthRequest, res: Response) => {
+    try {
+      const { classId, branchId } = req.query;
+      const query: any = { organization: req.user.organization };
+      if (classId) query.class = classId;
+      if (branchId) query.branch = branchId;
+
+      const routines = await ExamRoutine.find(query)
+        .populate('class', 'name')
+        .populate('branch', 'name')
+        .sort({ date: 1 });
+      
+      res.status(200).json({ success: true, data: routines });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  },
+
+  deleteExamRoutine: async (req: AuthRequest, res: Response) => {
+    try {
+      const routine = await ExamRoutine.findOneAndDelete({ 
+        _id: req.params.id, 
+        organization: req.user.organization 
+      });
+      if (!routine) return res.status(404).json({ success: false, message: 'Routine not found' });
+      res.status(200).json({ success: true, message: 'Routine deleted successfully' });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
     }
   }
 };

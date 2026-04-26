@@ -126,4 +126,23 @@ export const adminService = {
     const response = await api.post('/admin/leaves/request', data);
     return response.data;
   },
+
+  // Exam Routines
+  createExamRoutine: async (data: any) => {
+    const response = await api.post('/admin/exams/routines', data);
+    return response.data;
+  },
+
+  getExamRoutines: async (classId?: string, branchId?: string) => {
+    const params = new URLSearchParams();
+    if (classId) params.append('classId', classId);
+    if (branchId) params.append('branchId', branchId);
+    const response = await api.get(`/admin/exams/routines?${params.toString()}`);
+    return response.data;
+  },
+
+  deleteExamRoutine: async (id: string) => {
+    const response = await api.delete(`/admin/exams/routines/${id}`);
+    return response.data;
+  },
 };

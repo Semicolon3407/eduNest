@@ -1,29 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import StatCard from '../../components/dashboard/StatCard';
 import { GitBranch, Calendar, Users, Settings, ArrowRight, Building2, MapPin, GraduationCap, ChevronRight } from 'lucide-react';
 import Badge from '../../components/ui/Badge';
-
-const branches = [
-  { id: 1, name: 'Main Campus', location: 'Downtown', students: '1,240', staff: '84' },
-  { id: 2, name: 'North Branch', location: 'Uptown', students: '640', staff: '42' },
-  { id: 3, name: 'West Side', location: 'Suburbs', students: '320', staff: '18' },
-];
-
-const recentStudents = [
-  { id: 'STU-24-001', name: 'Alice Walker', grade: 'Grade 10 - Science', branch: 'Main Campus', status: 'Active' },
-  { id: 'STU-24-002', name: 'Thomas Edison', grade: 'Grade 8 - General', branch: 'North Branch', status: 'Active' },
-  { id: 'STU-24-003', name: 'Marie Curie', grade: 'Grade 12 - Advanced', branch: 'West Side', status: 'Pending' },
-  { id: 'STU-24-004', name: 'Isaac Newton', grade: 'Grade 9 - Standard', branch: 'Main Campus', status: 'Active' },
-  { id: 'STU-24-005', name: 'Albert Einstein', grade: 'Grade 11 - Science', branch: 'North Branch', status: 'Active' },
-];
-
-const activeStaff = [
-  { id: 'EMP-001', name: 'Sarah Wilson', role: 'Principal', branch: 'Main Campus', status: 'Active' },
-  { id: 'EMP-002', name: 'Michael Brown', role: 'Administrator', branch: 'North Branch', status: 'Active' },
-  { id: 'EMP-003', name: 'Emily Davis', role: 'HR Manager', branch: 'Main Campus', status: 'Active' },
-];
+import { tenantService } from '../../services/tenantService';
+import toast from 'react-hot-toast';
 
 const OrganizationDashboard: React.FC = () => {
+  const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const res = await tenantService.getDashboardStats();
+      if (res.success) {
+        setStats(res.data);
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to fetch dashboard stats');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading || !stats) {
+    return <div className="flex items-center justify-center h-64 text-brand-600">Loading dashboard...</div>;
+  }
+
+  const { branches, recentStudents, activeStaff, totalBranches, totalStudents, totalStaff, currentSession, onboardingPercentage, onboardingText } = stats;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div>
@@ -32,10 +41,10 @@ const OrganizationDashboard: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-        <StatCard title="Total Branches" value="3 Active" icon={GitBranch} color="brand" />
-        <StatCard title="Total Students" value="2,200" icon={GraduationCap} color="brand" />
-        <StatCard title="Total Staff" value="144" icon={Users} color="warning" />
-        <StatCard title="Current Session" value="2024 - 2025" icon={Calendar} color="success" />
+        <StatCard title="Total Branches" value={`${totalBranches} Active`} icon={GitBranch} color="brand" />
+        <StatCard title="Total Students" value={totalStudents.toLocaleString()} icon={GraduationCap} color="brand" />
+        <StatCard title="Total Staff" value={totalStaff.toLocaleString()} icon={Users} color="warning" />
+        <StatCard title="Current Session" value={currentSession} icon={Calendar} color="success" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -46,7 +55,7 @@ const OrganizationDashboard: React.FC = () => {
            <div>
              <h2 className="text-xl font-medium text-gray-900 px-1 mb-6">Active Campuses</h2>
              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               {branches.map((branch) => (
+               {branches.map((branch: any) => (
                  <div key={branch.id} className="bg-surface p-6 rounded-[32px] shadow-soft border border-surface-200 hover:border-brand-200 transition-all group relative overflow-hidden">
                    <div className="flex justify-between items-start relative z-10">
                       <div className="w-12 h-12 bg-surface-100 rounded-xl flex items-center justify-center text-gray-500 group-hover:bg-brand-50 group-hover:text-brand-600 transition-all">
@@ -95,7 +104,7 @@ const OrganizationDashboard: React.FC = () => {
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-surface-100">
-                   {activeStaff.map((staff) => (
+                   {activeStaff.map((staff: any) => (
                      <tr key={staff.id} className="hover:bg-brand-50/20 transition-all">
                        <td className="px-6 py-4">
                          <div className="flex items-center gap-3">
@@ -142,7 +151,7 @@ const OrganizationDashboard: React.FC = () => {
                    </tr>
                  </thead>
                  <tbody className="divide-y divide-surface-100">
-                   {recentStudents.map((student) => (
+                   {recentStudents.map((student: any) => (
                      <tr key={student.id} className="hover:bg-brand-50/20 transition-all">
                        <td className="px-6 py-4">
                          <div className="flex items-center gap-3">
@@ -196,11 +205,11 @@ const OrganizationDashboard: React.FC = () => {
               <h3 className="text-sm font-medium text-gray-900">Onboarding Status</h3>
               <div className="mt-4 flex items-center gap-3">
                  <div className="flex-1 h-2 bg-surface-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-success rounded-full" style={{ width: '85%' }}></div>
+                    <div className="h-full bg-success rounded-full" style={{ width: `${onboardingPercentage}%` }}></div>
                  </div>
-                 <span className="text-xs font-medium text-success-dark">85%</span>
+                 <span className="text-xs font-medium text-success-dark">{onboardingPercentage}%</span>
               </div>
-              <p className="text-[10px] text-gray-500 mt-2 font-medium">8 out of 10 staff roles configured</p>
+              <p className="text-[10px] text-gray-500 mt-2 font-medium">{onboardingText}</p>
               <button className="w-full mt-4 py-2 text-xs font-medium text-brand-600 bg-brand-50 rounded-lg hover:bg-brand-100 transition-colors">Complete Setup</button>
            </div>
         </div>

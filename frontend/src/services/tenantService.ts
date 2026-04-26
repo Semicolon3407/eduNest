@@ -14,6 +14,11 @@ const getAuthHeaders = () => {
 };
 
 export const tenantService = {
+  getDashboardStats: async () => {
+    const response = await axios.get(`${API_URL}/dashboard`, getAuthHeaders());
+    return response.data;
+  },
+
   // Branch Management
   getBranches: async () => {
     const response = await axios.get(`${API_URL}/branches`, getAuthHeaders());

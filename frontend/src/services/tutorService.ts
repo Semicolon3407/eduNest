@@ -112,6 +112,16 @@ export const updateStudentLeaveStatus = async (id: string, status: string) => {
   return response.data;
 };
 
+export const getAnnouncements = async () => {
+  const response = await api.get('/tutor/announcements');
+  return response.data;
+};
+
+export const createAnnouncement = async (data: any) => {
+  const response = await api.post('/tutor/announcements', data);
+  return response.data;
+};
+
 export const tutorService = {
   getDashboardStats,
   getTutorClasses,
@@ -135,4 +145,6 @@ export const tutorService = {
   checkAttendance,
   getStudentLeaves,
   updateStudentLeaveStatus,
+  getAnnouncements,
+  createAnnouncement,
 };

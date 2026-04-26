@@ -45,4 +45,9 @@ router.get('/schedules', adminController.getSchedules);
 router.post('/schedules', adminController.createSchedule);
 router.delete('/schedules/:id', adminController.deleteSchedule);
 
+// Exam Routines
+router.get('/exams/routines', adminController.getExamRoutines);
+router.post('/exams/routines', adminController.createExamRoutine);
+router.delete('/exams/routines/:id', adminController.deleteExamRoutine);
+
 export default router;

@@ -26,9 +26,11 @@ export const getDashboardStats = async (req: AuthRequest, res: Response) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    const fullName = `${staff.firstName} ${staff.lastName}`;
+    
     // Get total students across all classes this tutor teaches
     // For now, let's assume we find classes where this tutor is assigned
-    const classes = await Class.find({ tutor: staff.employeeId, organization: req.user.organization });
+    const classes = await Class.find({ tutor: fullName, organization: req.user.organization });
     const classIds = classes.map(c => c._id);
 
     const totalStudents = await Student.countDocuments({ 
@@ -620,6 +622,44 @@ export const updateStudentLeaveStatus = async (req: AuthRequest, res: Response) 
     }
 
     res.status(200).json({ success: true, data: leave });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Create announcement
+// @route   POST /api/v1/tutor/announcements
+// @access  Private/Tutor
+export const createAnnouncement = async (req: AuthRequest, res: Response) => {
+  try {
+    const staff = await Staff.findOne({ user: req.user._id });
+    if (!staff) return res.status(404).json({ success: false, message: 'Staff record not found' });
+
+    const announcement = await mongoose.model('Announcement').create({
+      ...req.body,
+      organization: req.user.organization,
+      branch: req.body.branchId || staff.branch,
+      class: req.body.classId || null,
+      category: 'STUDENT',
+      type: req.body.type || 'Academic'
+    });
+
+    res.status(201).json({ success: true, data: announcement });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+// @desc    Get tutor announcements
+// @route   GET /api/v1/tutor/announcements
+// @access  Private/Tutor
+export const getAnnouncements = async (req: AuthRequest, res: Response) => {
+  try {
+    const announcements = await mongoose.model('Announcement').find({
+      organization: req.user.organization,
+      category: 'STUDENT'
+    }).populate('class', 'name section').sort('-createdAt');
+    res.status(200).json({ success: true, data: announcements });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }
