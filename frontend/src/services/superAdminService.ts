@@ -10,6 +10,7 @@ export interface OrganizationData {
   phone: string;
   branchCount?: number;
   status?: 'Active' | 'Pending' | 'Suspended';
+  subscription?: string;
 }
 
 export const superAdminService = {

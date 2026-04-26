@@ -5,8 +5,8 @@ import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import { 
   CreditCard, Plus, Search, Filter, MoreVertical, 
-  CheckCircle2, Edit3, Trash2, Loader2, DollarSign, 
-  Calendar, X, ChevronDown
+  Edit3, Trash2, Loader2, DollarSign, 
+  Calendar, ChevronDown
 } from 'lucide-react';
 import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
 import ConfirmModal from '../../components/ui/ConfirmModal';
@@ -29,7 +29,6 @@ const Subscriptions: React.FC = () => {
     name: '',
     price: 0,
     duration: 'Monthly' as SubscriptionData['duration'],
-    features: [''],
     status: 'Active' as SubscriptionData['status']
   });
 
@@ -58,7 +57,6 @@ const Subscriptions: React.FC = () => {
       name: '',
       price: 0,
       duration: 'Monthly',
-      features: [''],
       status: 'Active'
     });
     setIsModalOpen(true);
@@ -70,34 +68,19 @@ const Subscriptions: React.FC = () => {
       name: sub.name,
       price: sub.price,
       duration: sub.duration,
-      features: sub.features.length > 0 ? [...sub.features] : [''],
       status: sub.status
     });
     setIsModalOpen(true);
   };
 
-  const handleFeatureChange = (index: number, value: string) => {
-    const newFeatures = [...formData.features];
-    newFeatures[index] = value;
-    setFormData({ ...formData, features: newFeatures });
-  };
 
-  const addFeature = () => {
-    setFormData({ ...formData, features: [...formData.features, ''] });
-  };
-
-  const removeFeature = (index: number) => {
-    const newFeatures = formData.features.filter((_, i) => i !== index);
-    setFormData({ ...formData, features: newFeatures.length > 0 ? newFeatures : [''] });
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setIsSubmitting(true);
       const dataToSave = {
-        ...formData,
-        features: formData.features.filter(f => f.trim() !== '')
+        ...formData
       };
 
       if (editingSub?._id) {
@@ -186,7 +169,7 @@ const Subscriptions: React.FC = () => {
                   <tr className="bg-surface-50 text-gray-400 text-[10px] font-bold tracking-[0.2em] px-6">
                     <th className="px-6 py-4">Plan Description</th>
                     <th className="px-6 py-4">Duration & Pricing</th>
-                    <th className="px-6 py-4">Features</th>
+
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
@@ -211,18 +194,7 @@ const Subscriptions: React.FC = () => {
                           <span className="text-[10px] font-medium text-brand-500 flex items-center gap-1 uppercase tracking-wider"><Calendar size={10} /> {sub.duration}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-5">
-                        <div className="flex flex-col gap-1 max-w-[200px]">
-                          {sub.features.slice(0, 2).map((feature, i) => (
-                            <span key={i} className="text-xs text-gray-500 flex items-center gap-1 truncate">
-                              <CheckCircle2 size={12} className="text-success-dark shrink-0" /> {feature}
-                            </span>
-                          ))}
-                          {sub.features.length > 2 && (
-                            <span className="text-[10px] font-bold text-brand-500">+{sub.features.length - 2} more features</span>
-                          )}
-                        </div>
-                      </td>
+
                       <td className="px-6 py-5">
                         <Badge variant={sub.status === 'Active' ? 'success' : 'danger'}>
                           {sub.status}
@@ -246,7 +218,7 @@ const Subscriptions: React.FC = () => {
                   ))}
                   {filteredSubs.length === 0 && (
                     <tr>
-                      <td colSpan={5} className="py-20 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">
+                      <td colSpan={4} className="py-20 text-center text-gray-400 uppercase tracking-widest text-xs font-bold">
                         No subscription plans found
                       </td>
                     </tr>
@@ -305,37 +277,7 @@ const Subscriptions: React.FC = () => {
               </div>
             </div>
 
-            <div className="md:col-span-2 space-y-4">
-              <div className="flex items-center justify-between">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">Included Features</label>
-                <button type="button" onClick={addFeature} className="text-xs font-bold text-brand-600 flex items-center gap-1 hover:underline">
-                  <Plus size={14} /> Add Feature
-                </button>
-              </div>
-              <div className="space-y-3">
-                {formData.features.map((feature, index) => (
-                  <div key={index} className="flex gap-2 group">
-                    <div className="flex-1">
-                      <Input 
-                        placeholder="Feature description..." 
-                        value={feature}
-                        onChange={(e) => handleFeatureChange(index, e.target.value)}
-                        className="rounded-xl"
-                      />
-                    </div>
-                    {formData.features.length > 1 && (
-                      <button 
-                        type="button" 
-                        onClick={() => removeFeature(index)}
-                        className="p-3 text-gray-400 hover:text-danger hover:bg-danger/5 rounded-xl transition-all"
-                      >
-                        <X size={18} />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
+
 
             <div className="md:col-span-2 space-y-1.5 group font-sans">
               <label className="text-xs font-medium text-gray-400 px-1">Plan Visibility</label>

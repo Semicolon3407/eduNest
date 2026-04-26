@@ -4,7 +4,7 @@ import Badge from '../../components/ui/Badge';
 import SecurityTab from '../../components/profile/SecurityTab';
 import { 
   Building2, Globe, Shield, 
-  Edit2, Loader2
+  Edit2, Loader2, CreditCard, CheckCircle2, DollarSign, Calendar
 } from 'lucide-react';
 import { tenantService } from '../../services/tenantService';
 import toast from 'react-hot-toast';
@@ -12,7 +12,9 @@ import toast from 'react-hot-toast';
 const OrganizationProfile: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'security'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'security' | 'buy_plan'>('overview');
+  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [isBuying, setIsBuying] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     name: '',
     email: '',
@@ -40,8 +42,20 @@ const OrganizationProfile: React.FC = () => {
     }
   };
 
+  const fetchSubscriptions = async () => {
+    try {
+      const response = await tenantService.getSubscriptions();
+      if (response.success) {
+        setSubscriptions(response.data.filter((s: any) => s.status === 'Active'));
+      }
+    } catch (error) {
+      console.error('Failed to fetch subscriptions:', error);
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchSubscriptions();
   }, []);
 
   const handleUpdate = async () => {
@@ -55,6 +69,21 @@ const OrganizationProfile: React.FC = () => {
       toast.error(error.response?.data?.message || 'Failed to update profile');
     } finally {
       setIsUpdating(false);
+    }
+  };
+
+  const handleBuyPlan = async (id: string) => {
+    try {
+      setIsBuying(id);
+      const response = await tenantService.buyPlan(id);
+      if (response.success) {
+        toast.success('Subscription plan purchased successfully!');
+        fetchData(); // Refresh profile to show new plan
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to purchase plan');
+    } finally {
+      setIsBuying(null);
     }
   };
 
@@ -126,7 +155,7 @@ const OrganizationProfile: React.FC = () => {
 
       {/* Tabs */}
       <div className="flex gap-2 p-1.5 bg-slate-100/50 w-fit rounded-2xl border border-slate-200 font-sans">
-        {(['overview', 'security'] as const).map((tab) => (
+        {(['overview', 'security', 'buy_plan'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -136,7 +165,7 @@ const OrganizationProfile: React.FC = () => {
                 : 'text-slate-500 hover:text-brand-500'
             }`}
           >
-            {tab}
+            {tab.replace('_', ' ')}
           </button>
         ))}
       </div>
@@ -237,6 +266,36 @@ const OrganizationProfile: React.FC = () => {
                    </div>
                 </div>
               </div>
+
+              {/* Subscription Plan Section */}
+              <div className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200">
+                <h3 className="text-lg font-medium text-gray-900 mb-6 uppercase tracking-tight">Subscription Plan</h3>
+                <div className="p-6 bg-brand-50 rounded-3xl border border-brand-100">
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-brand-600">
+                      <Shield size={22} />
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">Active Plan</p>
+                      <h4 className="text-lg font-bold text-brand-900 leading-none">{(profile as any).subscription?.name || 'Standard Tier'}</h4>
+                    </div>
+                  </div>
+                  <div className="space-y-3 border-t border-brand-100 pt-4">
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-brand-600 font-medium uppercase tracking-tight">Billing Cycle</span>
+                      <span className="font-bold text-brand-900 uppercase">{(profile as any).subscription?.duration || 'Monthly'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-brand-600 font-medium uppercase tracking-tight">Status</span>
+                      <span className="font-bold text-success uppercase tracking-widest">{(profile as any).subscription?.status || 'Active'}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className="text-brand-600 font-medium uppercase tracking-tight">Institutional Rate</span>
+                      <span className="font-bold text-brand-900 uppercase">Rs {(profile as any).subscription?.price?.toLocaleString() || '0'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
               
               <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-premium relative overflow-hidden group">
                 <div className="absolute bottom-0 right-0 w-32 h-32 bg-brand-500 rounded-full -mb-16 -mr-16 opacity-20 blur-2xl group-hover:scale-150 transition-transform duration-700"></div>
@@ -252,6 +311,71 @@ const OrganizationProfile: React.FC = () => {
         )}
 
         {activeTab === 'security' && <SecurityTab />}
+
+        {activeTab === 'buy_plan' && (
+          <div className="space-y-8">
+            <div className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200">
+              <h3 className="text-xl font-medium text-gray-900 mb-2 font-display">Available Subscription Plans</h3>
+              <p className="text-slate-500 text-sm mb-8">Select a plan that fits your institution's growth and scale.</p>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {subscriptions.map((sub) => {
+                  const isCurrent = (profile as any).subscription?._id === sub._id;
+                  return (
+                    <div 
+                      key={sub._id} 
+                      className={`relative p-8 rounded-[32px] border-2 transition-all duration-300 ${
+                        isCurrent 
+                          ? 'border-brand-500 bg-brand-50/30' 
+                          : 'border-slate-100 bg-white hover:border-brand-200 hover:shadow-premium'
+                      }`}
+                    >
+                      {isCurrent && (
+                        <div className="absolute top-4 right-4 bg-brand-500 text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest flex items-center gap-1 shadow-sm">
+                          <CheckCircle2 size={12} /> Current
+                        </div>
+                      )}
+                      
+                      <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center text-brand-500 mb-6 border border-slate-100">
+                        <CreditCard size={24} />
+                      </div>
+                      
+                      <h4 className="text-lg font-bold text-slate-800 uppercase tracking-tight mb-2">{sub.name}</h4>
+                      <div className="flex items-baseline gap-1 mb-6">
+                        <span className="text-2xl font-display font-bold text-slate-900">Rs {sub.price.toLocaleString()}</span>
+                        <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">/ {sub.duration}</span>
+                      </div>
+                      
+                      <div className="space-y-4 mb-8">
+                        <div className="flex items-center gap-3 text-sm text-slate-600">
+                          <DollarSign size={16} className="text-brand-500" /> Professional Grade
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-slate-600">
+                          <Calendar size={16} className="text-brand-500" /> {sub.duration} Billing
+                        </div>
+                        <div className="flex items-center gap-3 text-sm text-slate-600">
+                          <Shield size={16} className="text-brand-500" /> Root Access Node
+                        </div>
+                      </div>
+                      
+                      <Button 
+                        onClick={() => handleBuyPlan(sub._id)}
+                        disabled={isCurrent || (isBuying !== null)}
+                        className={`w-full rounded-2xl h-12 text-xs font-bold uppercase tracking-widest transition-all ${
+                          isCurrent 
+                            ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-none' 
+                            : 'shadow-premium'
+                        }`}
+                      >
+                        {isBuying === sub._id ? <Loader2 size={18} className="animate-spin" /> : (isCurrent ? 'Active Plan' : 'Purchase Plan')}
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

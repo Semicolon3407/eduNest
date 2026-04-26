@@ -2,8 +2,10 @@ import express from 'express';
 import { 
   getBranches, addBranch, updateBranch, deleteBranch,
   getStaff, onboardStaff, updateStaff, deleteStaff,
-  getOrganizationProfile, updateOrganizationProfile
+  getOrganizationProfile, updateOrganizationProfile,
+  buyPlan
 } from '../controllers/tenantController';
+import { getSubscriptions } from '../controllers/subscriptionController';
 import { protect, authorize } from '../middlewares/auth';
 
 const router = express.Router();
@@ -30,9 +32,12 @@ router.route('/staff/:id')
   .put(updateStaff)
   .delete(deleteStaff);
 
-// Profile Routes
 router.route('/profile')
   .get(getOrganizationProfile)
   .put(updateOrganizationProfile);
+
+// Subscription Routes
+router.get('/subscriptions', getSubscriptions);
+router.post('/buy-plan', buyPlan);
 
 export default router;

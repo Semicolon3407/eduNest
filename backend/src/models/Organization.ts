@@ -44,6 +44,10 @@ const organizationSchema = new Schema({
     type: String,
     default: 'www.edunest.com',
   },
+  subscription: {
+    type: Schema.Types.ObjectId,
+    ref: 'Subscription'
+  },
 }, {
   timestamps: true,
 });

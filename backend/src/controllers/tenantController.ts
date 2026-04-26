@@ -266,7 +266,7 @@ export const deleteStaff = async (req: AuthRequest, res: Response) => {
 // @access  Private (Organization Admin)
 export const getOrganizationProfile = async (req: AuthRequest, res: Response) => {
   try {
-    const org = await Organization.findById(req.user.organization);
+    const org = await Organization.findById(req.user.organization).populate('subscription');
     if (!org) {
       return res.status(404).json({ success: false, message: 'Organization not found' });
     }
@@ -288,6 +288,29 @@ export const updateOrganizationProfile = async (req: AuthRequest, res: Response)
     if (!org) {
       return res.status(404).json({ success: false, message: 'Organization not found' });
     }
+    res.status(200).json({ success: true, data: org });
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+// @desc    Buy/Upgrade subscription plan
+// @route   POST /api/v1/tenant/buy-plan
+// @access  Private (Organization Admin)
+export const buyPlan = async (req: AuthRequest, res: Response) => {
+  try {
+    const { subscriptionId } = req.body;
+    
+    const org = await Organization.findByIdAndUpdate(req.user.organization, {
+      subscription: subscriptionId
+    }, {
+      new: true,
+      runValidators: true
+    }).populate('subscription');
+
+    if (!org) {
+      return res.status(404).json({ success: false, message: 'Organization not found' });
+    }
+
     res.status(200).json({ success: true, data: org });
   } catch (err: any) {
     res.status(400).json({ success: false, message: err.message });

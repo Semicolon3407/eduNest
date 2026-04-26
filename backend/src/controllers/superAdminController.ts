@@ -10,7 +10,7 @@ import sendEmail from '../utils/sendEmail';
  */
 export const getOrganizations = async (req: Request, res: Response) => {
   try {
-    const orgs = await Organization.find();
+    const orgs = await Organization.find().populate('subscription');
     res.status(200).json({ success: true, count: orgs.length, data: orgs });
   } catch (err: any) {
     res.status(400).json({ success: false, message: err.message });
@@ -24,7 +24,7 @@ export const getOrganizations = async (req: Request, res: Response) => {
  */
 export const getOrganization = async (req: Request, res: Response) => {
   try {
-    const org = await Organization.findById(req.params.id);
+    const org = await Organization.findById(req.params.id).populate('subscription');
     if (!org) {
       return res.status(404).json({ success: false, message: 'Organization not found' });
     }
@@ -41,7 +41,7 @@ export const getOrganization = async (req: Request, res: Response) => {
  */
 export const createOrganization = async (req: Request, res: Response) => {
   try {
-    const { name, email, password, type, location, personalEmail, phone } = req.body;
+    const { name, email, password, type, location, personalEmail, phone, subscription } = req.body;
 
     // Create organization
     const org = await Organization.create({
@@ -50,7 +50,8 @@ export const createOrganization = async (req: Request, res: Response) => {
       type,
       location,
       personalEmail,
-      phone
+      phone,
+      subscription
     });
 
     // Create corresponding organization user

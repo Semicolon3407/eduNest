@@ -64,5 +64,15 @@ export const tenantService = {
   updateProfile: async (orgData: any) => {
     const response = await axios.put(`${API_URL}/profile`, orgData, getAuthHeaders());
     return response.data;
+  },
+
+  getSubscriptions: async () => {
+    const response = await axios.get(`${API_URL}/subscriptions`, getAuthHeaders());
+    return response.data;
+  },
+
+  buyPlan: async (subscriptionId: string) => {
+    const response = await axios.post(`${API_URL}/buy-plan`, { subscriptionId }, getAuthHeaders());
+    return response.data;
   }
 };

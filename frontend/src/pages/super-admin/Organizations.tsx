@@ -9,6 +9,9 @@ import { Dropdown, DropdownItem } from '../../components/ui/Dropdown';
 import ConfirmModal from '../../components/ui/ConfirmModal';
 import { superAdminService } from '../../services/superAdminService.ts';
 import type { OrganizationData } from '../../services/superAdminService.ts';
+import { subscriptionService } from '../../services/subscriptionService';
+import type { SubscriptionData } from '../../services/subscriptionService';
+import { ChevronDown } from 'lucide-react';
 
 const Organizations: React.FC = () => {
   const [organizations, setOrganizations] = useState<any[]>([]);
@@ -19,6 +22,7 @@ const Organizations: React.FC = () => {
   const [orgToDelete, setOrgToDelete] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [subscriptions, setSubscriptions] = useState<SubscriptionData[]>([]);
   const navigate = useNavigate();
 
   const fetchOrganizations = async () => {
@@ -35,8 +39,20 @@ const Organizations: React.FC = () => {
     }
   };
 
+  const fetchSubscriptions = async () => {
+    try {
+      const response = await subscriptionService.getSubscriptions();
+      if (response.success) {
+        setSubscriptions(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch subscriptions:', error);
+    }
+  };
+
   useEffect(() => {
     fetchOrganizations();
+    fetchSubscriptions();
   }, []);
 
   const openEditModal = (org: any) => {
@@ -58,6 +74,7 @@ const Organizations: React.FC = () => {
       personalEmail: formData.get('personalEmail') as string,
       phone: formData.get('phone') as string,
       location: formData.get('location') as string,
+      subscription: formData.get('subscription') as string,
       type: 'Academy', 
     };
 
@@ -163,6 +180,7 @@ const Organizations: React.FC = () => {
                   <tr className="bg-surface-50 text-gray-400 text-[10px] font-bold tracking-[0.2em] px-6">
                     <th className="px-6 py-4">Organization Name</th>
                     <th className="px-6 py-4">Branch Count</th>
+                    <th className="px-6 py-4">Subscription</th>
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
@@ -186,6 +204,12 @@ const Organizations: React.FC = () => {
                         <div className="flex flex-col gap-1">
                           <span className="text-sm font-medium text-gray-900">{org.branchCount || 0} Active Sites</span>
                           <span className="text-[10px] font-medium text-gray-400 flex items-center gap-1"><Calendar size={10} /> Since {new Date(org.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-sm font-bold text-brand-600">{org.subscription?.name || 'No Plan'}</span>
+                          <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">{org.subscription?.duration || '---'} Cycle</span>
                         </div>
                       </td>
                       <td className="px-6 py-5">
@@ -260,6 +284,23 @@ const Organizations: React.FC = () => {
                 <Input label="Set Admin Password" name="password" type="password" placeholder="••••••••" icon={Lock} required />
               </div>
             )}
+            
+            <div className="md:col-span-2 space-y-1.5 group font-sans">
+              <label className="text-xs font-bold text-gray-400 px-1 uppercase tracking-tight">Subscription Plan</label>
+              <div className="relative">
+                <select 
+                  name="subscription"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl h-12 px-4 text-sm font-medium outline-none transition-all focus:bg-white focus:border-brand-500 appearance-none cursor-pointer"
+                  defaultValue={editingOrg?.subscription?._id || editingOrg?.subscription}
+                >
+                  <option value="">Select a Plan</option>
+                  {subscriptions.map(sub => (
+                    <option key={sub._id} value={sub._id}>{sub.name} ({sub.duration} - Rs {sub.price})</option>
+                  ))}
+                </select>
+                <ChevronDown size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
