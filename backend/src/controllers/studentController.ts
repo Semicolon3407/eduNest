@@ -98,6 +98,20 @@ export const getStudentDashboardStats = async (req: AuthRequest, res: Response) 
 
     totalDue += manualDue;
 
+    // Calculate Rank
+    const classmates = await Student.find({ class: student.class, organization: req.user.organization }).select('_id');
+    const classmateIds = classmates.map(c => c._id);
+    const allGrades = await Grade.find({ student: { $in: classmateIds } });
+    const classmateAverages = classmateIds.map(id => {
+       const studentGrades = allGrades.filter(g => g.student.toString() === id.toString());
+       const avg = studentGrades.length > 0 
+         ? (studentGrades.reduce((acc, curr) => acc + curr.totalMarks, 0) / studentGrades.length)
+         : 0;
+       return { id, avg };
+    });
+    classmateAverages.sort((a, b) => b.avg - a.avg);
+    const rank = classmateAverages.findIndex(c => c.id.toString() === student._id.toString()) + 1;
+
     res.status(200).json({
       success: true,
       data: {
@@ -105,7 +119,9 @@ export const getStudentDashboardStats = async (req: AuthRequest, res: Response) 
         attendanceRate,
         pendingAssignments,
         totalDue,
-        studentName: student.firstName
+        studentName: student.firstName,
+        rank,
+        academicYear: student.academicYear || '2023-24'
       }
     });
   } catch (error: any) {

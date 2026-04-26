@@ -4,6 +4,7 @@ interface EmailOptions {
   email: string;
   subject: string;
   message: string;
+  attachments?: any[];
 }
 
 const sendEmail = async (options: EmailOptions) => {
@@ -20,6 +21,7 @@ const sendEmail = async (options: EmailOptions) => {
     to: options.email,
     subject: options.subject,
     html: options.message,
+    attachments: options.attachments
   };
 
   await transporter.sendMail(mailOptions);

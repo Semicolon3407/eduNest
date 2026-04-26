@@ -5,6 +5,7 @@ import Student from '../models/Student';
 import EsewaTransaction from '../models/EsewaTransaction';
 import FeeRecord from '../models/FeeRecord';
 import mongoose from 'mongoose';
+import { generateAndSendInvoice } from '../utils/invoiceGenerator';
 
 // eSewa UAT credentials
 const ESEWA_SECRET = '8gBm/:&EnhH.1/q'; 
@@ -110,20 +111,26 @@ export const verifyEsewaPayment = async (req: AuthRequest, res: Response) => {
       const student = await Student.findById(transaction.student);
 
       if (transaction.feeRecord) {
-        await FeeRecord.findByIdAndUpdate(transaction.feeRecord, {
+        const record = await FeeRecord.findByIdAndUpdate(transaction.feeRecord, {
           status: 'Paid',
           method: 'eSewa',
           transactionId: transaction_code,
           date: new Date()
-        });
+        }, { new: true });
+
+        // Generate and Send Invoice
+        const populatedStudent = await Student.findById(transaction.student).populate('class');
+        if (populatedStudent && record) {
+          generateAndSendInvoice(populatedStudent, record);
+        }
       } else {
         // Populate student to get branch
-        const populatedStudent = await Student.findById(transaction.student).populate('branch');
+        const populatedStudent = await Student.findById(transaction.student).populate('branch').populate('class');
         const description = transaction.metadata?.virtualFeeId 
           ? `Monthly Fee (eSewa) - ${transaction.metadata.virtualFeeId}`
           : `eSewa Payment - Ref: ${transaction_code}`;
 
-        await FeeRecord.create({
+        const record = await FeeRecord.create({
           student: transaction.student,
           description,
           amount: transaction.amount,
@@ -134,6 +141,11 @@ export const verifyEsewaPayment = async (req: AuthRequest, res: Response) => {
           branch: populatedStudent?.branch,
           date: new Date()
         });
+
+        // Generate and Send Invoice
+        if (populatedStudent && record) {
+          generateAndSendInvoice(populatedStudent, record);
+        }
       }
 
       res.status(200).json({ success: true, message: 'Payment verified successfully' });
@@ -170,18 +182,23 @@ export const checkEsewaStatus = async (req: AuthRequest, res: Response) => {
         
         // Also update FeeRecord if applicable
         if (transaction.feeRecord) {
-          await FeeRecord.findByIdAndUpdate(transaction.feeRecord, {
+          const record = await FeeRecord.findByIdAndUpdate(transaction.feeRecord, {
             status: 'Paid',
             method: 'eSewa',
             transactionId: data.ref_id,
             date: new Date()
-          });
+          }, { new: true });
+
+          const populatedStudent = await Student.findById(transaction.student).populate('class');
+          if (populatedStudent && record) {
+            generateAndSendInvoice(populatedStudent, record);
+          }
         } else {
           // Create a new FeeRecord if none existed (virtual fee payment via status check)
-          const populatedStudent = await Student.findById(transaction.student).populate('branch');
+          const populatedStudent = await Student.findById(transaction.student).populate('branch').populate('class');
           const existingRecord = await FeeRecord.findOne({ transactionId: data.ref_id });
           if (!existingRecord) {
-            await FeeRecord.create({
+            const record = await FeeRecord.create({
               student: transaction.student,
               description: `eSewa Payment - Ref: ${data.ref_id}`,
               amount: transaction.amount,
@@ -192,6 +209,10 @@ export const checkEsewaStatus = async (req: AuthRequest, res: Response) => {
               branch: populatedStudent?.branch,
               date: new Date()
             });
+
+            if (populatedStudent && record) {
+              generateAndSendInvoice(populatedStudent, record);
+            }
           }
         }
       }

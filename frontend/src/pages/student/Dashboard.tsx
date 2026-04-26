@@ -44,17 +44,17 @@ const StudentDashboard: React.FC = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-display font-medium text-gray-900   leading-none">Welcome back, {stats?.studentName || 'Student'}</h1>
-          <p className="text-gray-500 mt-2 font-medium">Your academic journey for <span className="text-brand-600 font-medium">Fall 2023</span> is on track.</p>
+          <p className="text-gray-500 mt-2 font-medium">Your academic journey for <span className="text-brand-600 font-medium">AY {stats?.academicYear || '2023-24'}</span> is on track.</p>
         </div>
         <div className="flex items-center gap-2 px-6 py-3 bg-brand-500 text-white rounded-2xl shadow-premium">
            <Award size={20} className="text-brand-300" />
-           <span className="text-[10px] font-medium   text-brand-100">Rank #4 in Science</span>
+           <span className="text-[10px] font-medium   text-brand-100">Rank #{stats?.rank || 'N/A'} in Class</span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard title="Course Average" value={`${stats?.avgGrade}%`} icon={BookOpen} trend={{ value: '+2.5%', isUp: true }} />
-        <StatCard title="Attendance" value={`${stats?.attendanceRate}%`} icon={Calendar} trend={{ value: 'On track', isUp: true }} />
+        <StatCard title="Course Average" value={`${stats?.avgGrade}%`} icon={BookOpen} trend={{ value: 'Live', isUp: true }} />
+        <StatCard title="Attendance" value={`${stats?.attendanceRate}%`} icon={Calendar} trend={{ value: stats?.attendanceRate >= 75 ? 'On track' : 'Low', isUp: stats?.attendanceRate >= 75 }} />
         <StatCard title="Pending Tasks" value={stats?.pendingAssignments?.toString() || '0'} icon={Clock} />
         <StatCard title="Fee Status" value={stats?.totalDue > 0 ? `Rs. ${stats.totalDue}` : 'Paid'} icon={CreditCard} />
       </div>
