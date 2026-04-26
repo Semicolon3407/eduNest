@@ -80,5 +80,35 @@ export const tenantService = {
   createPaymentIntent: async (subscriptionId: string) => {
     const response = await axios.post(`${API_URL_PAYMENT}/stripe/create-intent`, { subscriptionId }, getAuthHeaders());
     return response.data;
-  }
+  },
+
+  recalculateDates: async () => {
+    const response = await axios.patch(`${API_URL}/recalculate-dates`, {}, getAuthHeaders());
+    return response.data;
+  },
+
+  getTickets: async () => {
+    const response = await axios.get(`${API_URL}/tickets`, getAuthHeaders());
+    return response.data;
+  },
+
+  createTicket: async (data: { issue: string; description: string; priority: string }) => {
+    const response = await axios.post(`${API_URL}/tickets`, data, getAuthHeaders());
+    return response.data;
+  },
+
+  getNotifications: async () => {
+    const response = await axios.get(`${API_URL}/notifications`, getAuthHeaders());
+    return response.data;
+  },
+
+  markNotificationRead: async (id: string) => {
+    const response = await axios.patch(`${API_URL}/notifications/${id}/read`, {}, getAuthHeaders());
+    return response.data;
+  },
+
+  markAllNotificationsRead: async () => {
+    const response = await axios.patch(`${API_URL}/notifications/read-all`, {}, getAuthHeaders());
+    return response.data;
+  },
 };

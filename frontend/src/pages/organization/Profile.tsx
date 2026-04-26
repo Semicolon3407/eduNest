@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Badge from '../../components/ui/Badge';
 import Modal from '../../components/ui/Modal';
 import SecurityTab from '../../components/profile/SecurityTab';
 import { 
   Building2, Globe, Shield, 
-  Edit2, Loader2, CreditCard, CheckCircle2, DollarSign, Calendar
+  Edit2, Loader2, CreditCard, CheckCircle2, DollarSign, Calendar, RefreshCw, LifeBuoy
 } from 'lucide-react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
@@ -16,8 +17,10 @@ import toast from 'react-hot-toast';
 const stripePromise = loadStripe('pk_test_51SwPjgHiNWGpwACsRbwV9NSNTvU2QRQqemUXNBeAb3dTfCeLYd3rM2Kzef5jxRTeY85fy2dbkpHxqCmkCrATNfy200j7edhMu4');
 
 const OrganizationProfile: React.FC = () => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isRecalculating, setIsRecalculating] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'security' | 'buy_plan'>('overview');
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
   const [isBuying, setIsBuying] = useState<string | null>(null);
@@ -70,13 +73,41 @@ const OrganizationProfile: React.FC = () => {
     const paymentStatus = params.get('payment');
     if (paymentStatus === 'success') {
       toast.success('Subscription upgraded successfully! Your plan is being activated.');
-      // Clear params without refreshing
       window.history.replaceState({}, '', window.location.pathname);
     } else if (paymentStatus === 'cancel') {
       toast.error('Payment cancelled. Your subscription was not changed.');
       window.history.replaceState({}, '', window.location.pathname);
     }
   }, []);
+
+  // Auto-backfill: if subscription exists but dates are missing, silently recalculate
+  useEffect(() => {
+    const p = profile as any;
+    if (p.subscription && !p.subscriptionExpiry && !loading) {
+      tenantService.recalculateDates()
+        .then((res) => {
+          if (res.success) {
+            setProfile((prev) => ({ ...prev, ...res.data }));
+          }
+        })
+        .catch(() => { /* silent */ });
+    }
+  }, [(profile as any).subscription, (profile as any).subscriptionExpiry, loading]);
+
+  const handleRecalculateDates = async () => {
+    try {
+      setIsRecalculating(true);
+      const res = await tenantService.recalculateDates();
+      if (res.success) {
+        setProfile((prev) => ({ ...prev, ...res.data }));
+        toast.success('Subscription dates recalculated');
+      }
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Failed to recalculate dates');
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
 
   const handleUpdate = async () => {
     try {
@@ -178,14 +209,23 @@ const OrganizationProfile: React.FC = () => {
               </div>
             </div>
           </div>
-          <Button 
-            onClick={handleUpdate} 
-            disabled={isUpdating}
-            className="rounded-2xl h-14 px-8 shadow-premium shrink-0 flex items-center gap-2"
-          >
-            {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <Edit2 size={18} />} 
-            Update Profile
-          </Button>
+          <div className="flex flex-col gap-3">
+            <Button 
+              onClick={() => navigate('/organization/support')}
+              className="rounded-2xl h-14 px-8 bg-amber-500 hover:bg-amber-600 text-white shadow-sm shrink-0 flex items-center justify-center gap-2"
+            >
+              <LifeBuoy size={18} />
+              Raise Problem Ticket
+            </Button>
+            <Button 
+              onClick={handleUpdate} 
+              disabled={isUpdating}
+              className="rounded-2xl h-14 px-8 shadow-premium shrink-0 flex items-center justify-center gap-2"
+            >
+              {isUpdating ? <Loader2 size={18} className="animate-spin" /> : <Edit2 size={18} />} 
+              Update Profile
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -305,32 +345,85 @@ const OrganizationProfile: React.FC = () => {
 
               {/* Subscription Plan Section */}
               <div className="bg-white p-8 rounded-[40px] shadow-soft border border-slate-200">
-                <h3 className="text-lg font-medium text-gray-900 mb-6 uppercase tracking-tight">Subscription Plan</h3>
-                <div className="p-6 bg-brand-50 rounded-3xl border border-brand-100">
-                  <div className="flex items-center gap-4 mb-4">
-                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-brand-600">
-                      <Shield size={22} />
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold text-brand-400 uppercase tracking-widest">Active Plan</p>
-                      <h4 className="text-lg font-bold text-brand-900 leading-none">{(profile as any).subscription?.name || 'Standard Tier'}</h4>
-                    </div>
-                  </div>
-                  <div className="space-y-3 border-t border-brand-100 pt-4">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-brand-600 font-medium uppercase tracking-tight">Billing Cycle</span>
-                      <span className="font-bold text-brand-900 uppercase">{(profile as any).subscription?.duration || 'Monthly'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-brand-600 font-medium uppercase tracking-tight">Status</span>
-                      <span className="font-bold text-success uppercase tracking-widest">{(profile as any).subscription?.status || 'Active'}</span>
-                    </div>
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="text-brand-600 font-medium uppercase tracking-tight">Institutional Rate</span>
-                      <span className="font-bold text-brand-900 uppercase">Rs {(profile as any).subscription?.price?.toLocaleString() || '0'}</span>
-                    </div>
-                  </div>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-lg font-medium text-gray-900 uppercase tracking-tight">Subscription Plan</h3>
+                  {(profile as any).subscription && (
+                    <button
+                      onClick={handleRecalculateDates}
+                      disabled={isRecalculating}
+                      title="Recalculate start & expiry dates from plan duration"
+                      className="flex items-center gap-1.5 text-[11px] font-bold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 disabled:opacity-50 px-3 py-1.5 rounded-lg transition-all"
+                    >
+                      <RefreshCw size={12} className={isRecalculating ? 'animate-spin' : ''} />
+                      {isRecalculating ? 'Calculating...' : 'Recalculate'}
+                    </button>
+                  )}
                 </div>
+                {(() => {
+                  const sub = (profile as any).subscription;
+                  const startDate = (profile as any).subscriptionStartDate ? new Date((profile as any).subscriptionStartDate) : null;
+                  const expiryDate = (profile as any).subscriptionExpiry ? new Date((profile as any).subscriptionExpiry) : null;
+                  const now = new Date();
+                  const isExpired = expiryDate ? expiryDate < now : false;
+                  const daysLeft = expiryDate ? Math.ceil((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                  const isExpiringSoon = daysLeft !== null && daysLeft >= 0 && daysLeft <= 7;
+                  return (
+                    <div className={`p-6 rounded-3xl border ${isExpired ? 'bg-red-50 border-red-100' : isExpiringSoon ? 'bg-amber-50 border-amber-100' : 'bg-brand-50 border-brand-100'}`}>
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm text-brand-600">
+                          <Shield size={22} />
+                        </div>
+                        <div>
+                          <p className={`text-[10px] font-bold uppercase tracking-widest ${isExpired ? 'text-red-400' : isExpiringSoon ? 'text-amber-500' : 'text-brand-400'}`}>Active Plan</p>
+                          <h4 className={`text-lg font-bold leading-none ${isExpired ? 'text-red-900' : isExpiringSoon ? 'text-amber-900' : 'text-brand-900'}`}>
+                            {sub?.name || 'Standard Tier'}
+                          </h4>
+                        </div>
+                      </div>
+                      <div className={`space-y-3 border-t pt-4 ${isExpired ? 'border-red-100' : isExpiringSoon ? 'border-amber-100' : 'border-brand-100'}`}>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className={`font-medium uppercase tracking-tight ${isExpired ? 'text-red-500' : isExpiringSoon ? 'text-amber-600' : 'text-brand-600'}`}>Billing Cycle</span>
+                          <span className={`font-bold uppercase ${isExpired ? 'text-red-900' : isExpiringSoon ? 'text-amber-900' : 'text-brand-900'}`}>{sub?.duration || 'Monthly'}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className={`font-medium uppercase tracking-tight ${isExpired ? 'text-red-500' : isExpiringSoon ? 'text-amber-600' : 'text-brand-600'}`}>Status</span>
+                          <span className={`font-bold uppercase tracking-widest ${isExpired ? 'text-red-600' : 'text-success'}`}>
+                            {isExpired ? 'Expired' : sub?.status || 'Active'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className={`font-medium uppercase tracking-tight ${isExpired ? 'text-red-500' : isExpiringSoon ? 'text-amber-600' : 'text-brand-600'}`}>Institutional Rate</span>
+                          <span className={`font-bold uppercase ${isExpired ? 'text-red-900' : isExpiringSoon ? 'text-amber-900' : 'text-brand-900'}`}>Rs {sub?.price?.toLocaleString() || '0'}</span>
+                        </div>
+                        <div className="h-px bg-brand-100 opacity-60 my-1" />
+                        <div className="flex justify-between items-center text-xs">
+                          <span className={`font-medium uppercase tracking-tight ${isExpired ? 'text-red-500' : isExpiringSoon ? 'text-amber-600' : 'text-brand-600'}`}>Start Date</span>
+                          <span className={`font-bold ${isExpired ? 'text-red-900' : isExpiringSoon ? 'text-amber-900' : 'text-brand-900'}`}>
+                            {startDate ? startDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className={`font-medium uppercase tracking-tight ${isExpired ? 'text-red-500' : isExpiringSoon ? 'text-amber-600' : 'text-brand-600'}`}>Expiry Date</span>
+                          <span className={`font-bold ${isExpired ? 'text-red-600' : isExpiringSoon ? 'text-amber-600' : 'text-brand-900'}`}>
+                            {expiryDate ? expiryDate.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' }) : '—'}
+                          </span>
+                        </div>
+                        {isExpired && (
+                          <div className="mt-2 flex items-center gap-2 bg-red-100 text-red-700 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-xl">
+                            <span className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
+                            Plan Expired — Renewal Required
+                          </div>
+                        )}
+                        {isExpiringSoon && !isExpired && (
+                          <div className="mt-2 flex items-center gap-2 bg-amber-100 text-amber-700 text-[10px] font-bold uppercase tracking-widest px-3 py-2 rounded-xl">
+                            <span className="w-1.5 h-1.5 bg-amber-500 rounded-full animate-pulse" />
+                            {daysLeft} Day{daysLeft !== 1 ? 's' : ''} Until Expiry
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
               
               <div className="bg-slate-900 p-8 rounded-[40px] text-white shadow-premium relative overflow-hidden group">

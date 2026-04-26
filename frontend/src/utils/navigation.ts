@@ -11,7 +11,8 @@ import {
   FileText, 
   MessageSquare,
   Trophy,
-  Users
+  Users,
+  Bell
 } from 'lucide-react';
 
 export type UserRole = 'SUPER_ADMIN' | 'ORGANIZATION' | 'HR' | 'ADMIN' | 'TUTOR' | 'STUDENT';
@@ -28,6 +29,7 @@ export const navItems: NavItem[] = [
   { title: 'Dashboard', href: '/super-admin', icon: LayoutDashboard, roles: ['SUPER_ADMIN'] },
   { title: 'Organizations', href: '/super-admin/organizations', icon: School, roles: ['SUPER_ADMIN'] },
   { title: 'Subscription Plans', href: '/super-admin/subscriptions', icon: CreditCard, roles: ['SUPER_ADMIN'] },
+  { title: 'Notifications', href: '/super-admin/notifications', icon: Bell, roles: ['SUPER_ADMIN'] },
   { title: 'Support Tickets', href: '/super-admin/support', icon: LifeBuoy, roles: ['SUPER_ADMIN'] },
 
   // Organization Items
@@ -35,6 +37,7 @@ export const navItems: NavItem[] = [
   { title: 'Branch Management', href: '/organization/branches', icon: GitBranch, roles: ['ORGANIZATION'] },
   { title: 'Student Management', href: '/organization/students', icon: Users, roles: ['ORGANIZATION'] },
   { title: 'Staff Onboarding', href: '/organization/staff', icon: UserRound, roles: ['ORGANIZATION'] },
+  { title: 'Support Tickets', href: '/organization/support', icon: LifeBuoy, roles: ['ORGANIZATION'] },
   { title: 'My Profile', href: '/organization/profile', icon: UserRound, roles: ['ORGANIZATION'] },
 
   // HR Items

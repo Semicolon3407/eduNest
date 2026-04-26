@@ -5,7 +5,9 @@ import {
   createOrganization, 
   updateOrganizationStatus, 
   deleteOrganization, 
-  updateOrganization 
+  updateOrganization,
+  recalculateOrgSubscriptionDates,
+  backfillAllSubscriptionDates,
 } from '../controllers/superAdminController';
 import {
   getSubscriptions,
@@ -13,6 +15,17 @@ import {
   updateSubscription,
   deleteSubscription
 } from '../controllers/subscriptionController';
+import {
+  getNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+  checkAndCreateExpiryNotifications,
+  createPlanExpiredNotification,
+} from '../controllers/notificationController';
+import {
+  getAllTickets,
+  updateTicket
+} from '../controllers/ticketController';
 import { protect, authorize } from '../middlewares/auth';
 
 const router = express.Router();
@@ -62,6 +75,9 @@ router.use(authorize('SUPER_ADMIN') as any);
 router.route('/organizations')
   .get(getOrganizations)
   .post(createOrganization);
+
+// Must be defined BEFORE /:id to avoid conflict
+router.post('/organizations/backfill-dates', backfillAllSubscriptionDates);
 
 /**
  * @swagger
@@ -140,6 +156,7 @@ router.route('/organizations/:id')
  *         description: Status updated
  */
 router.patch('/organizations/:id/status', updateOrganizationStatus);
+router.patch('/organizations/:id/recalculate-dates', recalculateOrgSubscriptionDates);
 
 // Subscription Management
 router.route('/subscriptions')
@@ -149,5 +166,18 @@ router.route('/subscriptions')
 router.route('/subscriptions/:id')
   .put(updateSubscription as any)
   .delete(deleteSubscription as any);
+
+// Notification Management
+router.get('/notifications', getNotifications as any);
+router.patch('/notifications/read-all', markAllNotificationsRead as any);
+router.patch('/notifications/:id/read', markNotificationRead as any);
+router.post('/notifications/check-expiry', checkAndCreateExpiryNotifications as any);
+router.post('/notifications/plan-expired', createPlanExpiredNotification as any);
+
+// Ticket Management
+router.route('/tickets')
+  .get(getAllTickets as any);
+router.route('/tickets/:id')
+  .patch(updateTicket as any);
 
 export default router;

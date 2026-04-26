@@ -299,9 +299,29 @@ export const updateOrganizationProfile = async (req: AuthRequest, res: Response)
 export const buyPlan = async (req: AuthRequest, res: Response) => {
   try {
     const { subscriptionId } = req.body;
-    
+
+    // Load the plan to calculate expiry
+    const Subscription = require('../models/Subscription').default;
+    const plan = await Subscription.findById(subscriptionId);
+
+    let subscriptionStartDate: Date | null = null;
+    let subscriptionExpiry: Date | null = null;
+
+    if (plan) {
+      subscriptionStartDate = new Date();
+      subscriptionExpiry = new Date();
+      switch (plan.duration) {
+        case 'Monthly': subscriptionExpiry.setMonth(subscriptionExpiry.getMonth() + 1); break;
+        case '3 Months': subscriptionExpiry.setMonth(subscriptionExpiry.getMonth() + 3); break;
+        case '6 Months': subscriptionExpiry.setMonth(subscriptionExpiry.getMonth() + 6); break;
+        case 'Annual': subscriptionExpiry.setFullYear(subscriptionExpiry.getFullYear() + 1); break;
+      }
+    }
+
     const org = await Organization.findByIdAndUpdate(req.user.organization, {
-      subscription: subscriptionId
+      subscription: subscriptionId,
+      subscriptionStartDate,
+      subscriptionExpiry,
     }, {
       new: true,
       runValidators: true
@@ -312,6 +332,46 @@ export const buyPlan = async (req: AuthRequest, res: Response) => {
     }
 
     res.status(200).json({ success: true, data: org });
+  } catch (err: any) {
+    res.status(400).json({ success: false, message: err.message });
+  }
+};
+
+// @desc    Recalculate subscription start & expiry dates for the org's current plan
+// @route   PATCH /api/v1/tenant/recalculate-dates
+// @access  Private (Organization Admin)
+export const recalculateDates = async (req: AuthRequest, res: Response) => {
+  try {
+    const org = await Organization.findById(req.user.organization).populate('subscription');
+    if (!org) {
+      return res.status(404).json({ success: false, message: 'Organization not found' });
+    }
+
+    const sub = org.subscription as any;
+    if (!sub) {
+      return res.status(400).json({ success: false, message: 'No subscription plan assigned' });
+    }
+
+    // Use existing start date if present, otherwise fall back to createdAt
+    const startDate: Date = (org as any).subscriptionStartDate
+      ? new Date((org as any).subscriptionStartDate)
+      : new Date((org as any).createdAt);
+
+    const expiryDate = new Date(startDate);
+    switch (sub.duration) {
+      case 'Monthly':  expiryDate.setMonth(expiryDate.getMonth() + 1); break;
+      case '3 Months': expiryDate.setMonth(expiryDate.getMonth() + 3); break;
+      case '6 Months': expiryDate.setMonth(expiryDate.getMonth() + 6); break;
+      case 'Annual':   expiryDate.setFullYear(expiryDate.getFullYear() + 1); break;
+    }
+
+    const updated = await Organization.findByIdAndUpdate(
+      req.user.organization,
+      { subscriptionStartDate: startDate, subscriptionExpiry: expiryDate },
+      { new: true, runValidators: true }
+    ).populate('subscription');
+
+    res.status(200).json({ success: true, data: updated });
   } catch (err: any) {
     res.status(400).json({ success: false, message: err.message });
   }

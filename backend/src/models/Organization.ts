@@ -48,6 +48,14 @@ const organizationSchema = new Schema({
     type: Schema.Types.ObjectId,
     ref: 'Subscription'
   },
+  subscriptionStartDate: {
+    type: Date,
+    default: null,
+  },
+  subscriptionExpiry: {
+    type: Date,
+    default: null,
+  },
 }, {
   timestamps: true,
 });

@@ -5,6 +5,7 @@ import Organizations from './pages/super-admin/Organizations';
 import OrganizationDetails from './pages/super-admin/OrganizationDetails';
 import Subscriptions from './pages/super-admin/Subscriptions';
 import Support from './pages/super-admin/Support';
+import NotificationsPage from './pages/super-admin/Notifications';
 import StudentDashboard from './pages/student/Dashboard';
 import MyCourses from './pages/student/Courses';
 import StudentAssignments from './pages/student/Assignments';
@@ -23,6 +24,7 @@ import Branches from './pages/organization/Branches';
 import StudentManagement from './pages/organization/Students';
 import OrgStudentDetails from './pages/organization/StudentDetails';
 import OrganizationProfile from './pages/organization/Profile';
+import OrganizationSupport from './pages/organization/Support';
 import StaffOnboarding from './pages/organization/Staff';
 import TutorDashboard from './pages/tutor/Dashboard';
 import Classroom from './pages/tutor/Classroom';
@@ -81,6 +83,7 @@ function App() {
           <Route path="organizations" element={<Organizations />} />
           <Route path="organizations/:id" element={<OrganizationDetails />} />
           <Route path="subscriptions" element={<Subscriptions />} />
+          <Route path="notifications" element={<NotificationsPage />} />
           <Route path="support" element={<Support />} />
         </Route>
 
@@ -95,6 +98,7 @@ function App() {
           <Route path="students" element={<StudentManagement />} />
           <Route path="students/:studentId" element={<OrgStudentDetails />} />
           <Route path="staff" element={<StaffOnboarding />} />
+          <Route path="support" element={<OrganizationSupport />} />
           <Route path="profile" element={<OrganizationProfile />} />
         </Route>
 

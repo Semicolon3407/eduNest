@@ -44,4 +44,24 @@ export const superAdminService = {
     const response = await api.patch(`/super-admin/organizations/${id}/status`, { status });
     return response.data;
   },
+
+  recalculateSubscriptionDates: async (id: string) => {
+    const response = await api.patch(`/super-admin/organizations/${id}/recalculate-dates`);
+    return response.data;
+  },
+
+  backfillAllDates: async () => {
+    const response = await api.post('/super-admin/organizations/backfill-dates');
+    return response.data;
+  },
+
+  getTickets: async () => {
+    const response = await api.get('/super-admin/tickets');
+    return response.data;
+  },
+
+  updateTicket: async (id: string, data: { status?: string; resolutionNotes?: string; replyMessage?: string }) => {
+    const response = await api.patch(`/super-admin/tickets/${id}`, data);
+    return response.data;
+  },
 };
